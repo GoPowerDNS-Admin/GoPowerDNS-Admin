@@ -31,3 +31,148 @@ Level = "info"
 
 [log.Console]
 Enable = true
+
+[record]
+[record.A]
+forward = true
+reverse = false
+
+[record.AAAA]
+forward = true
+reverse = false
+
+[record.AFSDB]
+forward = false
+reverse = false
+
+[record.ALIAS]
+forward = false
+reverse = false
+
+[record.CAA]
+forward = true
+reverse = false
+
+[record.CERT]
+forward = false
+reverse = false
+
+[record.CDNSKEY]
+forward = false
+reverse = false
+
+[record.CDS]
+forward = false
+reverse = false
+
+[record.CNAME]
+forward = true
+reverse = false
+
+[record.DNSKEY]
+forward = false
+reverse = false
+
+[record.DNAME]
+forward = false
+reverse = false
+
+[record.DS]
+forward = false
+reverse = false
+
+[record.HINFO]
+forward = false
+reverse = false
+
+[record.KEY]
+forward = false
+reverse = false
+
+[record.LOC]
+forward = true
+reverse = true
+
+[record.LUA]
+forward = false
+reverse = false
+
+[record.MX]
+forward = true
+reverse = false
+
+[record.NAPTR]
+forward = false
+reverse = false
+
+[record.NS]
+forward = true
+reverse = true
+
+[record.NSEC]
+forward = false
+reverse = false
+
+[record.NSEC3]
+forward = false
+reverse = false
+
+[record.NSEC3PARAM]
+forward = false
+reverse = false
+
+[record.OPENPGPKEY]
+forward = false
+reverse = false
+
+[record.PTR]
+forward = true
+reverse = true
+
+[record.RP]
+forward = false
+reverse = false
+
+[record.RRSIG]
+forward = false
+reverse = false
+
+[record.SOA]
+forward = false
+reverse = false
+
+[record.SPF]
+forward = true
+reverse = false
+
+[record.SSHFP]
+forward = false
+reverse = false
+
+[record.SRV]
+forward = true
+reverse = false
+
+[record.TKEY]
+forward = false
+reverse = false
+
+[record.TSIG]
+forward = false
+reverse = false
+
+[record.TLSA]
+forward = false
+reverse = false
+
+[record.SMIMEA]
+forward = false
+reverse = false
+
+[record.TXT]
+forward = true
+reverse = true
+
+[record.URI]
+forward = false
+reverse = false

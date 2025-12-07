@@ -1,0 +1,120 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-sm-6"><h3 class="mb-0">{{.Navigation.PageTitle}}</h3></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{range .Navigation.Breadcrumbs}}
+                            {{if .Active}}
+                            <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                            {{else}}
+                            <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                            {{end}}
+                            {{end}}
+                        </ol>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                {{if .Success}}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{.Success}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
+                {{if .Error}}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{.Error}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card card-primary card-outline mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">DNS Record Type Permissions</h3>
+                            </div>
+                            <!--begin::Form-->
+                            <form method="POST" enctype="application/x-www-form-urlencoded" action="/settings/zone-records">
+                                <div class="card-body">
+                                    <p class="text-muted">
+                                        Configure which DNS record types can be edited in forward and reverse zones.
+                                    </p>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Record Type</th>
+                                                    <th class="text-center">Allow in Forward Zones</th>
+                                                    <th class="text-center">Allow in Reverse Zones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {{range $recordType, $settings := .Settings.Records}}
+                                                <tr>
+                                                    <td><strong>{{$recordType}}</strong></td>
+                                                    <td class="text-center">
+                                                        <div class="form-check form-switch d-inline-block">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                   id="forward_{{$recordType}}"
+                                                                   name="records[{{$recordType}}].forward"
+                                                                   value="true"
+                                                                   {{if $settings.Forward}}checked{{end}}>
+                                                            <label class="form-check-label visually-hidden" for="forward_{{$recordType}}">
+                                                                Allow {{$recordType}} in forward zones
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="form-check form-switch d-inline-block">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                   id="reverse_{{$recordType}}"
+                                                                   name="records[{{$recordType}}].reverse"
+                                                                   value="true"
+                                                                   {{if $settings.Reverse}}checked{{end}}>
+                                                            <label class="form-check-label visually-hidden" for="reverse_{{$recordType}}">
+                                                                Allow {{$recordType}} in reverse zones
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {{end}}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                                    <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->

@@ -8,20 +8,12 @@ import (
 )
 
 func init() { //nolint: gochecknoinits
-	startCmd.Flags().StringVarP(
-		&configPath,
-		"configPath",
-		"c",
-		"etc/",
-		"Path to the configuration folder",
-	)
+	startCmd.Flags().BoolVar(&devMode, "dev", false, "Enable dev mode")
 
-	startCmd.Flags().BoolVarP(&devMode, "dev", "d", false, "Enable dev mode")
-
-	startCmd.Flags().BoolVarP(
+	startCmd.Flags().BoolVar(
 		&browseStatic,
 		"browse",
-		"b", false,
+		false,
 		"Enable static file browsing (for development purposes only)",
 	)
 
@@ -29,8 +21,8 @@ func init() { //nolint: gochecknoinits
 }
 
 var (
-	configPath   string // Path to the configuration file
-	cfg          config.Config
+	configPath string // Path to the configuration file
+
 	err          error
 	devMode      bool
 	browseStatic bool

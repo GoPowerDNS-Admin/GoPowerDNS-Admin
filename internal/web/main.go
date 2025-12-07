@@ -19,6 +19,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/pdnserver"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/zone"
 )
 
 // Service represents the web service.
@@ -143,6 +144,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	_ = login.Handler.Init(app, cfg, db)
 	_ = dashboard.Handler.Init(app, cfg, db)
 	_ = pdnserver.Handler.Init(app, cfg, db)
+	_ = zone.Handler.Init(app, cfg, db)
 
 	// redirect root to dashboard
 	app.Get("/", func(c *fiber.Ctx) error {

@@ -18,6 +18,7 @@ type Config struct {
 	Log       logger.Log
 	Title     string
 	Webserver Webserver
+	Record    Record // DNS record type settings
 }
 
 // Webserver implement webserver settings.
@@ -34,3 +35,13 @@ type Webserver struct {
 	Argon2Salt          string  // salt for argon2 hashing
 	Session             Session // session settings
 }
+
+// RecordTypeSettings defines whether a DNS record type can be edited in forward or reverse zones.
+type RecordTypeSettings struct {
+	Forward bool `form:"forward" json:"forward"` // allow editing in forward zones
+	Reverse bool `form:"reverse" json:"reverse"` // allow editing in reverse zones
+}
+
+// Record holds configuration for DNS record type editing permissions.
+// Keys are DNS record types (A, AAAA, CNAME, etc.)
+type Record map[string]RecordTypeSettings

@@ -1,0 +1,44 @@
+.PHONY: help vendor-update vendor-clean vendor-bootstrap vendor-adminlte
+
+# Versions
+BOOTSTRAP_VERSION := 5.3.8
+ADMINLTE_VERSION := 4.0.0-rc4
+
+# Directories
+VENDOR_DIR := internal/web/static/vendor
+TMP_DIR := /tmp/gopowerdns-vendor
+
+help:
+	@echo "Available targets:"
+	@echo "  vendor-update     - Update all vendor dependencies"
+	@echo "  vendor-bootstrap  - Update only Bootstrap"
+	@echo "  vendor-adminlte   - Update only AdminLTE"
+	@echo "  vendor-clean      - Remove all vendor dependencies"
+
+vendor-update: vendor-bootstrap vendor-adminlte
+	@echo "✓ All vendor dependencies updated"
+
+vendor-bootstrap:
+	@echo "Downloading Bootstrap $(BOOTSTRAP_VERSION)..."
+	@mkdir -p $(TMP_DIR)
+	@curl -sL https://github.com/twbs/bootstrap/releases/download/v$(BOOTSTRAP_VERSION)/bootstrap-$(BOOTSTRAP_VERSION)-dist.zip -o $(TMP_DIR)/bootstrap.zip
+	@rm -rf $(VENDOR_DIR)/bootstrap-$(BOOTSTRAP_VERSION)-dist
+	@unzip -q $(TMP_DIR)/bootstrap.zip -d $(VENDOR_DIR)/
+	@rm $(TMP_DIR)/bootstrap.zip
+	@echo "✓ Bootstrap $(BOOTSTRAP_VERSION) installed"
+
+vendor-adminlte:
+	@echo "Downloading AdminLTE $(ADMINLTE_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/adminlte-v4/css
+	@mkdir -p $(VENDOR_DIR)/adminlte-v4/js
+	@curl -sL https://cdn.jsdelivr.net/npm/admin-lte@$(ADMINLTE_VERSION)/dist/css/adminlte.min.css -o $(VENDOR_DIR)/adminlte-v4/css/adminlte.min.css
+	@curl -sL https://cdn.jsdelivr.net/npm/admin-lte@$(ADMINLTE_VERSION)/dist/css/adminlte.css -o $(VENDOR_DIR)/adminlte-v4/css/adminlte.css
+	@curl -sL https://cdn.jsdelivr.net/npm/admin-lte@$(ADMINLTE_VERSION)/dist/js/adminlte.min.js -o $(VENDOR_DIR)/adminlte-v4/js/adminlte.min.js
+	@curl -sL https://cdn.jsdelivr.net/npm/admin-lte@$(ADMINLTE_VERSION)/dist/js/adminlte.js -o $(VENDOR_DIR)/adminlte-v4/js/adminlte.js
+	@echo "✓ AdminLTE $(ADMINLTE_VERSION) installed"
+
+vendor-clean:
+	@echo "Cleaning vendor dependencies..."
+	@rm -rf $(VENDOR_DIR)/bootstrap-*
+	@rm -rf $(VENDOR_DIR)/adminlte-*
+	@echo "✓ Vendor dependencies cleaned"

@@ -1,0 +1,33 @@
+Title = "GO PowerDNS-Admin"
+DevMode = false
+
+[webserver]
+CookieEncryptionKey = "change_this_to_a_random_string"
+# if you change this after users have been created, they will need to reset their passwords
+Argon2Salt = "change_this_to_a_random_string"
+Domain = "localhost"
+Port = 8080
+URL = "http://localhost:8080"
+BrowseStatic = false
+
+
+[webserver.Session]
+ExpireTime = 86400
+# RefreshTime = 3600
+# RememberMeExpireTime = 604800
+
+[DB]
+GormEngine = "mysql"
+Host = "127.0.0.1"
+Port = 3306
+Name = "go-pdns"
+User = "go-pdns"
+Password = "go-pdns"
+Extras = "charset=utf8mb4&parseTime=True&loc=Local"
+
+
+[log]
+Level = "info"
+
+[log.Console]
+Enable = true

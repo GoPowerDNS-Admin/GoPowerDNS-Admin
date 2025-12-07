@@ -1,0 +1,25 @@
+services:
+  pgdb:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: go-pdns
+      POSTGRES_PASSWORD: go-pdns
+      POSTGRES_DB: go-pdns
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_db_data:/var/lib/postgresql/data
+  mysqldb:
+    image: mariadb:10
+    environment:
+      MYSQL_ROOT_PASSWORD: go-pdns
+      MYSQL_DATABASE: go-pdns
+      MYSQL_USER: go-pdns
+      MYSQL_PASSWORD: go-pdns
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_db_data:/var/lib/mysql
+volumes:
+  pg_db_data:
+  mysql_db_data:

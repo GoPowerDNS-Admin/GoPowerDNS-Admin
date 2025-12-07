@@ -1,0 +1,141 @@
+<!--begin::Sidebar-->
+<aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+    <!--begin::Sidebar Brand-->
+    <div class="sidebar-brand">
+        <!--begin::Brand Link-->
+        <a href="#" class="brand-link">
+            <!--begin::Brand Image-->
+            <img
+                    src="../../static/img/favicon.png"
+                    alt="PowerDNS-Admin"
+                    class="brand-image opacity-75 shadow"
+            />
+            <!--end::Brand Image-->
+            <!--begin::Brand Text-->
+            <span class="brand-text fw-light">PowerDNS Admin</span>
+            <!--end::Brand Text-->
+        </a>
+        <!--end::Brand Link-->
+    </div>
+    <!--end::Sidebar Brand-->
+    <!--begin::Sidebar Wrapper-->
+    <div class="sidebar-wrapper">
+        <nav class="mt-2">
+            <!--begin::Sidebar Menu-->
+            <ul
+                    class="nav sidebar-menu flex-column"
+                    data-lte-toggle="treeview"
+                    role="navigation"
+                    aria-label="Main navigation"
+                    data-accordion="false"
+                    id="navigation"
+            >
+                <!-- begin Zone Management -->
+                <li class="nav-header">Zone Management</li>
+                <li class="nav-item">
+                    <a href="/dashboard" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "dashboard")}} active{{end}}">
+                        <i class="nav-icon bi bi-speedometer"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-plus-square"></i>
+                        <p>Create Zone</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-dash-square-dotted"></i>
+                        <p>Remove Zone</p>
+                    </a>
+                </li>
+                <!-- end Zone Management -->
+                <!-- begin Administration -->
+                <li class="nav-header">Administration</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-search"></i>
+                        <p>Global Search</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-activity"></i>
+                        <p>Activity</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-clipboard-data"></i>
+                        <p>Server Statistics</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-tools"></i>
+                        <p>Server Configuration</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-copy"></i>
+                        <p>Zone Templates</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-people"></i>
+                        <p>Accounts</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-person-vcard"></i>
+                        <p>Users</p>
+                    </a>
+                </li>
+                <li class="nav-item{{if and .Navigation (eq .Navigation.ActiveSection "settings")}} menu-open{{end}}">
+                    <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActiveSection "settings")}} active{{end}}">
+                        <i class="nav-icon bi bi-speedometer"></i>
+                        <p>
+                            Settings
+                            <i class="nav-arrow bi bi-chevron-right"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "settings-basic")}} active{{end}}">
+                                <i class="nav-icon bi bi-gear"></i>
+                                <p>Basic</p>
+                            </a>
+
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "settings-zone-records")}} active{{end}}">
+                                <i class="nav-icon bi bi-card-list"></i>
+                                <p>Zone Records</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/settings/pdns-server" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "pdns-server")}} active{{end}}">
+                                <i class="nav-icon bi bi-server"></i>
+                                <p>PDNS Server</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "settings-authentication")}} active{{end}}">
+                                <i class="nav-icon bi bi-person-lock"></i>
+                                <p>Authentication</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <!-- end Administration -->
+            </ul>
+            <!--end::Sidebar Menu-->
+        </nav>
+    </div>
+    <!--end::Sidebar Wrapper-->
+</aside>
+<!--end::Sidebar-->

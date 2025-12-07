@@ -1,0 +1,77 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-sm-6"><h3 class="mb-0">{{.Navigation.PageTitle}}</h3></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{range .Navigation.Breadcrumbs}}
+                            {{if .Active}}
+                            <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                            {{else}}
+                            <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                            {{end}}
+                            {{end}}
+                        </ol>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="card card-primary card-outline mb-4">
+                            <!--begin::Form-->
+                            <form method="POST" action="/settings/pdns-server">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="pdns-server-url" class="form-label">PowerDNS API URL</label>
+                                        <input type="url" class="form-control" id="powerdns-server-url" name="api_server_url"
+                                               aria-describedby="powerdns-server-url-help"
+                                               placeholder="http://127.0.0.1:8081/api/v1"
+                                               value="{{.Settings.APIServerURL}}">
+                                        <div id="powerdns-server-url-help" class="form-text">Enter the URL of your PowerDNS server API endpoint.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="powerdns-server-api-key" class="form-label">PowerDNS API Key</label>
+                                        <input type="password" class="form-control" id="powerdns-server-api-key" name="api_key"
+                                               placeholder="Enter your PowerDNS API key"
+                                               value="{{.Settings.APIKey}}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="powerdns-server-version" class="form-label">PowerDNS Version</label>
+                                        <input type="text" class="form-control" id="powerdns-server-version" name="version"
+                                               placeholder="Enter your PowerDNS version (e.g., 4.9.4)"
+                                               value="{{.Settings.Version}}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->

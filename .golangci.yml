@@ -1,0 +1,249 @@
+version: 2
+
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+  modules-download-mode: readonly
+
+output:
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters:
+  disable-all: true
+  enable:
+    # Default linters
+    - errcheck # Checks for unchecked errors
+    - govet # Reports suspicious constructs
+    - ineffassign # Detects unused assignments
+    - staticcheck # Advanced static analysis (includes gosimple)
+    - unused # Checks for unused code
+
+    # Additional recommended linters
+    - asasalint # Check for pass []any as any in variadic func
+    - asciicheck # Check for non-ASCII identifiers
+    - bidichk # Check for dangerous unicode characters
+    - bodyclose # Check HTTP response body is closed
+    - canonicalheader # Check net/http.Header uses canonical header
+    - contextcheck # Check for non-inherited context
+    - copyloopvar # Detect places where loop variables are copied
+    - dogsled # Check for too many blank identifiers
+    - dupl # Detect code duplication
+    - dupword # Check for duplicate words
+    - durationcheck # Check for two durations multiplied
+    - errname # Check error naming conventions (Err prefix, Error suffix)
+    - errorlint # Find issues with error wrapping
+    - exhaustive # Check exhaustiveness of enum switches
+    - fatcontext # Detect nested contexts in loops
+    - gocheckcompilerdirectives # Check go compiler directives are valid
+    - gochecknoinits # Check no init functions
+    - goconst # Find repeated strings that could be constants
+    - gocritic # Comprehensive Go linter
+    - gocyclo # Check cyclomatic complexity
+    - godot # Check comments end in period
+    - gomodguard # Check blocked modules
+    - goprintffuncname # Check printf-like functions are named correctly
+    - gosec # Security-focused linter
+    - intrange # Find places where for loops could use integer range
+    - lll # Report long lines
+    - loggercheck # Check logger key-value pairs (for zerolog)
+    - makezero # Find slice declarations with non-zero initial length
+    - mirror # Check wrong mirror patterns of bytes/strings
+    - misspell # Find misspelled English words
+    - mnd # Detect magic numbers
+    - nakedret # Check naked returns in long functions
+    - nestif # Report deeply nested if statements
+    - nilerr # Find code returning nil when error is not nil
+    - nilnil # Check no simultaneous return of nil error and nil value
+    - noctx # Find missing context.Context
+    - nolintlint # Check nolint directives
+    - nosprintfhostport # Check for Sprintf misuse in URLs
+    - perfsprint # Check fmt.Sprintf can be replaced with faster alternative
+    - prealloc # Find slice declarations that could be preallocated
+    - predeclared # Find code shadowing predeclared identifiers
+    - promlinter # Check Prometheus metrics naming
+    - reassign # Check package variables are not reassigned
+    - revive # Comprehensive linter (replacement for golint)
+    - rowserrcheck # Check sql.Rows.Err is checked
+    - sloglint # Ensure consistent log/slog style
+    - sqlclosecheck # Check SQL statements are closed
+    - tagalign # Check struct tags are aligned
+    # - tagliatelle # Check struct tag naming
+    - testableexamples # Check examples are testable
+    - testifylint # Check testify usage
+    - thelper # Check test helpers call t.Helper()
+    - tparallel # Check t.Parallel() usage
+    - unconvert # Remove unnecessary type conversions
+    - unparam # Report unused function parameters
+    - usestdlibvars # Detect possibility to use stdlib vars/constants
+    - wastedassign # Find wasted assignments
+    - whitespace # Check for unnecessary newlines
+    - zerologlint # Check zerolog usage (dispatch with Send/Msg)
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+      - (*database/sql.Rows).Close
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow
+      - fieldalignment
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+      - opinionated
+    disabled-checks:
+      - whyNoLint
+      - unnamedResult
+
+  lll:
+    line-length: 120
+    tab-width: 1
+
+  misspell:
+    locale: US
+    ignore-words:
+      - behaviour
+      - colour
+
+  mnd:
+    checks:
+      - argument
+      - case
+      - condition
+      - operation
+      - return
+      - assign
+    ignored-numbers:
+      - "0"
+      - "1"
+      - "2"
+      - "10"
+      - "100"
+      - "1000"
+
+  nakedret:
+    max-func-lines: 30
+
+  nestif:
+    min-complexity: 5
+
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    require-specific: true
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  tagliatelle:
+    case:
+      use-field-name: true
+      rules:
+        json: snake
+        yaml: snake
+        xml: camel
+        bson: camel
+        avro: snake
+        mapstructure: kebab
+
+  unparam:
+    check-exported: false
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+  zerologlint:
+    require-msg-or-send: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  fix: false
+
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - goconst
+        - gocognit
+        - mnd
+
+    # Exclude magic number check for test values
+    - path: _test\.go
+      text: "mnd: Magic number"
+
+    # Exclude error check in defer statements
+    - text: "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*print(f|ln)?|os\\.(Un)?Setenv). is not checked"
+      linters:
+        - errcheck
+
+    # Exclude certain revive rules for tests
+    - path: _test\.go
+      text: "unused-parameter"
+      linters:
+        - revive
+
+    # Allow dot imports in tests for testify
+    - path: _test\.go
+      text: "dot-imports"
+      linters:
+        - revive
+
+  exclude-use-default: false
+  exclude-case-sensitive: false

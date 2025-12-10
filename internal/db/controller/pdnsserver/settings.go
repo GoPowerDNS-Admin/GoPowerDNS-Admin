@@ -1,4 +1,4 @@
-package pdnserver
+package pdnsserver
 
 import (
 	"encoding/json"
@@ -14,16 +14,16 @@ const (
 )
 
 type (
-	// PDNSServerSettings represents PowerDNS server configuration.
-	PDNSServerSettings struct {
+	// Settings represents PowerDNS server configuration.
+	Settings struct {
 		APIServerURL string `form:"api_server_url" json:"apiServerUrl" validate:"required,url"`
 		APIKey       string `form:"api_key"        json:"apiKey"       validate:"required,min=8"`
-		Version      string `form:"version"        json:"version"      validate:"required"`
+		VHost        string `form:"vhost"          json:"vhost"        validate:"required"`
 	}
 )
 
 // Load loads the PDNS server settings from the database.
-func (p *PDNSServerSettings) Load(db *gorm.DB) error {
+func (p *Settings) Load(db *gorm.DB) error {
 	// Retrieve the setting from the database
 	s, err := setting.Get(db, SettingKeyPDNSServer)
 	if err != nil {
@@ -39,7 +39,7 @@ func (p *PDNSServerSettings) Load(db *gorm.DB) error {
 }
 
 // Save saves the PDNS server settings to the database.
-func (p *PDNSServerSettings) Save(db *gorm.DB) error {
+func (p *Settings) Save(db *gorm.DB) error {
 	// Marshal the struct to JSON
 	data, err := json.Marshal(p)
 	if err != nil {

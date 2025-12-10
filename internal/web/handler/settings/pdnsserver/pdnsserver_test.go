@@ -1,4 +1,4 @@
-package pdnserver
+package pdnsserver
 
 import (
 	"io"
@@ -11,9 +11,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	controller "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/pdnsserver"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 )
+
+// setupTestDB creates an in-memory SQLite database for testing.
+func setupTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err, "failed to create test database")
+
+	// Migrate the schema
+	err = db.AutoMigrate(&models.Setting{})
+	require.NoError(t, err, "failed to migrate test database")
+
+	return db
+}
 
 func TestService_Get_WithExistingSettings(t *testing.T) {
 	db := setupTestDB(t)
@@ -25,10 +43,10 @@ func TestService_Get_WithExistingSettings(t *testing.T) {
 	}
 
 	// Save test settings
-	settings := &PDNSServerSettings{
+	settings := &controller.Settings{
 		APIServerURL: "https://pdns.example.com:8081",
 		APIKey:       "test-api-key",
-		Version:      "4.8.0",
+		VHost:        "4.8.0",
 	}
 	err := settings.Save(db)
 	require.NoError(t, err)
@@ -130,12 +148,12 @@ func TestService_Post_Success(t *testing.T) {
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 
 	// Verify settings were saved to database
-	loaded := &PDNSServerSettings{}
+	loaded := &controller.Settings{}
 	err = loaded.Load(db)
 	require.NoError(t, err)
 	assert.Equal(t, "https://pdns.example.com:8081", loaded.APIServerURL)
 	assert.Equal(t, "test-key-123", loaded.APIKey)
-	assert.Equal(t, "4.9.0", loaded.Version)
+	assert.Equal(t, "4.9.0", loaded.VHost)
 }
 
 func TestService_Post_InvalidFormData(t *testing.T) {

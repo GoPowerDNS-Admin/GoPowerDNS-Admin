@@ -18,7 +18,8 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/pdnserver"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/server/configuration"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/zone"
 )
 
@@ -107,6 +108,21 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 		log.Warn().Msg("debug mode enabled: using local filesystem for templates")
 	}
 
+	// Add template helper functions
+	templateEngine.AddFunc("iterate", func(count int) []int {
+		result := make([]int, count)
+		for i := range result {
+			result[i] = i
+		}
+		return result
+	})
+	templateEngine.AddFunc("add", func(a, b int) int {
+		return a + b
+	})
+	templateEngine.AddFunc("sub", func(a, b int) int {
+		return a - b
+	})
+
 	// create fiber app
 	app := fiber.New(
 		fiber.Config{
@@ -143,8 +159,9 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	// init login handler
 	_ = login.Handler.Init(app, cfg, db)
 	_ = dashboard.Handler.Init(app, cfg, db)
-	_ = pdnserver.Handler.Init(app, cfg, db)
+	_ = pdnsserver.Handler.Init(app, cfg, db)
 	_ = zone.Handler.Init(app, cfg, db)
+	_ = configuration.Handler.Init(app, cfg, db)
 
 	// redirect root to dashboard
 	app.Get("/", func(c *fiber.Ctx) error {

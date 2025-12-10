@@ -1,8 +1,8 @@
-// Package pdnserver provides handlers for PowerDNS server settings management.
-package pdnserver
+package pdnsserver
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -10,7 +10,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	controller "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
 )
@@ -59,7 +61,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 		AddBreadcrumb("PowerDNS Server", "/settings/pdns-server", true)
 
 	// Load PDNS server settings
-	settings := &PDNSServerSettings{}
+	settings := &controller.Settings{}
 	if err := settings.Load(s.db); err != nil {
 		// If settings don't exist yet, render form with empty values
 		if errors.Is(err, setting.ErrSettingNotFound) {
@@ -91,7 +93,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		AddBreadcrumb("PowerDNS Server", "/settings/pdns-server", true)
 
 	// Parse form data into settings struct
-	settings := &PDNSServerSettings{}
+	settings := &controller.Settings{}
 	if err := c.BodyParser(settings); err != nil {
 		log.Error().Err(err).Msg("failed to parse PDNS server settings form")
 		return c.Status(fiber.StatusBadRequest).Render(Path, fiber.Map{
@@ -131,8 +133,28 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Log success
 	log.Info().
 		Str("api_server_url", settings.APIServerURL).
-		Str("version", settings.Version).
+		Str("version", settings.VHost).
 		Msg("PDNS server settings saved successfully")
+
+	// Re-initialize PowerDNS engine with new settings
+	if err := powerdns.Open(s.db); err != nil {
+		log.Error().Err(err).Msg("failed to initialize PowerDNS engine after settings update")
+		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
+			"Settings":   settings,
+			"Navigation": nav,
+			"Error":      "Failed to initialize PowerDNS engine with new settings",
+		}, handler.BaseLayout)
+	}
+
+	// test PowerDNS API connection with new settings
+	if err := powerdns.Engine.Test(); err != nil {
+		log.Error().Err(err).Msg("failed to connect to PowerDNS API with new settings")
+		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
+			"Settings":   settings,
+			"Navigation": nav,
+			"Error":      fmt.Sprintf("Failed to connect to PowerDNS API with the provided settings (%s)", err),
+		}, handler.BaseLayout)
+	}
 
 	// Redirect to the same page with success message
 	return c.Render(Path, fiber.Map{

@@ -9,6 +9,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/dsn"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
@@ -53,6 +54,19 @@ func New(cfg *config.Config) *Daemon {
 	})
 
 	session.Init(sessionStorage)
+
+	// Initialize PowerDNS client
+	if err := powerdns.Open(db); err != nil {
+		log.Warn().Err(err).Msg("failed to initialize PowerDNS client - server configuration features will be unavailable")
+		log.Info().Msg("PowerDNS client will be available after configuring server settings")
+	} else {
+		log.Info().Msg("PowerDNS client initialized successfully")
+
+		// Test the connection
+		if err := powerdns.Engine.Test(); err != nil {
+			log.Warn().Err(err).Msg("PowerDNS API connection test failed - please verify server settings")
+		}
+	}
 
 	return &Daemon{
 		webService: *web.New(cfg, db),

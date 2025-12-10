@@ -11,6 +11,7 @@ require (
 	github.com/gofiber/storage v1.3.3
 	github.com/gofiber/storage/mysql v1.3.7
 	github.com/gofiber/template/html/v2 v2.1.3
+	github.com/joeig/go-powerdns/v3 v3.19.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/zerolog v1.34.0

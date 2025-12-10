@@ -1,4 +1,4 @@
-.PHONY: help vendor-update vendor-clean vendor-bootstrap vendor-adminlte
+.PHONY: help linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
@@ -14,6 +14,16 @@ help:
 	@echo "  vendor-bootstrap  - Update only Bootstrap"
 	@echo "  vendor-adminlte   - Update only AdminLTE"
 	@echo "  vendor-clean      - Remove all vendor dependencies"
+
+linter:
+	@echo "Running linter..."
+	@golangci-lint run ./...
+	@echo "✓ Linter passed"
+
+pre-commit: linter
+	@echo "Running Pre-commit checks..."
+	@pre-commit run --all-files
+	@echo "✓ Pre-commit checks passed"
 
 vendor-update: vendor-bootstrap vendor-adminlte
 	@echo "✓ All vendor dependencies updated"

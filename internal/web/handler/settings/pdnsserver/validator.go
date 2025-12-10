@@ -1,4 +1,4 @@
-package pdnserver
+package pdnsserver
 
 import (
 	"github.com/go-playground/validator/v10"

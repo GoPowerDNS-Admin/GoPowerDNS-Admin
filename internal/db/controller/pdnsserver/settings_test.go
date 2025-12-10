@@ -1,4 +1,4 @@
-package pdnserver
+package pdnsserver
 
 import (
 	"testing"
@@ -28,10 +28,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 func TestPDNSServerSettings_Save(t *testing.T) {
 	db := setupTestDB(t)
 
-	settings := &PDNSServerSettings{
+	settings := &Settings{
 		APIServerURL: "https://pdns.example.com:8081",
 		APIKey:       "secret-api-key-123",
-		Version:      "4.8.0",
+		VHost:        "4.8.0",
 	}
 
 	err := settings.Save(db)
@@ -49,30 +49,30 @@ func TestPDNSServerSettings_Load(t *testing.T) {
 	db := setupTestDB(t)
 
 	// First save a setting
-	original := &PDNSServerSettings{
+	original := &Settings{
 		APIServerURL: "https://pdns.example.com:8081",
 		APIKey:       "secret-api-key-123",
-		Version:      "4.8.0",
+		VHost:        "4.8.0",
 	}
 
 	err := original.Save(db)
 	require.NoError(t, err)
 
 	// Now load it into a new struct
-	loaded := &PDNSServerSettings{}
+	loaded := &Settings{}
 	err = loaded.Load(db)
 	require.NoError(t, err)
 
 	// Verify all fields match
 	assert.Equal(t, original.APIServerURL, loaded.APIServerURL)
 	assert.Equal(t, original.APIKey, loaded.APIKey)
-	assert.Equal(t, original.Version, loaded.Version)
+	assert.Equal(t, original.VHost, loaded.VHost)
 }
 
 func TestPDNSServerSettings_Load_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 
-	settings := &PDNSServerSettings{}
+	settings := &Settings{}
 	err := settings.Load(db)
 	require.Error(t, err)
 }
@@ -81,31 +81,31 @@ func TestPDNSServerSettings_SaveAndLoadMultipleTimes(t *testing.T) {
 	db := setupTestDB(t)
 
 	// First save
-	settings1 := &PDNSServerSettings{
+	settings1 := &Settings{
 		APIServerURL: "https://pdns1.example.com:8081",
 		APIKey:       "key1",
-		Version:      "4.7.0",
+		VHost:        "4.7.0",
 	}
 	err := settings1.Save(db)
 	require.NoError(t, err)
 
 	// Update and save again
-	settings2 := &PDNSServerSettings{
+	settings2 := &Settings{
 		APIServerURL: "https://pdns2.example.com:8082",
 		APIKey:       "key2",
-		Version:      "4.8.0",
+		VHost:        "4.8.0",
 	}
 	err = settings2.Save(db)
 	require.NoError(t, err)
 
 	// Load and verify it has the latest values
-	loaded := &PDNSServerSettings{}
+	loaded := &Settings{}
 	err = loaded.Load(db)
 	require.NoError(t, err)
 
 	assert.Equal(t, settings2.APIServerURL, loaded.APIServerURL)
 	assert.Equal(t, settings2.APIKey, loaded.APIKey)
-	assert.Equal(t, settings2.Version, loaded.Version)
+	assert.Equal(t, settings2.VHost, loaded.VHost)
 
 	// Verify only one setting exists in the database
 	var count int64
@@ -118,29 +118,29 @@ func TestPDNSServerSettings_EmptyValues(t *testing.T) {
 	db := setupTestDB(t)
 
 	// Save with empty values
-	settings := &PDNSServerSettings{
+	settings := &Settings{
 		APIServerURL: "",
 		APIKey:       "",
-		Version:      "",
+		VHost:        "",
 	}
 	err := settings.Save(db)
 	require.NoError(t, err)
 
 	// Load and verify
-	loaded := &PDNSServerSettings{}
+	loaded := &Settings{}
 	err = loaded.Load(db)
 	require.NoError(t, err)
 
 	assert.Empty(t, loaded.APIServerURL)
 	assert.Empty(t, loaded.APIKey)
-	assert.Empty(t, loaded.Version)
+	assert.Empty(t, loaded.VHost)
 }
 
 func TestPDNSServerSettings_NilDatabase(t *testing.T) {
-	settings := &PDNSServerSettings{
+	settings := &Settings{
 		APIServerURL: "https://pdns.example.com:8081",
 		APIKey:       "secret-api-key-123",
-		Version:      "4.8.0",
+		VHost:        "4.8.0",
 	}
 
 	err := settings.Save(nil)

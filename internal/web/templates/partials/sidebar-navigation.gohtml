@@ -72,7 +72,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="/server/configuration" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "configuration")}} active{{end}}">
                         <i class="nav-icon bi bi-tools"></i>
                         <p>Server Configuration</p>
                     </a>
@@ -112,7 +112,7 @@
 
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "settings-zone-records")}} active{{end}}">
+                            <a href="/settings/zone-records" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "zone-records")}} active{{end}}">
                                 <i class="nav-icon bi bi-card-list"></i>
                                 <p>Zone Records</p>
                             </a>

@@ -1,0 +1,170 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-sm-6"><h3 class="mb-0">{{.Navigation.PageTitle}}</h3></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{range .Navigation.Breadcrumbs}}
+                            {{if .Active}}
+                            <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                            {{else}}
+                            <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                            {{end}}
+                            {{end}}
+                        </ol>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                {{if .Success}}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{.Success}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
+                {{if .Error}}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{if eq (printf "%T" .Error) "[]string"}}
+                        {{range .Error}}
+                        <div>{{.}}</div>
+                        {{end}}
+                    {{else}}
+                        {{.Error}}
+                    {{end}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-12 col-md-8 col-lg-6">
+                        <div class="card card-primary card-outline mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">Zone Details</h3>
+                            </div>
+                            <!--begin::Form-->
+                            <form method="POST" action="/zone/add">
+                                <div class="card-body">
+                                    <!-- Zone Name -->
+                                    <div class="mb-3">
+                                        <label for="zone-name" class="form-label">Zone Name <span class="text-danger">*</span></label>
+                                        <input type="text"
+                                               class="form-control"
+                                               id="zone-name"
+                                               name="name"
+                                               aria-describedby="zone-name-help"
+                                               placeholder="example.com"
+                                               value="{{.Form.Name}}"
+                                               required>
+                                        <div id="zone-name-help" class="form-text">
+                                            Enter the fully qualified domain name (FQDN) for the zone. A trailing dot will be added automatically if not provided.
+                                        </div>
+                                    </div>
+
+                                    <!-- Zone Type/Kind -->
+                                    <div class="mb-3">
+                                        <label for="zone-kind" class="form-label">Zone Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="zone-kind" name="kind" required>
+                                            <option value="">Select zone type...</option>
+                                            <option value="Native" {{if eq .Form.Kind "Native"}}selected{{end}}>Native</option>
+                                            <option value="Master" {{if eq .Form.Kind "Master"}}selected{{end}}>Primary (Master)</option>
+                                            <option value="Slave" {{if eq .Form.Kind "Slave"}}selected{{end}}>Secondary (Slave)</option>
+                                        </select>
+                                        <div id="zone-kind-help" class="form-text">
+                                            <strong>Native:</strong> Standard zone type for standalone servers.<br>
+                                            <strong>Primary (Master):</strong> Zone that can be transferred to secondary servers.<br>
+                                            <strong>Secondary (Slave):</strong> Zone that receives data from a primary server.
+                                        </div>
+                                    </div>
+
+                                    <!-- Masters (for Slave zones) -->
+                                    <div class="mb-3" id="masters-group" style="display: none;">
+                                        <label for="zone-masters" class="form-label">Primary Servers (Masters)</label>
+                                        <input type="text"
+                                               class="form-control"
+                                               id="zone-masters"
+                                               name="masters"
+                                               aria-describedby="zone-masters-help"
+                                               placeholder="192.0.2.1, 192.0.2.2"
+                                               value="{{.Form.Masters}}">
+                                        <div id="zone-masters-help" class="form-text">
+                                            Enter comma-separated IP addresses of the primary servers to transfer from.
+                                        </div>
+                                    </div>
+
+                                    <!-- SOA-EDIT-API -->
+                                    <div class="mb-3">
+                                        <label for="soa-edit-api" class="form-label">SOA-EDIT-API <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="soa-edit-api" name="soa_edit_api" required>
+                                            <option value="DEFAULT" {{if eq .Form.SOAEditAPI "DEFAULT"}}selected{{end}}>DEFAULT</option>
+                                            <option value="INCREASE" {{if eq .Form.SOAEditAPI "INCREASE"}}selected{{end}}>INCREASE</option>
+                                            <option value="EPOCH" {{if eq .Form.SOAEditAPI "EPOCH"}}selected{{end}}>EPOCH</option>
+                                            <option value="OFF" {{if eq .Form.SOAEditAPI "OFF"}}selected{{end}}>OFF</option>
+                                        </select>
+                                        <div id="soa-edit-api-help" class="form-text">
+                                            <strong>DEFAULT:</strong> Use the server's default SOA-EDIT-API setting.<br>
+                                            <strong>INCREASE:</strong> Increment the serial number on each change.<br>
+                                            <strong>EPOCH:</strong> Set serial to current Unix timestamp.<br>
+                                            <strong>OFF:</strong> Do not automatically update the SOA serial.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button type="submit" class="btn btn-primary">Add Zone</button>
+                                    <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+                                </div>
+                            </form>
+                            <!--end::Form-->
+                        </div>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->
+
+<!-- JavaScript to show/hide masters field based on zone type -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const zoneKindSelect = document.getElementById('zone-kind');
+    const mastersGroup = document.getElementById('masters-group');
+    const mastersInput = document.getElementById('zone-masters');
+
+    function toggleMasters() {
+        if (zoneKindSelect.value === 'Slave') {
+            mastersGroup.style.display = 'block';
+            mastersInput.required = true;
+        } else {
+            mastersGroup.style.display = 'none';
+            mastersInput.required = false;
+        }
+    }
+
+    // Initial check
+    toggleMasters();
+
+    // Listen for changes
+    zoneKindSelect.addEventListener('change', toggleMasters);
+});
+</script>

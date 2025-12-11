@@ -16,11 +16,12 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/server/configuration"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/pdnsserver"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/settings/zone"
+	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 )
 
 // Service represents the web service.
@@ -161,6 +162,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	_ = dashboard.Handler.Init(app, cfg, db)
 	_ = pdnsserver.Handler.Init(app, cfg, db)
 	_ = zone.Handler.Init(app, cfg, db)
+	_ = zoneadd.Handler.Init(app, cfg, db)
 	_ = configuration.Handler.Init(app, cfg, db)
 
 	// redirect root to dashboard

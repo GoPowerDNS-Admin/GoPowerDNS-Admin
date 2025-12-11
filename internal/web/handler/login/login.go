@@ -10,12 +10,16 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
 
 const (
 	// Path is the path to the login page.
-	Path = "/login"
+	Path = handler.RootPath + "login"
+
+	// TemplateName is the name of the login template.
+	TemplateName = "login/login"
 )
 
 // Service is the login handler service.
@@ -39,8 +43,8 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 
 	// register routes
 	app.Route(Path, func(router fiber.Router) {
-		router.Get(handler.RouterRootPath, s.Get)
-		router.Post(handler.RouterRootPath, s.Post)
+		router.Get(handler.RootPath, s.Get)
+		router.Post(handler.RootPath, s.Post)
 	})
 
 	return nil
@@ -48,7 +52,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 
 // Get handles the login page rendering.
 func (s *Service) Get(c *fiber.Ctx) error {
-	return c.Render("login", fiber.Map{
+	return c.Render(TemplateName, fiber.Map{
 		"local_db_enabled": true,
 		"ldap_enabled":     false,
 	})
@@ -75,7 +79,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	// check if user is active
 	if !dbUser.Active {
-		return c.Render("login", fiber.Map{
+		return c.Render(TemplateName, fiber.Map{
 			"local_db_enabled": true,
 			"ldap_enabled":     false,
 			"error":            "Data is inactive",
@@ -84,7 +88,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	// check if password matches
 	if !dbUser.VerifyPassword(user.Password) {
-		return c.Render("login", fiber.Map{
+		return c.Render(TemplateName, fiber.Map{
 			"local_db_enabled": true,
 			"ldap_enabled":     false,
 			"error":            "Invalid username or password",
@@ -94,7 +98,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	sessionID, err := session.GenerateSessionID()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to generate session ID")
-		return c.Render("login", fiber.Map{
+		return c.Render(TemplateName, fiber.Map{
 			"local_db_enabled": true,
 			"ldap_enabled":     false,
 			"error":            "Internal server error",
@@ -107,7 +111,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	if err = userSession.Write(sessionID, s.cfg.Webserver.Session.ExpiryTime); err != nil {
 		log.Error().Err(err).Msg("failed to write session")
-		return c.Render("login", fiber.Map{
+		return c.Render(TemplateName, fiber.Map{
 			"local_db_enabled": true,
 			"ldap_enabled":     false,
 			"error":            "Internal server error",
@@ -121,7 +125,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		MaxAge:   int(s.cfg.Webserver.Session.ExpiryTime.Seconds()),
 		Secure:   true,
 		HTTPOnly: true,
-		SameSite: "Lax", // TODO: make this configurable
+		SameSite: "Lax",
 	}
 
 	if s.cfg.DevMode {
@@ -130,5 +134,5 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	c.Cookie(cookieSettings)
 
-	return c.Redirect("/dashboard")
+	return c.Redirect(dashboard.Path)
 }

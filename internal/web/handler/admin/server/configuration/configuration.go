@@ -14,12 +14,16 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
 )
 
 const (
 	// Path is the base path for server configuration handlers.
-	Path = "server/configuration"
+	Path = "admin/server/configuration"
+
+	// TemplateName is the name of the server configuration template.
+	TemplateName = "admin/server/configuration"
 
 	// DefaultPageSize is the default number of items per page.
 	DefaultPageSize = 25
@@ -74,7 +78,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 
 	// register routes
 	app.Route("/"+Path, func(router fiber.Router) {
-		router.Get(handler.RouterRootPath, s.Get)
+		router.Get(handler.RootPath, s.Get)
 	})
 
 	return nil
@@ -84,14 +88,14 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 func (s *Service) Get(c *fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("PowerDNS Server Configuration", "server", "configuration").
-		AddBreadcrumb("Home", "/dashboard", false).
+		AddBreadcrumb("Home", "/"+dashboard.Path, false).
 		AddBreadcrumb("Server", "#", false).
 		AddBreadcrumb("Configuration", "/server/configuration", true)
 
 	// Check if PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg("PowerDNS client not initialized")
-		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
 			"Error":      "PowerDNS client not initialized. Please configure PowerDNS server settings.",
 		}, handler.BaseLayout)
@@ -201,7 +205,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 		Str("filter_type", filterType).
 		Msg("PowerDNS configuration retrieved successfully")
 
-	return c.Render(Path, fiber.Map{
+	return c.Render(TemplateName, fiber.Map{
 		"Navigation": nav,
 		"Data":       data,
 	}, handler.BaseLayout)

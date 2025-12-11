@@ -1,4 +1,4 @@
-.PHONY: help linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte
+.PHONY: help linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
@@ -10,6 +10,18 @@ TMP_DIR := /tmp/gopowerdns-vendor
 
 help:
 	@echo "Available targets:"
+	@echo ""
+	@echo "Docker:"
+	@echo "  docker-up         - Start Docker Compose services"
+	@echo "  docker-down       - Stop Docker Compose services"
+	@echo "  docker-logs       - View Docker Compose logs"
+	@echo "  load-test-data    - Load PowerDNS test data into running instance"
+	@echo ""
+	@echo "Development:"
+	@echo "  linter            - Run golangci-lint"
+	@echo "  pre-commit        - Run pre-commit checks"
+	@echo ""
+	@echo "Vendor Dependencies:"
 	@echo "  vendor-update     - Update all vendor dependencies"
 	@echo "  vendor-bootstrap  - Update only Bootstrap"
 	@echo "  vendor-adminlte   - Update only AdminLTE"
@@ -52,3 +64,28 @@ vendor-clean:
 	@rm -rf $(VENDOR_DIR)/bootstrap-*
 	@rm -rf $(VENDOR_DIR)/adminlte-*
 	@echo "✓ Vendor dependencies cleaned"
+
+docker-up:
+	@echo "Starting Docker Compose services..."
+	@docker-compose up -d
+	@echo "✓ Services started"
+	@echo ""
+	@echo "Services:"
+	@echo "  PostgreSQL:   localhost:5432"
+	@echo "  MySQL:        localhost:3306"
+	@echo "  PowerDNS API: http://localhost:8081"
+	@echo "  PowerDNS DNS: localhost:53"
+
+docker-down:
+	@echo "Stopping Docker Compose services..."
+	@docker-compose down
+	@echo "✓ Services stopped"
+
+docker-logs:
+	@docker-compose logs -f
+
+load-test-data:
+	@echo "Loading PowerDNS test data..."
+	@./docker/pdns/load-test-data.py
+	@echo ""
+	@echo "✓ Test data loaded successfully"

@@ -13,12 +13,16 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
 )
 
 const (
 	// Path is the path to the zone record settings page.
-	Path = "settings/zone-records"
+	Path = handler.RootPath + "admin/settings/zone-records"
+
+	// TemplateName is the name of the zone record settings template.
+	TemplateName = "admin/settings/zone-records"
 )
 
 // Service is the zone record settings handler service.
@@ -47,9 +51,9 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 	s.validator = validator.New()
 
 	// register routes
-	app.Route("/"+Path, func(router fiber.Router) {
-		router.Get(handler.RouterRootPath, s.Get)
-		router.Post(handler.RouterRootPath, s.Post)
+	app.Route(Path, func(router fiber.Router) {
+		router.Get(handler.RootPath, s.Get)
+		router.Post(handler.RootPath, s.Post)
 	})
 
 	return nil
@@ -59,9 +63,9 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 func (s *Service) Get(c *fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("Zone Record Settings", "settings", "zone-records").
-		AddBreadcrumb("Home", "/dashboard", false).
+		AddBreadcrumb("Home", dashboard.Path, false).
 		AddBreadcrumb("Settings", "#", false).
-		AddBreadcrumb("Zone Records", "/settings/zone-records", true)
+		AddBreadcrumb("Zone Records", Path, true)
 
 	// Load zone record settings
 	settings := &RecordSettings{}
@@ -70,7 +74,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 		if errors.Is(err, setting.ErrSettingNotFound) {
 			log.Debug().Msg("zone record settings not found, using config defaults")
 			settings.Records = s.cfg.Record
-			return c.Render(Path, fiber.Map{
+			return c.Render(TemplateName, fiber.Map{
 				"Settings":   settings,
 				"Navigation": nav,
 			}, handler.BaseLayout)
@@ -103,7 +107,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	}
 
 	// Render form with loaded settings
-	return c.Render(Path, fiber.Map{
+	return c.Render(TemplateName, fiber.Map{
 		"Settings":   settings,
 		"Navigation": nav,
 	}, handler.BaseLayout)
@@ -159,19 +163,10 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		settings.Records[recordType] = recordConfig
 	})
 
-	// if err := c.BodyParser(settings); err != nil {
-	//	log.Error().Err(err).Msg("failed to parse zone record settings form")
-	//	return c.Status(fiber.StatusBadRequest).Render(Path, fiber.Map{
-	//		"Settings":   settings,
-	//		"Navigation": nav,
-	//		"Error":      "Invalid form data",
-	//	}, handler.BaseLayout)
-	//}
-
 	// Validate settings
 	if err := s.validator.Struct(settings); err != nil {
 		log.Error().Err(err).Msg("validation failed for zone record settings")
-		return c.Status(fiber.StatusBadRequest).Render(Path, fiber.Map{
+		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
 			"Settings":   settings,
 			"Navigation": nav,
 			"Error":      "Validation failed: " + err.Error(),
@@ -181,7 +176,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Save settings to database
 	if err := settings.Save(s.db); err != nil {
 		log.Error().Err(err).Msg("failed to save zone record settings")
-		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
 			"Settings":   settings,
 			"Navigation": nav,
 			"Error":      "Failed to save settings",
@@ -194,7 +189,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		Msg("zone record settings saved successfully")
 
 	// Redirect to the same page with success message
-	return c.Render(Path, fiber.Map{
+	return c.Render(TemplateName, fiber.Map{
 		"Settings":   settings,
 		"Navigation": nav,
 		"Success":    "Settings saved successfully",

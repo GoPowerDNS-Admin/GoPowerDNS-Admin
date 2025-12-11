@@ -1,0 +1,1153 @@
+{
+  "zones": [
+    {
+      "name": "example.com.",
+      "kind": "Native",
+      "nameservers": ["ns1.example.com.", "ns2.example.com."],
+      "rrsets": [
+        {
+          "name": "example.com.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.example.com. hostmaster.example.com. 2024120701 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "example.com.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.example.com.", "disabled": false },
+            { "content": "ns2.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "192.0.2.10", "disabled": false }]
+        },
+        {
+          "name": "www.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "192.0.2.11", "disabled": false }]
+        },
+        {
+          "name": "api.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "192.0.2.12", "disabled": false }]
+        },
+        {
+          "name": "blog.example.com.",
+          "type": "CNAME",
+          "ttl": 300,
+          "records": [{ "content": "www.example.com.", "disabled": false }]
+        },
+        {
+          "name": "mail.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "192.0.2.20", "disabled": false }]
+        },
+        {
+          "name": "example.com.",
+          "type": "MX",
+          "ttl": 3600,
+          "records": [
+            { "content": "10 mail.example.com.", "disabled": false },
+            { "content": "20 mail2.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "example.com.",
+          "type": "TXT",
+          "ttl": 3600,
+          "records": [
+            { "content": "\"v=spf1 mx -all\"", "disabled": false },
+            {
+              "content": "\"google-site-verification=abc123\"",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "_dmarc.example.com.",
+          "type": "TXT",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "\"v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com\"",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "ftp.example.com.",
+          "type": "CNAME",
+          "ttl": 300,
+          "records": [{ "content": "www.example.com.", "disabled": false }]
+        },
+        {
+          "name": "ns1.example.com.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "192.0.2.1", "disabled": false }]
+        },
+        {
+          "name": "ns2.example.com.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "192.0.2.2", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "master-zone.net.",
+      "kind": "Master",
+      "nameservers": ["ns1.master-zone.net."],
+      "rrsets": [
+        {
+          "name": "master-zone.net.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.master-zone.net. admin.master-zone.net. 2024120701 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "master-zone.net.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [{ "content": "ns1.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "master-zone.net.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "203.0.113.10", "disabled": false }]
+        },
+        {
+          "name": "www.master-zone.net.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "203.0.113.11", "disabled": false }]
+        },
+        {
+          "name": "app.master-zone.net.",
+          "type": "A",
+          "ttl": 300,
+          "records": [
+            { "content": "203.0.113.12", "disabled": false },
+            { "content": "203.0.113.13", "disabled": false }
+          ]
+        },
+        {
+          "name": "cdn.master-zone.net.",
+          "type": "CNAME",
+          "ttl": 300,
+          "records": [{ "content": "www.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "ns1.master-zone.net.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "203.0.113.1", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "slave-zone.org.",
+      "kind": "Slave",
+      "masters": ["198.51.100.1", "198.51.100.2"],
+      "nameservers": ["ns1.master-dns.com."]
+    },
+    {
+      "name": "test-lab.local.",
+      "kind": "Native",
+      "nameservers": ["ns.test-lab.local."],
+      "rrsets": [
+        {
+          "name": "test-lab.local.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns.test-lab.local. admin.test-lab.local. 2024120701 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "test-lab.local.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [{ "content": "ns.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "server1.test-lab.local.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "10.0.1.10", "disabled": false }]
+        },
+        {
+          "name": "server2.test-lab.local.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "10.0.1.11", "disabled": false }]
+        },
+        {
+          "name": "db.test-lab.local.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "10.0.1.20", "disabled": false }]
+        },
+        {
+          "name": "database.test-lab.local.",
+          "type": "CNAME",
+          "ttl": 300,
+          "records": [{ "content": "db.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "web.test-lab.local.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "10.0.1.30", "disabled": false }]
+        },
+        {
+          "name": "lb.test-lab.local.",
+          "type": "A",
+          "ttl": 60,
+          "records": [
+            { "content": "10.0.1.100", "disabled": false },
+            { "content": "10.0.1.101", "disabled": false },
+            { "content": "10.0.1.102", "disabled": false }
+          ]
+        },
+        {
+          "name": "_http._tcp.test-lab.local.",
+          "type": "SRV",
+          "ttl": 300,
+          "records": [
+            { "content": "10 60 80 web.test-lab.local.", "disabled": false }
+          ]
+        },
+        {
+          "name": "ns.test-lab.local.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "10.0.1.1", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "dev.internal.",
+      "kind": "Native",
+      "nameservers": ["ns.dev.internal."],
+      "rrsets": [
+        {
+          "name": "dev.internal.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns.dev.internal. hostmaster.dev.internal. 2024120701 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "dev.internal.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [{ "content": "ns.dev.internal.", "disabled": false }]
+        },
+        {
+          "name": "*.dev.internal.",
+          "type": "A",
+          "ttl": 60,
+          "records": [{ "content": "172.16.0.100", "disabled": false }]
+        },
+        {
+          "name": "api.dev.internal.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "172.16.0.10", "disabled": false }]
+        },
+        {
+          "name": "frontend.dev.internal.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "172.16.0.20", "disabled": false }]
+        },
+        {
+          "name": "backend.dev.internal.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "172.16.0.30", "disabled": false }]
+        },
+        {
+          "name": "cache.dev.internal.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "172.16.0.40", "disabled": false }]
+        },
+        {
+          "name": "redis.dev.internal.",
+          "type": "CNAME",
+          "ttl": 300,
+          "records": [{ "content": "cache.dev.internal.", "disabled": false }]
+        },
+        {
+          "name": "ns.dev.internal.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "172.16.0.1", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "production.example.com.",
+      "kind": "Native",
+      "nameservers": [
+        "ns1.production.example.com.",
+        "ns2.production.example.com."
+      ],
+      "rrsets": [
+        {
+          "name": "production.example.com.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.production.example.com. hostmaster.production.example.com. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "production.example.com.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.production.example.com.", "disabled": false },
+            { "content": "ns2.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "production.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.10", "disabled": false }]
+        },
+        {
+          "name": "production.example.com.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:1::10", "disabled": false }]
+        },
+        {
+          "name": "www.production.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.11", "disabled": false }]
+        },
+        {
+          "name": "www.production.example.com.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:1::11", "disabled": false }]
+        },
+        {
+          "name": "api.production.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.20", "disabled": false }]
+        },
+        {
+          "name": "api.production.example.com.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:1::20", "disabled": false }]
+        },
+        {
+          "name": "db1.production.example.com.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.30", "disabled": false }]
+        },
+        {
+          "name": "db1.production.example.com.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:1::30", "disabled": false }]
+        },
+        {
+          "name": "ns1.production.example.com.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "198.51.100.1", "disabled": false }]
+        },
+        {
+          "name": "ns1.production.example.com.",
+          "type": "AAAA",
+          "ttl": 3600,
+          "records": [{ "content": "2001:db8:1::1", "disabled": false }]
+        },
+        {
+          "name": "ns2.production.example.com.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "198.51.100.2", "disabled": false }]
+        },
+        {
+          "name": "ns2.production.example.com.",
+          "type": "AAAA",
+          "ttl": 3600,
+          "records": [{ "content": "2001:db8:1::2", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "staging.example.org.",
+      "kind": "Native",
+      "nameservers": ["ns.staging.example.org."],
+      "rrsets": [
+        {
+          "name": "staging.example.org.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns.staging.example.org. hostmaster.staging.example.org. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "staging.example.org.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns.staging.example.org.", "disabled": false }
+          ]
+        },
+        {
+          "name": "staging.example.org.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.100", "disabled": false }]
+        },
+        {
+          "name": "staging.example.org.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:2::100", "disabled": false }]
+        },
+        {
+          "name": "app1.staging.example.org.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.101", "disabled": false }]
+        },
+        {
+          "name": "app2.staging.example.org.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "198.51.100.102", "disabled": false }]
+        },
+        {
+          "name": "ns.staging.example.org.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "198.51.100.99", "disabled": false }]
+        },
+        {
+          "name": "ns.staging.example.org.",
+          "type": "AAAA",
+          "ttl": 3600,
+          "records": [{ "content": "2001:db8:2::99", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "cloud-services.io.",
+      "kind": "Native",
+      "nameservers": ["ns1.cloud-services.io.", "ns2.cloud-services.io."],
+      "rrsets": [
+        {
+          "name": "cloud-services.io.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.cloud-services.io. admin.cloud-services.io. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "cloud-services.io.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.cloud-services.io.", "disabled": false },
+            { "content": "ns2.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "cloud-services.io.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "203.0.113.100", "disabled": false }]
+        },
+        {
+          "name": "cloud-services.io.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:3::100", "disabled": false }]
+        },
+        {
+          "name": "storage.cloud-services.io.",
+          "type": "A",
+          "ttl": 300,
+          "records": [{ "content": "203.0.113.110", "disabled": false }]
+        },
+        {
+          "name": "storage.cloud-services.io.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [{ "content": "2001:db8:3::110", "disabled": false }]
+        },
+        {
+          "name": "compute.cloud-services.io.",
+          "type": "A",
+          "ttl": 300,
+          "records": [
+            { "content": "203.0.113.120", "disabled": false },
+            { "content": "203.0.113.121", "disabled": false }
+          ]
+        },
+        {
+          "name": "compute.cloud-services.io.",
+          "type": "AAAA",
+          "ttl": 300,
+          "records": [
+            { "content": "2001:db8:3::120", "disabled": false },
+            { "content": "2001:db8:3::121", "disabled": false }
+          ]
+        },
+        {
+          "name": "ns1.cloud-services.io.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "203.0.113.1", "disabled": false }]
+        },
+        {
+          "name": "ns1.cloud-services.io.",
+          "type": "AAAA",
+          "ttl": 3600,
+          "records": [{ "content": "2001:db8:3::1", "disabled": false }]
+        },
+        {
+          "name": "ns2.cloud-services.io.",
+          "type": "A",
+          "ttl": 3600,
+          "records": [{ "content": "203.0.113.2", "disabled": false }]
+        },
+        {
+          "name": "ns2.cloud-services.io.",
+          "type": "AAAA",
+          "ttl": 3600,
+          "records": [{ "content": "2001:db8:3::2", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "2.0.192.in-addr.arpa.",
+      "kind": "Native",
+      "nameservers": ["ns1.example.com.", "ns2.example.com."],
+      "rrsets": [
+        {
+          "name": "2.0.192.in-addr.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.example.com. hostmaster.example.com. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "2.0.192.in-addr.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.example.com.", "disabled": false },
+            { "content": "ns2.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "1.2.0.192.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [{ "content": "ns1.example.com.", "disabled": false }]
+        },
+        {
+          "name": "2.2.0.192.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [{ "content": "ns2.example.com.", "disabled": false }]
+        },
+        {
+          "name": "10.2.0.192.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "example.com.", "disabled": false }]
+        },
+        {
+          "name": "11.2.0.192.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "www.example.com.", "disabled": false }]
+        },
+        {
+          "name": "12.2.0.192.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "api.example.com.", "disabled": false }]
+        },
+        {
+          "name": "20.2.0.192.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "mail.example.com.", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "113.0.203.in-addr.arpa.",
+      "kind": "Native",
+      "nameservers": ["ns1.master-zone.net."],
+      "rrsets": [
+        {
+          "name": "113.0.203.in-addr.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.master-zone.net. admin.master-zone.net. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "113.0.203.in-addr.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [{ "content": "ns1.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "1.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [{ "content": "ns1.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "10.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "11.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "www.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "12.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "app.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "13.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "app.master-zone.net.", "disabled": false }]
+        },
+        {
+          "name": "100.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "cloud-services.io.", "disabled": false }]
+        },
+        {
+          "name": "110.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "storage.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "120.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "compute.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "121.113.0.203.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "compute.cloud-services.io.", "disabled": false }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "100.51.198.in-addr.arpa.",
+      "kind": "Native",
+      "nameservers": [
+        "ns1.production.example.com.",
+        "ns2.production.example.com."
+      ],
+      "rrsets": [
+        {
+          "name": "100.51.198.in-addr.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.production.example.com. hostmaster.production.example.com. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "100.51.198.in-addr.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.production.example.com.", "disabled": false },
+            { "content": "ns2.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "1.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "2.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns2.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "10.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "11.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "www.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "20.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "api.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "30.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "db1.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "99.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns.staging.example.org.", "disabled": false }
+          ]
+        },
+        {
+          "name": "100.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "staging.example.org.", "disabled": false }]
+        },
+        {
+          "name": "101.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "app1.staging.example.org.", "disabled": false }
+          ]
+        },
+        {
+          "name": "102.100.51.198.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "app2.staging.example.org.", "disabled": false }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1.0.10.in-addr.arpa.",
+      "kind": "Native",
+      "nameservers": ["ns.test-lab.local."],
+      "rrsets": [
+        {
+          "name": "1.0.10.in-addr.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns.test-lab.local. admin.test-lab.local. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "1.0.10.in-addr.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [{ "content": "ns.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "1.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [{ "content": "ns.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "10.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "server1.test-lab.local.", "disabled": false }
+          ]
+        },
+        {
+          "name": "11.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "server2.test-lab.local.", "disabled": false }
+          ]
+        },
+        {
+          "name": "20.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "db.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "30.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "web.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "100.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 60,
+          "records": [{ "content": "lb.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "101.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 60,
+          "records": [{ "content": "lb.test-lab.local.", "disabled": false }]
+        },
+        {
+          "name": "102.1.0.10.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 60,
+          "records": [{ "content": "lb.test-lab.local.", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "0.16.172.in-addr.arpa.",
+      "kind": "Native",
+      "nameservers": ["ns.dev.internal."],
+      "rrsets": [
+        {
+          "name": "0.16.172.in-addr.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns.dev.internal. hostmaster.dev.internal. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "0.16.172.in-addr.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [{ "content": "ns.dev.internal.", "disabled": false }]
+        },
+        {
+          "name": "1.0.16.172.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [{ "content": "ns.dev.internal.", "disabled": false }]
+        },
+        {
+          "name": "10.0.16.172.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "api.dev.internal.", "disabled": false }]
+        },
+        {
+          "name": "20.0.16.172.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "frontend.dev.internal.", "disabled": false }
+          ]
+        },
+        {
+          "name": "30.0.16.172.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "backend.dev.internal.", "disabled": false }]
+        },
+        {
+          "name": "40.0.16.172.in-addr.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "cache.dev.internal.", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+      "kind": "Native",
+      "nameservers": [
+        "ns1.production.example.com.",
+        "ns2.production.example.com."
+      ],
+      "rrsets": [
+        {
+          "name": "1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.production.example.com. hostmaster.production.example.com. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.production.example.com.", "disabled": false },
+            { "content": "ns2.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns2.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "0.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "1.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "www.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "0.2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "api.production.example.com.", "disabled": false }
+          ]
+        },
+        {
+          "name": "0.3.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "db1.production.example.com.", "disabled": false }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+      "kind": "Native",
+      "nameservers": ["ns.staging.example.org."],
+      "rrsets": [
+        {
+          "name": "2.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns.staging.example.org. hostmaster.staging.example.org. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "2.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns.staging.example.org.", "disabled": false }
+          ]
+        },
+        {
+          "name": "9.9.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns.staging.example.org.", "disabled": false }
+          ]
+        },
+        {
+          "name": "0.0.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "staging.example.org.", "disabled": false }]
+        }
+      ]
+    },
+    {
+      "name": "3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+      "kind": "Native",
+      "nameservers": ["ns1.cloud-services.io.", "ns2.cloud-services.io."],
+      "rrsets": [
+        {
+          "name": "3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "SOA",
+          "ttl": 3600,
+          "records": [
+            {
+              "content": "ns1.cloud-services.io. admin.cloud-services.io. 2024120801 10800 3600 604800 3600",
+              "disabled": false
+            }
+          ]
+        },
+        {
+          "name": "3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "NS",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.cloud-services.io.", "disabled": false },
+            { "content": "ns2.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns1.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 3600,
+          "records": [
+            { "content": "ns2.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "0.0.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [{ "content": "cloud-services.io.", "disabled": false }]
+        },
+        {
+          "name": "0.1.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "storage.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "0.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "compute.cloud-services.io.", "disabled": false }
+          ]
+        },
+        {
+          "name": "1.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.",
+          "type": "PTR",
+          "ttl": 300,
+          "records": [
+            { "content": "compute.cloud-services.io.", "disabled": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

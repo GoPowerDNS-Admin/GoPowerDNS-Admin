@@ -14,12 +14,16 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
 )
 
 const (
 	// Path is the path to the pdns-server settings page.
-	Path = "settings/pdns-server"
+	Path = handler.RootPath + "admin/settings/pdns-server"
+
+	// TemplateName is the name of the powerdns setting template.
+	TemplateName = "admin/settings/pdns-server"
 )
 
 // Service is the pdns-server settings handler service.
@@ -44,9 +48,9 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 	s.validator = validator.New()
 
 	// register routes
-	app.Route("/"+Path, func(router fiber.Router) {
-		router.Get(handler.RouterRootPath, s.Get)
-		router.Post(handler.RouterRootPath, s.Post)
+	app.Route(Path, func(router fiber.Router) {
+		router.Get(handler.RootPath, s.Get)
+		router.Post(handler.RootPath, s.Post)
 	})
 
 	return nil
@@ -56,9 +60,9 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
 func (s *Service) Get(c *fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("PowerDNS Server Settings", "settings", "pdns-server").
-		AddBreadcrumb("Home", "/dashboard", false).
-		AddBreadcrumb("Settings", "#", false).
-		AddBreadcrumb("PowerDNS Server", "/settings/pdns-server", true)
+		AddBreadcrumb("Home", dashboard.Path, false).
+		AddBreadcrumb("Settings", "", false).
+		AddBreadcrumb("PowerDNS Server", Path, true)
 
 	// Load PDNS server settings
 	settings := &controller.Settings{}
@@ -66,7 +70,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 		// If settings don't exist yet, render form with empty values
 		if errors.Is(err, setting.ErrSettingNotFound) {
 			log.Debug().Msg("PDNS server settings not found, rendering empty form")
-			return c.Render(Path, fiber.Map{
+			return c.Render(TemplateName, fiber.Map{
 				"Settings":   settings,
 				"Navigation": nav,
 			}, handler.BaseLayout)
@@ -78,10 +82,12 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	}
 
 	// Render form with loaded settings
-	return c.Render(Path, fiber.Map{
-		"Settings":   settings,
-		"Navigation": nav,
-	}, handler.BaseLayout)
+	return c.Render(
+		TemplateName,
+		fiber.Map{
+			"Settings":   settings,
+			"Navigation": nav,
+		}, handler.BaseLayout)
 }
 
 // Post handles the pdns-server settings form submission.
@@ -96,11 +102,12 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	settings := &controller.Settings{}
 	if err := c.BodyParser(settings); err != nil {
 		log.Error().Err(err).Msg("failed to parse PDNS server settings form")
-		return c.Status(fiber.StatusBadRequest).Render(Path, fiber.Map{
-			"Settings":   settings,
-			"Navigation": nav,
-			"Error":      "Invalid form data",
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusBadRequest).Render(
+			TemplateName, fiber.Map{
+				"Settings":   settings,
+				"Navigation": nav,
+				"Error":      "Invalid form data",
+			}, handler.BaseLayout)
 	}
 
 	// Validate settings
@@ -113,21 +120,23 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		}
 
 		log.Error().Err(err).Msg("validation failed for PDNS server settings")
-		return c.Status(fiber.StatusBadRequest).Render(Path, fiber.Map{
-			"Settings":   settings,
-			"Navigation": nav,
-			"Error":      errorMessages,
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusBadRequest).Render(
+			TemplateName, fiber.Map{
+				"Settings":   settings,
+				"Navigation": nav,
+				"Error":      errorMessages,
+			}, handler.BaseLayout)
 	}
 
 	// Save settings to database
 	if err := settings.Save(s.db); err != nil {
 		log.Error().Err(err).Msg("failed to save PDNS server settings")
-		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
-			"Settings":   settings,
-			"Navigation": nav,
-			"Error":      "Failed to save settings",
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusInternalServerError).Render(
+			TemplateName, fiber.Map{
+				"Settings":   settings,
+				"Navigation": nav,
+				"Error":      "Failed to save settings",
+			}, handler.BaseLayout)
 	}
 
 	// Log success
@@ -139,27 +148,30 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Re-initialize PowerDNS engine with new settings
 	if err := powerdns.Open(s.db); err != nil {
 		log.Error().Err(err).Msg("failed to initialize PowerDNS engine after settings update")
-		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
-			"Settings":   settings,
-			"Navigation": nav,
-			"Error":      "Failed to initialize PowerDNS engine with new settings",
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusInternalServerError).Render(
+			TemplateName, fiber.Map{
+				"Settings":   settings,
+				"Navigation": nav,
+				"Error":      "Failed to initialize PowerDNS engine with new settings",
+			}, handler.BaseLayout)
 	}
 
 	// test PowerDNS API connection with new settings
 	if err := powerdns.Engine.Test(); err != nil {
 		log.Error().Err(err).Msg("failed to connect to PowerDNS API with new settings")
-		return c.Status(fiber.StatusInternalServerError).Render(Path, fiber.Map{
-			"Settings":   settings,
-			"Navigation": nav,
-			"Error":      fmt.Sprintf("Failed to connect to PowerDNS API with the provided settings (%s)", err),
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusInternalServerError).Render(
+			TemplateName, fiber.Map{
+				"Settings":   settings,
+				"Navigation": nav,
+				"Error":      fmt.Sprintf("Failed to connect to PowerDNS API with the provided settings (%s)", err),
+			}, handler.BaseLayout)
 	}
 
 	// Redirect to the same page with success message
-	return c.Render(Path, fiber.Map{
-		"Settings":   settings,
-		"Navigation": nav,
-		"Success":    "Settings saved successfully",
-	}, handler.BaseLayout)
+	return c.Render(
+		TemplateName, fiber.Map{
+			"Settings":   settings,
+			"Navigation": nav,
+			"Success":    "Settings saved successfully",
+		}, handler.BaseLayout)
 }

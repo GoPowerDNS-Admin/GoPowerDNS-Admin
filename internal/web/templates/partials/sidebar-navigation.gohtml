@@ -39,9 +39,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="/zone/add" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "add")}} active{{end}}">
                         <i class="nav-icon bi bi-plus-square"></i>
-                        <p>Create Zone</p>
+                        <p>Add Zone</p>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -72,7 +72,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/server/configuration" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "configuration")}} active{{end}}">
+                    <a href="/admin/server/configuration" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "configuration")}} active{{end}}">
                         <i class="nav-icon bi bi-tools"></i>
                         <p>Server Configuration</p>
                     </a>
@@ -112,13 +112,13 @@
 
                         </li>
                         <li class="nav-item">
-                            <a href="/settings/zone-records" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "zone-records")}} active{{end}}">
+                            <a href="/admin/settings/zone-records" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "zone-records")}} active{{end}}">
                                 <i class="nav-icon bi bi-card-list"></i>
                                 <p>Zone Records</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/settings/pdns-server" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "pdns-server")}} active{{end}}">
+                            <a href="/admin/settings/pdns-server" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "pdns-server")}} active{{end}}">
                                 <i class="nav-icon bi bi-server"></i>
                                 <p>PDNS Server</p>
                             </a>

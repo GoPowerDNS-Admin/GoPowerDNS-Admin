@@ -52,7 +52,7 @@
                                 <h3 class="card-title">DNS Record Type Permissions</h3>
                             </div>
                             <!--begin::Form-->
-                            <form method="POST" enctype="application/x-www-form-urlencoded" action="/settings/zone-records">
+                            <form method="POST" enctype="application/x-www-form-urlencoded" action="/admin/settings/zone-records">
                                 <div class="card-body">
                                     <p class="text-muted">
                                         Configure which DNS record types can be edited in forward and reverse zones.
@@ -62,6 +62,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Record Type</th>
+                                                    <th>Description</th>
+                                                    <th>Help Text (shown in Add/Edit modal)</th>
                                                     <th class="text-center">Allow in Forward Zones</th>
                                                     <th class="text-center">Allow in Reverse Zones</th>
                                                 </tr>
@@ -70,6 +72,23 @@
                                                 {{range $recordType, $settings := .Settings.Records}}
                                                 <tr>
                                                     <td><strong>{{$recordType}}</strong></td>
+                                                    <td>
+                                                        <input type="text"
+                                                               class="form-control form-control-sm"
+                                                               id="description_{{$recordType}}"
+                                                               name="records[{{$recordType}}].description"
+                                                               value="{{$settings.Description}}"
+                                                               placeholder="Enter description">
+                                                    </td>
+                                                    <td>
+                                                        <textarea
+                                                                class="form-control form-control-sm"
+                                                                id="help_{{$recordType}}"
+                                                                name="records[{{$recordType}}].help"
+                                                                rows="2"
+                                                                placeholder="Enter help text shown to users when this type is selected"
+                                                        >{{$settings.Help}}</textarea>
+                                                    </td>
                                                     <td class="text-center">
                                                         <div class="form-check form-switch d-inline-block">
                                                             <input class="form-check-input" type="checkbox"

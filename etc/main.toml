@@ -32,147 +32,261 @@ Level = "info"
 [log.Console]
 Enable = true
 
+# Authentication Configuration
+[auth]
+
+[auth.LocalDB]
+enabled = true
+
+[auth.OIDC]
+enabled = false
+provider_url = "https://accounts.google.com"  # Example: Google OIDC
+client_id = "your-client-id"
+client_secret = "your-client-secret"
+redirect_url = "http://localhost:8080/auth/oidc/callback"
+scopes = ["openid", "profile", "email", "groups"]
+groups_claim = "groups"  # Claim name for groups in ID token
+
+[auth.LDAP]
+enabled = false
+host = "ldap.example.com"
+port = 389
+use_ssl = false
+use_tls = true
+skip_verify = false
+bind_dn = "cn=admin,dc=example,dc=com"
+bind_password = "change-your-bind-password"
+base_dn = "ou=users,dc=example,dc=com"
+user_filter = "(uid={username})"
+group_base_dn = "ou=groups,dc=example,dc=com"
+group_filter = "(member={userdn})"
+group_member_attr = "member"
+username_attr = "uid"
+email_attr = "mail"
+first_name_attr = "givenName"
+last_name_attr = "sn"
+group_name_attr = "cn"
+timeout = 10
+
 [record]
 [record.A]
 forward = true
 reverse = false
+description = "IPv4 Address"
+help = "Enter an IPv4 address (e.g., 203.0.113.5)."
 
 [record.AAAA]
 forward = true
 reverse = false
+description = "IPv6 Address"
+help = "Enter an IPv6 address (e.g., 2001:db8::1)."
 
 [record.AFSDB]
 forward = false
 reverse = false
+description = "AFS Database Location"
+help = "AFS database location; advanced record."
 
 [record.ALIAS]
 forward = false
 reverse = false
+description = "Auto-resolved Alias"
+help = "Alias to another hostname (provider-specific)."
 
 [record.CAA]
 forward = true
 reverse = false
+description = "Certification Authority Authorization"
+help = "Format: flags tag \"value\" (e.g., 0 issue \"letsencrypt.org\")."
 
 [record.CERT]
 forward = false
 reverse = false
+description = "Certificate Record"
+help = "Certificate record; provide type, key tag, algorithm, and certificate data."
 
 [record.CDNSKEY]
 forward = false
 reverse = false
+description = "Child DNSKEY"
+help = "Child zone DNSKEY (DNSSEC)."
 
 [record.CDS]
 forward = false
 reverse = false
+description = "Child Delegation Signer"
+help = "Child DS record (DNSSEC)."
 
 [record.CNAME]
 forward = true
 reverse = false
+description = "Canonical Name (Alias)"
+help = "Enter the target hostname (FQDN). A trailing dot will be added automatically."
 
 [record.DNSKEY]
 forward = false
 reverse = false
+description = "DNS Public Key"
+help = "DNSKEY record (DNSSEC)."
 
 [record.DNAME]
 forward = false
 reverse = false
+description = "Delegation Name"
+help = "DNAME redirection of a subtree to another domain."
 
 [record.DS]
 forward = false
 reverse = false
+description = "Delegation Signer"
+help = "DS record (DNSSEC)."
+
+[record.DLV]
+forward = false
+reverse = false
+description = "DNSSEC Lookaside Validation"
+help = "DLV (deprecated)."
 
 [record.HINFO]
 forward = false
 reverse = false
+description = "Host Information"
+help = "Host hardware and OS (e.g., \"Intel-386\" \"Unix\")."
 
 [record.KEY]
 forward = false
 reverse = false
+description = "Key Record"
+help = "KEY record (obsolete; use DNSKEY)."
 
 [record.LOC]
 forward = true
 reverse = true
+description = "Location Information"
+help = "Geographical location (e.g., 52 22 23.000 N 4 53 32.000 E 0.00m)."
 
 [record.LUA]
 forward = false
 reverse = false
+description = "LUA Record"
+help = "Lua record (PowerDNS-specific)."
 
 [record.MX]
 forward = true
 reverse = false
+description = "Mail Exchange"
+help = "Format: priority hostname (e.g., 10 mail.example.com). Hostname will be canonicalized."
 
 [record.NAPTR]
 forward = false
 reverse = false
+description = "Naming Authority Pointer"
+help = "Complex structured record: order preference flags service regexp replacement."
 
 [record.NS]
 forward = true
 reverse = true
+description = "Name Server"
+help = "Enter the nameserver hostname (FQDN). A trailing dot will be added automatically."
 
 [record.NSEC]
 forward = false
 reverse = false
+description = "Next Secure (DNSSEC)"
+help = "NSEC (DNSSEC)."
 
 [record.NSEC3]
 forward = false
 reverse = false
+description = "NSEC version 3 (DNSSEC)"
+help = "NSEC3 (DNSSEC)."
 
 [record.NSEC3PARAM]
 forward = false
 reverse = false
+description = "NSEC3 Parameters"
+help = "NSEC3 parameters (DNSSEC)."
 
 [record.OPENPGPKEY]
 forward = false
 reverse = false
+description = "OpenPGP Public Key"
+help = "OpenPGP public key record."
 
 [record.PTR]
 forward = true
 reverse = true
+description = "Pointer (Reverse DNS)"
+help = "Enter the target hostname (FQDN) for reverse DNS. A trailing dot will be added automatically."
 
 [record.RP]
 forward = false
 reverse = false
+description = "Responsible Person"
+help = "Mailbox and TXT pointer (e.g., hostmaster.example.com. txt-host.example.com.)."
 
 [record.RRSIG]
 forward = false
 reverse = false
+description = "Resource Record Signature"
+help = "RRSIG (DNSSEC signature)."
 
 [record.SOA]
 forward = false
 reverse = false
+description = "Start of Authority"
+help = "Use the SOA editor by editing an existing SOA record."
 
 [record.SPF]
 forward = true
 reverse = false
+description = "Sender Policy Framework"
+help = "SPF policy text. Quotes will be added automatically if missing."
 
 [record.SSHFP]
 forward = false
 reverse = false
+description = "SSH Fingerprint"
+help = "Format: algorithm fingerprint-type fingerprint (hex)."
 
 [record.SRV]
 forward = true
 reverse = false
+description = "Service Locator"
+help = "Format: priority weight port target. Target will be canonicalized."
 
 [record.TKEY]
 forward = false
 reverse = false
+description = "Transaction Key"
+help = "TKEY (transaction key)."
 
 [record.TSIG]
 forward = false
 reverse = false
+description = "Transaction Signature"
+help = "TSIG shared-secret signature."
 
 [record.TLSA]
 forward = false
 reverse = false
+description = "TLS Authentication"
+help = "Format: usage selector matching-type certificate-association-data."
 
 [record.SMIMEA]
 forward = false
 reverse = false
+description = "S/MIME Certificate Association"
+help = "Format: usage selector matching-type certificate-association-data."
 
 [record.TXT]
 forward = true
 reverse = true
+description = "Text Record"
+help = "Text value. Quotes are not required; they will be added automatically if missing."
 
 [record.URI]
 forward = false
 reverse = false
+description = "Uniform Resource Identifier"
+help = "Format: priority weight \"https://...\". If only a URL is provided, 0 0 will be defaulted and URL quoted."

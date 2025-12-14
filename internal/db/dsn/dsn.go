@@ -9,7 +9,6 @@ import (
 
 // Create builds the Data Source Name from the configuration.
 func Create(dbCfg *config.Config) string {
-	// createDSN := "go-pdns:go-pdns@tcp(127.0.0.1:3306)/go-pdns?charset=utf8mb4&parseTime=True&loc=Local"
 	out := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
 		dbCfg.DB.User,
 		dbCfg.DB.Password,
@@ -19,6 +18,5 @@ func Create(dbCfg *config.Config) string {
 		dbCfg.DB.Extras,
 	)
 
-	// return createDSN
 	return out
 }

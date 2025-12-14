@@ -41,22 +41,23 @@ func (s *Data) Read(sessionID string) error {
 }
 
 // Init initializes the session store with the provided storage backend.
-func Init(storage storage.Storage) {
-	if storage == nil {
+func Init(fiberStorage storage.Storage) {
+	if fiberStorage == nil {
 		panic("storage is nil")
 	}
 
 	Store = session.New(session.Config{
-		Storage: storage,
+		Storage: fiberStorage,
 	})
 }
 
 // GenerateSessionID generates a new secure random session ID.
 func GenerateSessionID() (string, error) {
 	// 32 bytes = 256 bits
-	b := make([]byte, 32) //nolint:mnd
+	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
+
 	return hex.EncodeToString(b), nil
 }

@@ -59,9 +59,10 @@ func TestService_Get_WithExistingSettings(t *testing.T) {
 	app.Get("/settings/pdns-server", service.Get)
 
 	// Create request and test
-	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", nil)
+	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -87,9 +88,10 @@ func TestService_Get_WithoutSettings(t *testing.T) {
 	app.Get("/settings/pdns-server", service.Get)
 
 	// Create request and test
-	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", nil)
+	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -108,9 +110,10 @@ func TestService_Get_WithNilDatabase(t *testing.T) {
 	app := fiber.New()
 	app.Get("/settings/pdns-server", service.Get)
 
-	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", nil)
+	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -141,6 +144,7 @@ func TestService_Post_Success(t *testing.T) {
 
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -178,6 +182,7 @@ func TestService_Post_InvalidFormData(t *testing.T) {
 
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -208,6 +213,7 @@ func TestService_Post_InvalidAPIKey(t *testing.T) {
 
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -237,6 +243,7 @@ func TestService_Post_DatabaseError(t *testing.T) {
 
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -259,5 +266,6 @@ func (m *mockTemplateEngine) Render(_ io.Writer, _ string, binding interface{}, 
 			return nil
 		}
 	}
+
 	return fiber.ErrInternalServerError
 }

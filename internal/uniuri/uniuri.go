@@ -57,12 +57,14 @@ func NewLenCharsBytes(length int, chars []byte) []byte {
 	if length == 0 {
 		return nil
 	}
+
 	clen := len(chars)
 	if clen < 2 || clen > byteRange {
 		panic("uniuri: wrong charset length for NewLenChars")
 	}
 
 	maxRb := maxByteValue - (byteRange % clen)
+
 	bufLen := estimatedBufLen(length, maxRb)
 	if bufLen < length {
 		bufLen = length
@@ -76,6 +78,7 @@ func NewLenCharsBytes(length int, chars []byte) []byte {
 	out := make([]byte, length) // storage for result
 
 	var i int // index in out
+
 	for {
 		if _, err := rand.Read(buf[:bufLen]); err != nil {
 			panic("uniuri: error reading random bytes: " + err.Error())
@@ -87,7 +90,9 @@ func NewLenCharsBytes(length int, chars []byte) []byte {
 				// Skip this number to avoid modulo bias.
 				continue
 			}
+
 			out[i] = chars[c%clen]
+
 			i++
 			if i == length {
 				return out
@@ -98,6 +103,7 @@ func NewLenCharsBytes(length int, chars []byte) []byte {
 		if bufLen < minRegenBufLen && minRegenBufLen < cap(buf) {
 			bufLen = minRegenBufLen
 		}
+
 		if bufLen > maxBufLen {
 			bufLen = maxBufLen
 		}

@@ -1,0 +1,648 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+    <!--begin::App Content Header-->
+    <div class="app-content-header">
+        <!--begin::Container-->
+        <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">{{.Navigation.PageTitle}}</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        {{range .Navigation.Breadcrumbs}}
+                        {{if .Active}}
+                        <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                        {{else}}
+                        <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                        {{end}}
+                        {{end}}
+                    </ol>
+                </div>
+            </div>
+            <!--end::Row-->
+        </div>
+        <!--end::Container-->
+    </div>
+    <!--end::App Content Header-->
+    <!--begin::App Content-->
+    <div class="app-content">
+        <!--begin::Container-->
+        <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+                <div class="col-md-8">
+                    <!--begin::Card-->
+                    <div class="card card-primary card-outline mb-4 collapsed-card">
+                        <!--begin::Header-->
+                        <div class="card-header">
+                            <div class="card-title">Edit Zone: {{.Form.Name}}</div>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse">
+                                    <i data-lte-icon="expand" class="bi bi-plus-lg"></i>
+                                    <i data-lte-icon="collapse" class="bi bi-dash-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!--end::Header-->
+                        <!--begin::Form-->
+                        <form method="POST" action="/zone/edit/{{.Form.Name}}">
+                            <!--begin::Body-->
+                            <div class="card-body" style="display: none;">
+                                {{if .Error}}
+                                    <!--begin::Alert-->
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        <strong>Error!</strong>
+                                        {{if eq (printf "%T" .Error) "string"}}
+                                            {{.Error}}
+                                        {{else}}
+                                            <ul class="mb-0">
+                                                {{range .Error}}
+                                                    <li>{{.}}</li>
+                                                {{end}}
+                                            </ul>
+                                        {{end}}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                    <!--end::Alert-->
+                                {{end}}
+
+                                <!--begin::Zone Name (Read-only)-->
+                                <div class="mb-3">
+                                    <label for="zone-name" class="form-label">
+                                        Zone Name
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                            type="text"
+                                            class="form-control"
+                                            id="zone-name"
+                                            value="{{.Form.Name}}"
+                                            disabled
+                                    >
+                                    <div class="form-text">
+                                        Zone name cannot be changed after creation
+                                    </div>
+                                </div>
+                                <!--end::Zone Name-->
+
+                                <!--begin::Zone Type-->
+                                <div class="mb-3">
+                                    <label for="zone-kind" class="form-label">
+                                        Zone Type
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" id="zone-kind" name="kind" required>
+                                        <option value="Native" {{if eq .Form.Kind "Native"}}selected{{end}}>Native - Authoritative zone without replication</option>
+                                        <option value="Master" {{if eq .Form.Kind "Master"}}selected{{end}}>Master - Primary authoritative zone with replication</option>
+                                        <option value="Slave" {{if eq .Form.Kind "Slave"}}selected{{end}}>Slave - Secondary zone replicated from master</option>
+                                    </select>
+                                    <div class="form-text">
+                                        Change the zone type. Note: Changing to/from Slave may require additional configuration.
+                                    </div>
+                                </div>
+                                <!--end::Zone Type-->
+
+                                <!--begin::Masters (for Slave zones)-->
+                                <div class="mb-3" id="masters-field" style="display: {{if eq .Form.Kind "Slave"}}block{{else}}none{{end}};">
+                                    <label for="masters" class="form-label">
+                                        Master Servers
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                            type="text"
+                                            class="form-control"
+                                            id="masters"
+                                            name="masters"
+                                            placeholder="192.168.1.1, 192.168.1.2"
+                                            value="{{.Form.Masters}}"
+                                    >
+                                    <div class="form-text">
+                                        Comma-separated list of master server IP addresses for zone transfers
+                                    </div>
+                                </div>
+                                <!--end::Masters-->
+
+                                <!--begin::SOA-EDIT-API-->
+                                <div class="mb-3">
+                                    <label for="soa-edit-api" class="form-label">
+                                        SOA-EDIT-API
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" id="soa-edit-api" name="soa_edit_api" required>
+                                        <option value="DEFAULT" {{if eq .Form.SOAEditAPI "DEFAULT"}}selected{{end}}>DEFAULT - Use server default</option>
+                                        <option value="INCREASE" {{if eq .Form.SOAEditAPI "INCREASE"}}selected{{end}}>INCREASE - Increment serial on update</option>
+                                        <option value="EPOCH" {{if eq .Form.SOAEditAPI "EPOCH"}}selected{{end}}>EPOCH - Set serial to current timestamp</option>
+                                        <option value="OFF" {{if eq .Form.SOAEditAPI "OFF"}}selected{{end}}>OFF - Do not auto-update serial</option>
+                                    </select>
+                                    <div class="form-text">
+                                        Controls how the SOA serial number is updated when records change
+                                    </div>
+                                </div>
+                                <!--end::SOA-EDIT-API-->
+
+                            </div>
+                            <!--end::Body-->
+                            <!--begin::Footer-->
+                            <div class="card-footer" style="display: none;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Update Zone
+                                </button>
+                                <a href="/dashboard" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                            <!--end::Footer-->
+                        </form>
+                        <!--end::Form-->
+                    </div>
+                    <!--end::Card-->
+
+                    {{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
+                    <!--begin::Records Card-->
+                    <div class="card card-success card-outline mb-4">
+                        <!--begin::Header-->
+                        <div class="card-header">
+                            <div class="card-title">DNS Records</div>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-sm btn-success" id="add-record-btn">
+                                    <i class="bi bi-plus-circle"></i> Add Record
+                                </button>
+                            </div>
+                        </div>
+                        <!--end::Header-->
+                        <!--begin::Body-->
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0" id="records-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>TTL</th>
+                                            <th>Status</th>
+                                            <th>Data</th>
+                                            <th>Comment</th>
+                                            <th width="100">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="records-tbody">
+                                        {{range .Records}}
+                                        <tr data-record-id="{{.Name}}-{{.Type}}-{{.Content}}" data-full-name="{{.Name}}" data-comment="{{.Comment}}">
+                                            <td class="record-name">{{.DisplayName}}</td>
+                                            <td class="record-type">{{.Type}}</td>
+                                            <td class="record-ttl">{{.TTL}}</td>
+                                            <td class="record-status">
+                                                {{if .Disabled}}
+                                                    <span class="badge bg-danger">Disabled</span>
+                                                {{else}}
+                                                    <span class="badge bg-success">Active</span>
+                                                {{end}}
+                                            </td>
+                                            <td class="record-content text-truncate" style="max-width: 200px;" title="{{.Content}}">{{.Content}}</td>
+                                            <td class="record-comment text-truncate" style="max-width: 150px;" title="{{.Comment}}">{{.Comment}}</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-primary edit-record-btn" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-danger delete-record-btn" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!--end::Body-->
+                        <!--begin::Footer-->
+                        <div class="card-footer">
+                            <button type="button" class="btn btn-success" id="save-records-btn">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="cancel-records-btn">
+                                <i class="bi bi-x-circle"></i> Cancel Changes
+                            </button>
+                            <span id="changes-indicator" class="ms-2 text-muted" style="display: none;">
+                                <i class="bi bi-exclamation-circle"></i> <span id="changes-count">0</span> unsaved changes
+                            </span>
+                        </div>
+                        <!--end::Footer-->
+                    </div>
+                    <!--end::Records Card-->
+                    {{else if eq .Form.Kind "Slave"}}
+                    <!--begin::Records Card (Read-only for Slave)-->
+                    <div class="card card-info card-outline mb-4">
+                        <!--begin::Header-->
+                        <div class="card-header">
+                            <div class="card-title">DNS Records (Read-Only)</div>
+                        </div>
+                        <!--end::Header-->
+                        <!--begin::Body-->
+                        <div class="card-body p-0">
+                            <div class="alert alert-info m-3">
+                                <i class="bi bi-info-circle"></i> This is a slave zone. Records are automatically synchronized from the master server and cannot be edited here.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>TTL</th>
+                                            <th>Status</th>
+                                            <th>Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{range .Records}}
+                                        <tr>
+                                            <td>{{.Name}}</td>
+                                            <td>{{.Type}}</td>
+                                            <td>{{.TTL}}</td>
+                                            <td>
+                                                {{if .Disabled}}
+                                                    <span class="badge bg-danger">Disabled</span>
+                                                {{else}}
+                                                    <span class="badge bg-success">Active</span>
+                                                {{end}}
+                                            </td>
+                                            <td class="text-truncate" style="max-width: 200px;" title="{{.Content}}">{{.Content}}</td>
+                                        </tr>
+                                        {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!--end::Body-->
+                    </div>
+                    <!--end::Records Card-->
+                    {{end}}
+                </div>
+
+                <div class="col-md-4">
+                    <!--begin::Info Card-->
+                    <div class="card card-info card-outline mb-4">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="bi bi-info-circle"></i> Zone Information
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{if .Zone}}
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">Zone ID:</dt>
+                                    <dd class="col-sm-7">{{.Zone.ID}}</dd>
+
+                                    <dt class="col-sm-5">URL:</dt>
+                                    <dd class="col-sm-7 text-break">
+                                        <small>{{.Zone.URL}}</small>
+                                    </dd>
+
+                                    {{if .Zone.Serial}}
+                                        <dt class="col-sm-5">Serial:</dt>
+                                        <dd class="col-sm-7">{{.Zone.Serial}}</dd>
+                                    {{end}}
+
+                                    <dt class="col-sm-5">DNSSEC:</dt>
+                                    <dd class="col-sm-7">
+                                        <span class="badge {{if .DNSSECEnabled}}bg-success{{else}}bg-secondary{{end}}">
+                                            {{if .DNSSECEnabled}}Enabled{{else}}Disabled{{end}}
+                                        </span>
+                                    </dd>
+                                </dl>
+                            {{end}}
+                        </div>
+                    </div>
+                    <!--end::Info Card-->
+
+                    <!--begin::Danger Zone Card-->
+                    <div class="card card-danger card-outline mb-4">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="bi bi-exclamation-triangle"></i> Danger Zone
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="text-danger">Delete Zone</h6>
+                            <p class="small mb-2">
+                                Once you delete a zone, there is no going back. This will permanently delete the zone and all its DNS records.
+                            </p>
+                            <button type="button" class="btn btn-danger btn-sm" id="delete-zone-btn">
+                                <i class="bi bi-trash"></i> Delete Zone
+                            </button>
+                        </div>
+                    </div>
+                    <!--end::Danger Zone Card-->
+
+                    <!--begin::Help Card-->
+                    <div class="card card-secondary card-outline mb-4">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="bi bi-question-circle"></i> Help
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6>Zone Type Options:</h6>
+                            <ul class="small">
+                                <li><strong>Native:</strong> Authoritative zone without replication</li>
+                                <li><strong>Master:</strong> Primary authoritative zone with replication support</li>
+                                <li><strong>Slave:</strong> Secondary zone replicated from master servers</li>
+                            </ul>
+                            <h6 class="mt-3">SOA-EDIT-API Options:</h6>
+                            <ul class="small">
+                                <li><strong>DEFAULT:</strong> Use the server's default setting</li>
+                                <li><strong>INCREASE:</strong> Increment the serial number on each update</li>
+                                <li><strong>EPOCH:</strong> Set the serial to the current Unix timestamp</li>
+                                <li><strong>OFF:</strong> Do not automatically update the serial</li>
+                            </ul>
+                            <p class="small mb-0">
+                                <strong>Note:</strong> Zone name cannot be changed after creation.
+                                To change the name, you must delete and recreate the zone.
+                            </p>
+                        </div>
+                    </div>
+                    <!--end::Help Card-->
+                </div>
+            </div>
+            <!--end::Row-->
+        </div>
+        <!--end::Container-->
+    </div>
+    <!--end::App Content-->
+</main>
+<!--end::App Main-->
+
+<!-- Delete Zone Modal -->
+<div class="modal fade" id="deleteZoneModal" tabindex="-1" aria-labelledby="deleteZoneModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteZoneModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Delete Zone
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <strong>Warning!</strong> This action cannot be undone. This will permanently delete the zone <strong>{{.Form.Name}}</strong> and all its DNS records.
+                </div>
+                <p>Please type <strong>{{.Form.Name}}</strong> to confirm:</p>
+                <input type="text" class="form-control" id="delete-zone-confirm-input" placeholder="Enter zone name">
+                <div class="invalid-feedback" id="delete-zone-error" style="display: none;">
+                    Zone name does not match. Please type the exact zone name.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-zone-btn" disabled>
+                    <i class="bi bi-trash"></i> Delete Zone
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Zone Type Change Handler -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const zoneKindSelect = document.getElementById('zone-kind');
+    const mastersField = document.getElementById('masters-field');
+    const mastersInput = document.getElementById('masters');
+
+    if (zoneKindSelect && mastersField) {
+        zoneKindSelect.addEventListener('change', function() {
+            if (this.value === 'Slave') {
+                mastersField.style.display = 'block';
+                mastersInput.required = true;
+            } else {
+                mastersField.style.display = 'none';
+                mastersInput.required = false;
+            }
+        });
+    }
+
+    // Delete zone functionality
+    const deleteZoneBtn = document.getElementById('delete-zone-btn');
+    const deleteZoneModal = document.getElementById('deleteZoneModal');
+    const deleteZoneConfirmInput = document.getElementById('delete-zone-confirm-input');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-zone-btn');
+    const deleteZoneError = document.getElementById('delete-zone-error');
+    const zoneName = '{{.Form.Name}}';
+
+    if (deleteZoneBtn && deleteZoneModal) {
+        const modal = new bootstrap.Modal(deleteZoneModal);
+
+        // Fix aria-hidden accessibility issue
+        deleteZoneModal.addEventListener('hide.bs.modal', function() {
+            const focusedElement = document.activeElement;
+            if (focusedElement && deleteZoneModal.contains(focusedElement)) {
+                focusedElement.blur();
+            }
+        });
+
+        // Open delete modal
+        deleteZoneBtn.addEventListener('click', function() {
+            deleteZoneConfirmInput.value = '';
+            confirmDeleteBtn.disabled = true;
+            deleteZoneError.style.display = 'none';
+            deleteZoneConfirmInput.classList.remove('is-invalid');
+            modal.show();
+        });
+
+        // Enable/disable delete button based on input
+        deleteZoneConfirmInput.addEventListener('input', function() {
+            if (this.value === zoneName) {
+                confirmDeleteBtn.disabled = false;
+                deleteZoneError.style.display = 'none';
+                this.classList.remove('is-invalid');
+            } else {
+                confirmDeleteBtn.disabled = true;
+            }
+        });
+
+        // Confirm delete
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (deleteZoneConfirmInput.value !== zoneName) {
+                deleteZoneError.style.display = 'block';
+                deleteZoneConfirmInput.classList.add('is-invalid');
+                return;
+            }
+
+            // Disable button and show loading state
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting...';
+
+            // Send delete request
+            fetch('/zone/edit/' + encodeURIComponent(zoneName) + '/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    globalThis.location.href = '/dashboard?success=' + encodeURIComponent('Zone deleted successfully');
+                } else {
+                    alert('Error: ' + data.message);
+                    confirmDeleteBtn.disabled = false;
+                    confirmDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Zone';
+                }
+            })
+            .catch(error => {
+                alert('Error deleting zone: ' + error.message);
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Zone';
+            });
+        });
+    }
+});
+</script>
+
+{{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
+<!-- Hidden data for JavaScript -->
+<div id="zone-data" data-zone-name="{{.Form.Name}}" style="display: none;"></div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
+
+<!-- Record Edit/Add Modal -->
+<div class="modal fade" id="recordModal" tabindex="-1" aria-labelledby="recordModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recordModalLabel">Add/Edit Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="record-form">
+                    <input type="hidden" id="record-original-id" value="">
+                    <input type="hidden" id="record-original-name" value="">
+                    <input type="hidden" id="record-original-type" value="">
+                    <input type="hidden" id="record-original-content" value="">
+
+                    <div class="mb-3">
+                        <label for="record-name-input" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="record-name-input" required placeholder="www or test or @">
+                        <div class="form-text">
+                            Enter the subdomain (e.g., <code>www</code>, <code>test</code>, or <code>mail</code>).
+                            Use <code>@</code> for the zone itself.
+                            The zone name will be automatically appended.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="record-type-input" class="form-label">Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="record-type-input" required>
+                            {{range .AllowedRecordTypes}}
+                            <option value="{{.Type}}" data-help="{{.Help}}">{{.Type}}{{if .Description}} - {{.Description}}{{end}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="record-ttl-input" class="form-label">TTL <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="record-ttl-input" value="3600" required min="1">
+                        <div class="form-text">Time to live in seconds (default: 3600 = 1 hour)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="record-content-input" class="form-label">Data <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="record-content-input" required>
+                        <div class="form-text" id="record-content-help">
+                            Record data (e.g., IP address, hostname, text).
+                            For CNAME, MX, NS, PTR, and SRV records, enter the full domain name (e.g., <code>cdn.cloudflare.com</code>).
+                            A trailing dot will be added automatically.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="record-comment-input" class="form-label">Comment</label>
+                        <textarea class="form-control" id="record-comment-input" rows="2" maxlength="255"></textarea>
+                        <div class="form-text">Optional comment for this record (max 255 characters)</div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="record-disabled-input">
+                        <label class="form-check-label" for="record-disabled-input">
+                            Disabled
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-record-modal-btn"><i class="bi bi-plus-circle"></i> Add Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SOA Edit Modal -->
+<div class="modal fade" id="soaModal" tabindex="-1" aria-labelledby="soaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="soaModalLabel">Edit SOA Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="soa-form">
+                    <div class="mb-3">
+                        <label for="soa-mname" class="form-label">Primary Name Server <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="soa-mname" required placeholder="ns1.example.com.">
+                        <div class="form-text">Fully qualified domain name, ending with a dot.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="soa-rname" class="form-label">Primary Contact <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="soa-rname" required placeholder="hostmaster.example.com.">
+                        <div class="form-text">Contact in DNS RNAME format (e.g., hostmaster.example.com.).</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="soa-serial" class="form-label">Serial <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="soa-serial" required min="1">
+                        </div>
+                        <div class="col-6">
+                            <label for="soa-refresh" class="form-label">Zone Refresh Timer (s) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="soa-refresh" required min="1">
+                        </div>
+                        <div class="col-6">
+                            <label for="soa-retry" class="form-label">Failed refresh retry (s) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="soa-retry" required min="1">
+                        </div>
+                        <div class="col-6">
+                            <label for="soa-expire" class="form-label">Zone Expiry (s) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="soa-expire" required min="1">
+                        </div>
+                        <div class="col-6">
+                            <label for="soa-minimum" class="form-label">Minimum TTL (s) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="soa-minimum" required min="0">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-soa-modal-btn"><i class="bi bi-save"></i> Save</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<!-- Zone edit JavaScript -->
+<script src="/static/js/zone-edit.js"></script>
+{{end}}
+
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->

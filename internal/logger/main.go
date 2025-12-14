@@ -47,19 +47,18 @@ func (lw *LevelWriter) WriteLevel(l zerolog.Level, p []byte) (n int, err error) 
 	}
 
 	// return selected logger writer.
-	return w.Write(p) //nolint:wrapcheck
+	return w.Write(p)
 }
 
 // Init the zerolog logger.
 // Depending on the config it enables all, some or no logger at all.
 // Be sure to enable at least one logger for output.
-func Init(cfg Log) error { //nolint:funlen
+func Init(cfg *Log) error {
 	var (
 		logLevel, err = zerolog.ParseLevel(cfg.LogLevel)
 		writers       []io.Writer
 		stack         bool
 	)
-
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("loglevel %s is not supported", cfg.LogLevel))
 	}
@@ -74,7 +73,7 @@ func Init(cfg Log) error { //nolint:funlen
 
 	// use zerolog stack marshal func if trace level is set
 	if logLevel == zerolog.TraceLevel {
-		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack //nolint:reassign
+		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack //nolint:reassign // reassign with own marshaller
 		stack = true
 	}
 
@@ -108,8 +107,8 @@ func Init(cfg Log) error { //nolint:funlen
 }
 
 // newRollingInfoErrorFile uses LevelWriter and lumberjack to create file based log.
-func newRollingInfoErrorFile(cfg Log) io.Writer {
-	if err := os.MkdirAll(cfg.File.Path, 0o750); err != nil { //nolint: mnd
+func newRollingInfoErrorFile(cfg *Log) io.Writer {
+	if err := os.MkdirAll(cfg.File.Path, 0o750); err != nil {
 		log.Error().Err(err).Str("path", cfg.File.Path).Msg("can't create log directory")
 
 		return nil
@@ -157,7 +156,7 @@ func newRollingInfoErrorFile(cfg Log) io.Writer {
 }
 
 // NewConsoleWriter creates a zerolog ConsoleWriter.
-func NewConsoleWriter(cfg Log) io.Writer {
+func NewConsoleWriter(cfg *Log) io.Writer {
 	var lw LevelWriter
 
 	lw.ErrorWriter = os.Stderr

@@ -5,15 +5,18 @@ import (
 	"testing"
 )
 
-func validateBytes(t *testing.T, u []byte, chars []byte) {
+func validateBytes(t *testing.T, u, chars []byte) {
 	t.Helper()
+
 	for _, c := range u {
 		var present bool
+
 		for _, a := range chars {
 			if a == c {
 				present = true
 			}
 		}
+
 		if !present {
 			t.Fatalf("chars not allowed in %q", u)
 		}
@@ -22,13 +25,16 @@ func validateBytes(t *testing.T, u []byte, chars []byte) {
 
 func validateChars(t *testing.T, u string, chars []byte) {
 	t.Helper()
+
 	for _, c := range u {
 		var present bool
+
 		for _, a := range chars {
 			if rune(a) == c {
 				present = true
 			}
 		}
+
 		if !present {
 			t.Fatalf("chars not allowed in %q", u)
 		}
@@ -49,6 +55,7 @@ func TestNew(t *testing.T) {
 	for i := range uris {
 		uris[i] = New()
 	}
+
 	for i, u := range uris {
 		for j, u2 := range uris {
 			if i != j && u == u2 {
@@ -111,19 +118,22 @@ func TestNewLenCharsMaxLength(t *testing.T) {
 			t.Fatal("didn't panic")
 		}
 	}()
+
 	chars := make([]byte, 257)
 	NewLenChars(32, chars)
 }
 
 func TestBias(t *testing.T) {
 	chars := []byte("abcdefghijklmnopqrstuvwxyz")
-	slen := 100000
-	s := NewLenChars(slen, chars)
+	sLen := 100000
+	s := NewLenChars(sLen, chars)
+
 	counts := make(map[rune]int)
 	for _, b := range s {
 		counts[b]++
 	}
-	avg := float64(slen) / float64(len(chars))
+
+	avg := float64(sLen) / float64(len(chars))
 	for k, n := range counts {
 		diff := float64(n) / avg
 		if diff < 0.95 || diff > 1.05 {

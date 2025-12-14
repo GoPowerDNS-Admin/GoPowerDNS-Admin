@@ -27,9 +27,9 @@ that provides an easy-to-use interface for managing domains, records, and users.
 				}
 
 				if jsonOutput != nil && *jsonOutput {
-					out, err = config.DumpConfigJSON(cfg)
+					out, err = config.DumpConfigJSON(&cfg)
 				} else {
-					out, err = config.DumpConfig(cfg)
+					out, err = config.DumpConfig(&cfg)
 				}
 
 				if err != nil {

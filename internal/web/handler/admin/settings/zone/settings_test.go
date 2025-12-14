@@ -16,9 +16,11 @@ import (
 func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	var err error
+	var (
+		err error
+		db  *gorm.DB
+	)
 
-	var db *gorm.DB
 	db, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err, "failed to create test database")
 
@@ -56,6 +58,7 @@ func TestRecordSettings_Save(t *testing.T) {
 
 	// Verify the setting was saved
 	var savedSetting models.Setting
+
 	err = db.Where("name = ?", SettingKeyZoneRecords).First(&savedSetting).Error
 	require.NoError(t, err)
 	assert.Equal(t, SettingKeyZoneRecords, savedSetting.Name)
@@ -158,6 +161,7 @@ func TestRecordSettings_SaveAndLoadMultipleTimes(t *testing.T) {
 
 	// Verify only one setting exists in the database
 	var count int64
+
 	err = db.Model(&models.Setting{}).Where("name = ?", SettingKeyZoneRecords).Count(&count).Error
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), count)

@@ -35,14 +35,20 @@ func New(cfg *config.Config) *Daemon {
 
 	db, err := gorm.Open(dbDriver, &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		log.Fatal().Err(err).Msg("failed to connect database")
 	}
 
 	if err = db.AutoMigrate(
 		&models.User{},
 		&models.Setting{},
+		&models.Role{},
+		&models.Permission{},
+		&models.RolePermission{},
+		&models.Group{},
+		&models.GroupMapping{},
+		&models.UserGroup{},
 	); err != nil {
-		panic("failed to migrate database")
+		log.Fatal().Err(err).Msg("failed to migrate database")
 	}
 
 	seed(cfg, db)
@@ -56,14 +62,14 @@ func New(cfg *config.Config) *Daemon {
 	session.Init(sessionStorage)
 
 	// Initialize PowerDNS client
-	if err := powerdns.Open(db); err != nil {
+	if err = powerdns.Open(db); err != nil {
 		log.Warn().Err(err).Msg("failed to initialize PowerDNS client - server configuration features will be unavailable")
 		log.Info().Msg("PowerDNS client will be available after configuring server settings")
 	} else {
 		log.Info().Msg("PowerDNS client initialized successfully")
 
 		// Test the connection
-		if err := powerdns.Engine.Test(); err != nil {
+		if err = powerdns.Engine.Test(); err != nil {
 			log.Warn().Err(err).Msg("PowerDNS API connection test failed - please verify server settings")
 		}
 	}

@@ -1,0 +1,458 @@
+internal/auth/middleware.go:55: 55-92 lines are duplicate of `internal/auth/middleware.go:95-132` (dupl)
+func RequireAnyPermission(authService *Service, permissions ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Get session cookie
+		sessionID := c.Cookies("session")
+		if sessionID == "" {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Read session data
+		sessionData := new(session.Data)
+		if err := sessionData.Read(sessionID); err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		if sessionData.User.ID == 0 {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Check if user has any of the permissions
+		hasPermission, err := authService.HasAnyPermission(sessionData.User.ID, permissions)
+		if err != nil {
+			log.Error().Err(err).Uint64("user_id", sessionData.User.ID).Strs("permissions", permissions).
+				Msg("Failed to check permissions")
+
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		}
+
+		if !hasPermission {
+			log.Warn().Uint64("user_id", sessionData.User.ID).Strs("permissions", permissions).
+				Msg("User lacks required permissions")
+
+			return c.Status(fiber.StatusForbidden).SendString("Forbidden: You don't have permission to access this resource")
+		}
+
+		// User has at least one permission, proceed
+		return c.Next()
+	}
+}
+internal/auth/middleware.go:95: 95-132 lines are duplicate of `internal/auth/middleware.go:55-92` (dupl)
+func RequireAllPermissions(authService *Service, permissions ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Get session cookie
+		sessionID := c.Cookies("session")
+		if sessionID == "" {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Read session data
+		sessionData := new(session.Data)
+		if err := sessionData.Read(sessionID); err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		if sessionData.User.ID == 0 {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Check if user has all permissions
+		hasPermissions, err := authService.HasAllPermissions(sessionData.User.ID, permissions)
+		if err != nil {
+			log.Error().Err(err).Uint64("user_id", sessionData.User.ID).Strs("permissions", permissions).
+				Msg("Failed to check permissions")
+
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		}
+
+		if !hasPermissions {
+			log.Warn().Uint64("user_id", sessionData.User.ID).Strs("permissions", permissions).
+				Msg("User lacks required permissions")
+
+			return c.Status(fiber.StatusForbidden).SendString("Forbidden: You don't have permission to access this resource")
+		}
+
+		// User has all permissions, proceed
+		return c.Next()
+	}
+}
+internal/db/controller/setting/setting_test.go:78: 78-102 lines are duplicate of `internal/db/controller/setting/setting_test.go:141-164` (dupl)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Clean database for each test
+			if tc.dbParam != nil {
+				tc.dbParam.Exec("DELETE FROM settings")
+			}
+
+			if tc.seedData != nil {
+				seedSettings(t, tc.dbParam, tc.seedData)
+			}
+
+			setting, err := Get(tc.dbParam, tc.settingName)
+
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.expectedError)
+				assert.Nil(t, setting)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, setting)
+				assert.Equal(t, tc.settingName, setting.Name)
+				assert.Equal(t, tc.expectedValue, setting.Value)
+			}
+		})
+	}
+internal/db/controller/setting/setting_test.go:141: 141-164 lines are duplicate of `internal/db/controller/setting/setting_test.go:78-102` (dupl)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.dbParam != nil {
+				tc.dbParam.Exec("DELETE FROM settings")
+			}
+
+			if tc.seedData != nil {
+				seedSettings(t, tc.dbParam, tc.seedData)
+			}
+
+			setting, err := GetByID(tc.dbParam, tc.settingID)
+
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.expectedError)
+				assert.Nil(t, setting)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, setting)
+				assert.Equal(t, tc.expectedName, setting.Name)
+				assert.Equal(t, tc.expectedValue, setting.Value)
+			}
+		})
+	}
+internal/db/controller/setting/setting_test.go:534: 534-558 lines are duplicate of `internal/db/controller/setting/setting_test.go:599-623` (dupl)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.dbParam != nil {
+				tc.dbParam.Exec("DELETE FROM settings")
+			}
+
+			if tc.seedData != nil {
+				seedSettings(t, tc.dbParam, tc.seedData)
+			}
+
+			err := Delete(tc.dbParam, tc.settingID)
+
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.expectedError)
+			} else {
+				require.NoError(t, err)
+
+				// Verify the setting was deleted
+				var count int64
+				tc.dbParam.Model(&models.Setting{}).Where("id = ?", tc.settingID).Count(&count)
+				assert.Zero(t, count)
+			}
+		})
+	}
+internal/db/controller/setting/setting_test.go:599: 599-623 lines are duplicate of `internal/db/controller/setting/setting_test.go:534-558` (dupl)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.dbParam != nil {
+				tc.dbParam.Exec("DELETE FROM settings")
+			}
+
+			if tc.seedData != nil {
+				seedSettings(t, tc.dbParam, tc.seedData)
+			}
+
+			err := DeleteByName(tc.dbParam, tc.settingName)
+
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.expectedError)
+			} else {
+				require.NoError(t, err)
+
+				// Verify the setting was deleted
+				var count int64
+				tc.dbParam.Model(&models.Setting{}).Where("name = ?", tc.settingName).Count(&count)
+				assert.Zero(t, count)
+			}
+		})
+	}
+internal/web/handler/admin/settings/pdnsserver/pdnsserver_test.go:163: 163-192 lines are duplicate of `internal/web/handler/admin/settings/pdnsserver/pdnsserver_test.go:194-223` (dupl)
+func TestService_Post_InvalidFormData(t *testing.T) {
+	db := setupTestDB(t)
+
+	service := &Service{
+		cfg:       &config.Config{},
+		db:        db,
+		validator: validator.New(),
+	}
+
+	app := fiber.New(fiber.Config{
+		Views: &mockTemplateEngine{},
+	})
+
+	app.Post("/settings/pdns-server", service.Post)
+
+	// Send empty form data - should fail validation (required fields)
+	formData := ""
+	req := httptest.NewRequest(http.MethodPost, "/settings/pdns-server", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Should fail validation and return bad request
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+internal/web/handler/admin/settings/pdnsserver/pdnsserver_test.go:194: 194-223 lines are duplicate of `internal/web/handler/admin/settings/pdnsserver/pdnsserver_test.go:163-192` (dupl)
+func TestService_Post_InvalidAPIKey(t *testing.T) {
+	db := setupTestDB(t)
+
+	service := &Service{
+		cfg:       &config.Config{},
+		db:        db,
+		validator: validator.New(),
+	}
+
+	app := fiber.New(fiber.Config{
+		Views: &mockTemplateEngine{},
+	})
+
+	app.Post("/settings/pdns-server", service.Post)
+
+	// Send form data with API key that is too short (less than 8 chars)
+	formData := "api_server_url=https://pdns.example.com&api_key=short&version=4.9.0"
+	req := httptest.NewRequest(http.MethodPost, "/settings/pdns-server", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Should fail validation and return bad request
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+internal/auth/ldap.go:144:14: Error return value of `conn.Close` is not checked (errcheck)
+			conn.Close()
+			          ^
+internal/auth/ldap.go:165:3: Error return value of `conn.Close` is not checked (errcheck)
+		_ = conn.Close()
+		^
+internal/auth/ldap.go:318:3: Error return value of `conn.Close` is not checked (errcheck)
+		_ = conn.Close()
+		^
+internal/auth/middleware.go:219:9: Error return value of `authService.HasPermission` is not checked (errcheck)
+			has, _ := authService.HasPermission(sessionData.User.ID, perm)
+			     ^
+internal/logger/adapter/fiber/logger.go:110:5: Error return value of `ctx.SendStatus` is not checked (errcheck)
+				_ = ctx.SendStatus(fiber.StatusInternalServerError)
+				^
+internal/logger/adapter/fiber/logger_test.go:253:8: Error return value of `os.Pipe` is not checked (errcheck)
+	r, w, _ := os.Pipe()
+	      ^
+internal/logger/adapter/fiber/logger_test.go:273:3: Error return value of `w.Close` is not checked (errcheck)
+		_ = w.Close()
+		^
+internal/logger/adapter/stdlogger/adapter_test.go:107:8: Error return value of `os.Pipe` is not checked (errcheck)
+	r, w, _ := os.Pipe()
+	      ^
+internal/logger/adapter/stdlogger/adapter_test.go:137:2: Error return value of `w.Close` is not checked (errcheck)
+	_ = w.Close()
+	^
+internal/logger/main_test.go:136:8: Error return value of `os.Pipe` is not checked (errcheck)
+	r, w, _ := os.Pipe()
+	      ^
+internal/logger/main_test.go:163:2: Error return value of `w.Close` is not checked (errcheck)
+	_ = w.Close()
+	^
+internal/web/auth.go:34:2: Error return value of `sessData.Read` is not checked (errcheck)
+	_ = sessData.Read(loginCookie)
+	^
+internal/web/handler/admin/settings/pdnsserver/validator.go:36:23: Error return value is not checked (errcheck)
+		for _, err := range errs.(validator.ValidationErrors) { //nolint:errorlint
+		                    ^
+internal/web/main.go:173:2: Error return value of `login.Handler.Init` is not checked (errcheck)
+	_ = login.Handler.Init(app, cfg, db)
+	^
+internal/web/main.go:174:2: Error return value of `oidchandler.Handler.Init` is not checked (errcheck)
+	_ = oidchandler.Handler.Init(app, cfg, db)
+	^
+internal/web/main.go:175:2: Error return value of `dashboard.Handler.Init` is not checked (errcheck)
+	_ = dashboard.Handler.Init(app, cfg, db, authService)
+	^
+internal/web/main.go:176:2: Error return value of `pdnsserver.Handler.Init` is not checked (errcheck)
+	_ = pdnsserver.Handler.Init(app, cfg, db, authService)
+	^
+internal/web/main.go:177:2: Error return value of `zone.Handler.Init` is not checked (errcheck)
+	_ = zone.Handler.Init(app, cfg, db, authService)
+	^
+internal/web/main.go:178:2: Error return value of `zoneadd.Handler.Init` is not checked (errcheck)
+	_ = zoneadd.Handler.Init(app, cfg, db, authService)
+	^
+internal/web/main.go:179:2: Error return value of `zoneedit.Handler.Init` is not checked (errcheck)
+	_ = zoneedit.Handler.Init(app, cfg, db, authService)
+	^
+internal/web/main.go:180:2: Error return value of `configuration.Handler.Init` is not checked (errcheck)
+	_ = configuration.Handler.Init(app, cfg, db, authService)
+	^
+internal/auth/local.go:39:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == gorm.ErrRecordNotFound {
+	   ^
+app/start.go:10:1: don't use `init` function (gochecknoinits)
+func init() {
+^
+internal/auth/ldap.go:74:22: hugeParam: config is heavy (264 bytes); consider passing it by pointer (gocritic)
+func NewLDAPProvider(config LDAPConfig, db *gorm.DB) (*LDAPProvider, error) {
+                     ^
+internal/auth/ldap.go:240:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+	^
+internal/auth/oidc.go:50:43: hugeParam: config is heavy (112 bytes); consider passing it by pointer (gocritic)
+func NewOIDCProvider(ctx context.Context, config OIDCConfig, db *gorm.DB) (*OIDCProvider, error) {
+                                          ^
+internal/auth/oidc.go:145:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+	^
+internal/auth/oidc.go:224:1: paramTypeCombine: func(idToken string, postLogoutRedirectURI string) string could be replaced with func(idToken, postLogoutRedirectURI string) string (gocritic)
+func (p *OIDCProvider) GetLogoutURL(idToken string, postLogoutRedirectURI string) string {
+^
+internal/config/config.go:44:27: hugeParam: c is heavy (1080 bytes); consider passing it by pointer (gocritic)
+func decodeAndMergeConfig(c Config, configAsJSON string) (Config, error) {
+                          ^
+internal/config/config.go:54:17: hugeParam: c is heavy (1080 bytes); consider passing it by pointer (gocritic)
+func DumpConfig(c Config) (string, error) {
+                ^
+internal/config/config.go:67:21: hugeParam: c is heavy (1080 bytes); consider passing it by pointer (gocritic)
+func DumpConfigJSON(c Config) (string, error) {
+                    ^
+internal/config/config_test.go:261:50: emptyStringTest: replace `len(substr) == 0` with `substr == ""` (gocritic)
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+	                                                ^
+internal/config/config_test.go:262:4: emptyStringTest: replace `len(s) > 0` with `s != ""` (gocritic)
+		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
+		 ^
+internal/db/dsn/dsn.go:12:2: commentedOutCode: may want to remove commented-out code (gocritic)
+	// createDSN := "go-pdns:go-pdns@tcp(127.0.0.1:3306)/go-pdns?charset=utf8mb4&parseTime=True&loc=Local"
+	^
+internal/db/dsn/dsn.go:22:2: commentedOutCode: may want to remove commented-out code (gocritic)
+	// return createDSN
+	^
+internal/db/models/user.go:70:7: hugeParam: u is heavy (192 bytes); consider passing it by pointer (gocritic)
+func (u User) VerifyPassword(password string) bool {
+      ^
+internal/logger/adapter/fiber/logger.go:162:27: hugeParam: cfg is heavy (464 bytes); consider passing it by pointer (gocritic)
+func newRollingAccessFile(cfg logger.Log) io.Writer {
+                          ^
+internal/logger/adapter/fiber/logger_test.go:246:60: hugeParam: adapterConfig is heavy (504 bytes); consider passing it by pointer (gocritic)
+func testMiddlewareHelper(t *testing.T, targetPath string, adapterConfig adapter.Config) (string, error) {
+                                                           ^
+internal/logger/adapter/fiber/logger_test.go:271:21: httpNoBody: http.NoBody should be preferred to the nil request body (gocritic)
+	_, err := app.Test(httptest.NewRequest(fiber.MethodGet, targetPath, nil), 100000)
+	                   ^
+internal/logger/adapter/stdlogger/adapter_test.go:100:37: hugeParam: cfg is heavy (464 bytes); consider passing it by pointer (gocritic)
+func testLoggerConfig(t *testing.T, cfg logger.Log) string {
+                                    ^
+internal/logger/main_test.go:129:37: hugeParam: cfg is heavy (464 bytes); consider passing it by pointer (gocritic)
+func testLoggerConfig(t *testing.T, cfg logger.Log) string {
+                                    ^
+internal/uniuri/uniuri_test.go:8:1: paramTypeCombine: func(t *testing.T, u []byte, chars []byte) could be replaced with func(t *testing.T, u, chars []byte) (gocritic)
+func validateBytes(t *testing.T, u []byte, chars []byte) {
+^
+internal/web/handler/admin/server/configuration/configuration.go:226:4: emptyStringTest: replace `len(substr) > 0` with `substr != ""` (gocritic)
+			len(substr) > 0 && indexIgnoreCase(s, substr) >= 0)
+			^
+internal/web/handler/admin/settings/pdnsserver/pdnsserver_test.go:62:9: httpNoBody: http.NoBody should be preferred to the nil request body (gocritic)
+	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", nil)
+	       ^
+internal/web/handler/admin/settings/pdnsserver/pdnsserver_test.go:91:9: httpNoBody: http.NoBody should be preferred to the nil request body (gocritic)
+	req := httptest.NewRequest(http.MethodGet, "/settings/pdns-server", nil)
+	       ^
+internal/web/handler/dashboard/dashboard.go:250:2: rangeValCopy: each iteration copies 264 bytes (consider pointers or indexing) (gocritic)
+	for _, apiZone := range apiZones {
+	^
+internal/web/handler/dashboard/dashboard.go:378:49: hugeParam: params is heavy (80 bytes); consider passing it by pointer (gocritic)
+func buildTabData(zones []Zone, totalPages int, params QueryParams) TabData {
+                                                ^
+internal/web/handler/login/login.go:143:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if s.cfg.Auth.LocalDB.Enabled {
+		^
+internal/web/handler/zone/edit/edit.go:84:13: sprintfQuotedString: use %q instead of "%s" for quoted strings (gocritic)
+					return fmt.Sprintf("%d %d \"%s\"", prio, weight, target)
+					       ^
+internal/web/handler/zone/edit/edit.go:100:10: sprintfQuotedString: use %q instead of "%s" for quoted strings (gocritic)
+		return fmt.Sprintf("0 0 \"%s\"", target)
+		       ^
+internal/web/handler/zone/edit/edit.go:318:30: hugeParam: rrSet is heavy (80 bytes); consider passing it by pointer (gocritic)
+func extractCommentFromRRSet(rrSet pdnsapi.RRset) string {
+                             ^
+internal/web/session/session.go:44:11: importShadow: shadow of imported from 'github.com/gofiber/storage' package 'storage' (gocritic)
+func Init(storage storage.Storage) {
+          ^
+internal/web/handler/admin/server/configuration/configuration.go:90:1: cyclomatic complexity 18 of func `(*Service).Get` is high (> 15) (gocyclo)
+func (s *Service) Get(c *fiber.Ctx) error {
+^
+internal/web/handler/login/login.go:121:1: cyclomatic complexity 16 of func `(*Service).Post` is high (> 15) (gocyclo)
+func (s *Service) Post(c *fiber.Ctx) error {
+^
+internal/web/handler/zone/edit/edit.go:34:1: cyclomatic complexity 19 of func `ensureQuotedContent` is high (> 15) (gocyclo)
+func ensureQuotedContent(rrType, content string) string {
+^
+internal/web/handler/zone/edit/edit.go:109:1: cyclomatic complexity 17 of func `isQuotedStringSequence` is high (> 15) (gocyclo)
+func isQuotedStringSequence(s string) bool {
+^
+internal/web/handler/zone/edit/edit.go:358:1: cyclomatic complexity 17 of func `(*Service).Get` is high (> 15) (gocyclo)
+func (s *Service) Get(c *fiber.Ctx) error {
+^
+internal/auth/ldap.go:130:24: G402: TLS InsecureSkipVerify may be true. (gosec)
+			InsecureSkipVerify: p.config.SkipVerify,
+			                    ^
+internal/auth/ldap.go:170:6: shadow: declaration of "err" shadows declaration at line 159 (govet)
+		if err := conn.Bind(p.config.BindDN, p.config.BindPassword); err != nil {
+		   ^
+internal/auth/ldap.go:212:5: shadow: declaration of "err" shadows declaration at line 159 (govet)
+	if err := conn.Bind(userDN, password); err != nil {
+	   ^
+internal/auth/ldap.go:223:6: shadow: declaration of "err" shadows declaration at line 159 (govet)
+		if err := conn.Bind(p.config.BindDN, p.config.BindPassword); err != nil {
+		   ^
+internal/auth/ldap.go:323:6: shadow: declaration of "err" shadows declaration at line 312 (govet)
+		if err := conn.Bind(p.config.BindDN, p.config.BindPassword); err != nil {
+		   ^
+internal/web/handler/auth/oidc/oidc.go:163:6: shadow: declaration of "err" shadows declaration at line 155 (govet)
+		if err := s.authService.SyncUserGroups(authenticatedUser.ID, groups, models.GroupSourceOIDC); err != nil {
+		   ^
+internal/web/handler/login/login.go:177:6: shadow: declaration of "err" shadows declaration at line 136 (govet)
+		if err := s.authService.SyncUserGroups(authenticatedUser.ID, groups, models.GroupSourceLDAP); err != nil {
+		   ^
+internal/web/handler/zone/edit/edit.go:63:1: `if len(parts) >= 3` has complex nested blocks (complexity: 9) (nestif)
+		if len(parts) >= 3 {
+^
+internal/config/structs.go:42:15: tag is not aligned, should be: form:"forward" json:"forward" toml:"forward" (tagalign)
+	Forward bool `form:"forward"     json:"forward"     toml:"forward"` // allow editing in forward zones
+	             ^
+internal/config/structs.go:43:15: tag is not aligned, should be: form:"reverse" json:"reverse" toml:"reverse" (tagalign)
+	Reverse bool `form:"reverse"     json:"reverse"     toml:"reverse"` // allow editing in reverse zones
+	             ^
+internal/config/structs.go:47:14: tag is not aligned , should be: form:"help" json:"help" toml:"help" (tagalign)
+	Help string `form:"help"        json:"help"        toml:"help"`
+	            ^
+76 issues:
+* dupl: 8
+* errcheck: 21
+* errorlint: 1
+* gochecknoinits: 1
+* gocritic: 29
+* gocyclo: 5
+* gosec: 1
+* govet: 6
+* nestif: 1
+* tagalign: 3

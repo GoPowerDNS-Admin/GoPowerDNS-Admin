@@ -8,7 +8,7 @@ import (
 
 var (
 	// counter is a singleton for the counter vec.
-	counter *prometheus.CounterVec //nolint:gochecknoglobals
+	counter *prometheus.CounterVec
 )
 
 // PrometheusHook calls Prometheus statistics at log write.

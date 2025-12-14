@@ -33,6 +33,7 @@ func (c *Context) AddBreadcrumb(title, url string, active bool) *Context {
 		URL:    url,
 		Active: active,
 	})
+
 	return c
 }
 

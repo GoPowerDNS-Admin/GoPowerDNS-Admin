@@ -7,7 +7,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/daemon"
 )
 
-func init() { //nolint: gochecknoinits
+func init() { //nolint:gochecknoinits // init is ok here
 	startCmd.Flags().BoolVar(&devMode, "dev", false, "Enable dev mode")
 
 	startCmd.Flags().BoolVar(
@@ -41,11 +41,8 @@ var (
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
 			daemon := daemon.New(&cfg)
-			if err := daemon.Start(); err != nil {
-				return err
-			}
 
-			return nil
+			return daemon.Start()
 		},
 	}
 )

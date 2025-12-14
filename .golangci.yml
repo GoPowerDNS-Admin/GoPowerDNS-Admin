@@ -1,20 +1,12 @@
-version: 2
+version: "2"
 
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
-    - vendor
   modules-download-mode: readonly
 
-output:
-  print-issued-lines: true
-  print-linter-name: true
-  uniq-by-line: true
-  sort-results: true
-
 linters:
-  disable-all: true
+  default: none
   enable:
     # Default linters
     - errcheck # Checks for unchecked errors
@@ -83,173 +75,182 @@ linters:
     - wastedassign # Find wasted assignments
     - whitespace # Check for unnecessary newlines
     - zerologlint # Check zerolog usage (dispatch with Send/Msg)
+    - wsl_v5
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - (io.Closer).Close
-      - (*database/sql.Rows).Close
-
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-
-  gocyclo:
-    min-complexity: 15
-
-  dupl:
-    threshold: 100
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-    ignore-tests: true
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
-      - opinionated
-    disabled-checks:
-      - whyNoLint
-      - unnamedResult
-
-  lll:
-    line-length: 120
-    tab-width: 1
-
-  misspell:
-    locale: US
-    ignore-words:
-      - behaviour
-      - colour
-
-  mnd:
-    checks:
-      - argument
-      - case
-      - condition
-      - operation
-      - return
-      - assign
-    ignored-numbers:
-      - "0"
-      - "1"
-      - "2"
-      - "3"
-      - "4"
-      - "5"
-      - "6"
-      - "7"
-      - "8"
-      - "9"
-      - "10"
-      - "100"
-      - "1000"
-
-  nakedret:
-    max-func-lines: 30
-
-  nestif:
-    min-complexity: 5
-
-  nolintlint:
-    allow-unused: false
-    require-explanation: true
-    require-specific: true
-
-  revive:
+  exclusions:
     rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
-      - name: increment-decrement
-      - name: var-naming
-      - name: var-declaration
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-      - name: empty-block
-      - name: superfluous-else
-      - name: unused-parameter
-      - name: unreachable-code
-      - name: redefines-builtin-id
+      - path: _test\.go
+        linters:
+          - lll
+          - goconst
+          - errcheck
+          - dupl
 
-  tagliatelle:
-    case:
-      use-field-name: true
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        - (io.Closer).Close
+        - (*database/sql.Rows).Close
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+
+    gocyclo:
+      min-complexity: 15
+
+    dupl:
+      threshold: 100
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - experimental
+        - opinionated
+      disabled-checks:
+        - whyNoLint
+        - unnamedResult
+
+    lll:
+      line-length: 120
+      tab-width: 1
+
+    misspell:
+      locale: US
+
+    mnd:
+      checks:
+        - argument
+        - case
+        - condition
+        - operation
+        - return
+        - assign
+
+      # Values always ignored: "1", "1.0", "0" and "0.0".
+      ignored-numbers:
+        - "2"
+        - "3"
+        - "4"
+        - "5"
+        - "6"
+        - "7"
+        - "8"
+        - "9"
+        - "10"
+        - "32"
+        - "100"
+        - "1000"
+        - "8192"
+        - "0o750"
+
+    nakedret:
+      max-func-lines: 30
+
+    nestif:
+      min-complexity: 5
+
+    nolintlint:
+      allow-unused: false
+      require-explanation: true
+      require-specific: true
+
+    revive:
       rules:
-        json: snake
-        yaml: snake
-        xml: camel
-        bson: camel
-        avro: snake
-        mapstructure: kebab
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
 
-  unparam:
-    check-exported: false
+    tagliatelle:
+      case:
+        use-field-name: true
+        rules:
+          json: snake
+          yaml: snake
+          xml: camel
+          bson: camel
+          avro: snake
+          mapstructure: kebab
 
-  whitespace:
-    multi-if: false
-    multi-func: false
+    unparam:
+      check-exported: false
 
-  zerologlint:
-    require-msg-or-send: true
+    whitespace:
+      multi-if: false
+      multi-func: false
 
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  new: false
-  fix: false
+    zerologlint:
+      require-msg-or-send: true
 
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-        - goconst
-        - gocognit
-        - mnd
+  issues:
+    max-issues-per-linter: 0
+    max-same-issues: 0
+    new: false
+    fix: false
 
-    # Exclude magic number check for test values
-    - path: _test\.go
-      text: "mnd: Magic number"
+    exclude-rules:
+      # Exclude some linters from running on tests files
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - funlen
+          - goconst
+          - gocognit
+          - mnd
 
-    # Exclude error check in defer statements
-    - text: "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*print(f|ln)?|os\\.(Un)?Setenv). is not checked"
-      linters:
-        - errcheck
+      # Exclude magic number check for test values
+      - path: _test\.go
+        text: "mnd: Magic number"
 
-    # Exclude certain revive rules for tests
-    - path: _test\.go
-      text: "unused-parameter"
-      linters:
-        - revive
+      # Exclude error check in defer statements
+      - text: "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*print(f|ln)?|os\\.(Un)?Setenv). is not checked"
+        linters:
+          - errcheck
 
-    # Allow dot imports in tests for testify
-    - path: _test\.go
-      text: "dot-imports"
-      linters:
-        - revive
+      # Exclude certain revive rules for tests
+      - path: _test\.go
+        text: "unused-parameter"
+        linters:
+          - revive
 
-  exclude-use-default: false
-  exclude-case-sensitive: false
+      # Allow dot imports in tests for testify
+      - path: _test\.go
+        text: "dot-imports"
+        linters:
+          - revive
+
+    exclude-use-default: false
+    exclude-case-sensitive: false

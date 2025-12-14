@@ -89,7 +89,7 @@ func TestLogger(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := testLoggerConfig(t, tc.cfg)
+			out := testLoggerConfig(t, &tc.cfg)
 			t.Logf("out: %s", out)
 
 			switch {
@@ -99,7 +99,7 @@ func TestLogger(t *testing.T) {
 				// split lines
 				outSplit := strings.Split(out, "\n")
 				// try to decode
-				type Foo struct { //nolint:musttag
+				type Foo struct {
 					Type    string
 					Level   string
 					Test    string
@@ -111,7 +111,7 @@ func TestLogger(t *testing.T) {
 				for _, outLine := range outSplit {
 					if outLine != "" {
 						if err := json.Unmarshal([]byte(outLine), &dummy); err != nil {
-							t.Errorf("expected json output but got: %s", out) //nolint:goerr113
+							t.Errorf("expected json output but got: %s", out)
 						} else {
 							t.Log(dummy)
 						}
@@ -123,10 +123,10 @@ func TestLogger(t *testing.T) {
 }
 
 func alwaysErrFunc() error {
-	return errors.New("a test error") //nolint:goerr113
+	return errors.New("a test error")
 }
 
-func testLoggerConfig(t *testing.T, cfg logger.Log) string {
+func testLoggerConfig(t *testing.T, cfg *logger.Log) string {
 	t.Helper()
 	// keep default std out
 	stdout := os.Stdout
@@ -150,10 +150,12 @@ func testLoggerConfig(t *testing.T, cfg logger.Log) string {
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
+
 		_, err = io.Copy(&buf, r)
 		if err != nil {
 			t.Error(err)
 		}
+
 		outC <- buf.String()
 	}()
 

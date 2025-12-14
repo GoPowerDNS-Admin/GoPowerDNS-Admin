@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
@@ -84,22 +85,25 @@ type Service struct {
 var Handler = Service{}
 
 // Init initializes the add zone handler.
-func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
+func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authService *auth.Service) {
 	if app == nil || cfg == nil || db == nil {
-		return errors.New("app or db is nil")
+		log.Fatal().Msg(handler.ErrNilACDFatalLogMsg)
+		return
 	}
 
 	s.db = db
 	s.cfg = cfg
 	s.validator = validator.New()
 
-	// register routes
-	app.Route(Path, func(router fiber.Router) {
-		router.Get(handler.RootPath, s.Get)
-		router.Post(handler.RootPath, s.Post)
-	})
-
-	return nil
+	// register routes with permission checks
+	app.Get(Path,
+		auth.RequirePermission(authService, auth.PermZoneCreate),
+		s.Get,
+	)
+	app.Post(Path,
+		auth.RequirePermission(authService, auth.PermZoneCreate),
+		s.Post,
+	)
 }
 
 // Get handles the add zone page rendering.
@@ -129,6 +133,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	form := &ZoneForm{}
 	if err := c.BodyParser(form); err != nil {
 		log.Error().Err(err).Msg("failed to parse add zone form")
+
 		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
@@ -145,12 +150,14 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	if err := s.validator.Struct(form); err != nil {
 		var validationErrors validator.ValidationErrors
 		errors.As(err, &validationErrors)
+
 		errorMessages := make([]string, len(validationErrors))
 		for i, ve := range validationErrors {
 			errorMessages[i] = "Field '" + ve.Field() + "' failed validation tag '" + ve.Tag() + "'"
 		}
 
 		log.Error().Err(err).Msg("validation failed for add zone")
+
 		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
@@ -160,11 +167,12 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	// Check if PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
-		log.Error().Msg("PowerDNS client not initialized")
+		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
+
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
-			"Error":      "PowerDNS client not initialized. Please configure PowerDNS server settings.",
+			"Error":      powerdns.ErrMsgClientNotInitializedDetailed,
 		}, handler.BaseLayout)
 	}
 
@@ -173,13 +181,14 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	defer cancel()
 
 	// Prepare common parameters
-	var nameservers []string
-	soaEditAPIStr := string(form.SOAEditAPI)
-	var createdZone *pdnsapi.Zone
-	var err error
+	var (
+		nameservers   []string
+		soaEditAPIStr = string(form.SOAEditAPI)
+		createdZone   *pdnsapi.Zone
+		err           error
+	)
 
-	// Create zone based on kind
-	switch form.Kind {
+	switch form.Kind { // Create zone based on kind
 	case ZoneKindNative:
 		createdZone, err = powerdns.Engine.Zones.AddNative(
 			ctx,
@@ -205,12 +214,14 @@ func (s *Service) Post(c *fiber.Ctx) error {
 			nameservers,
 		)
 	case ZoneKindSlave:
-		masters := []string{}
+		var masters []string
+
 		if form.Masters != "" {
 			for _, master := range strings.Split(form.Masters, ",") {
 				masters = append(masters, strings.TrimSpace(master))
 			}
 		}
+
 		createdZone, err = powerdns.Engine.Zones.AddSlave(
 			ctx,
 			form.Name,

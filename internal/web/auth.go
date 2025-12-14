@@ -31,7 +31,9 @@ func AuthMiddleware(c *fiber.Ctx) error {
 
 	// check session validity
 	sessData := new(session.Data)
-	_ = sessData.Read(loginCookie)
+	if err := sessData.Read(loginCookie); err != nil {
+		return c.Redirect(login.Path)
+	}
 
 	// valid data in session
 	if sessData.User.ID > 0 {

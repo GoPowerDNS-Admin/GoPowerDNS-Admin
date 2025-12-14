@@ -34,8 +34,8 @@ type Config struct {
 	CheckAliveURI string
 }
 
-// ConfigDefault is the default config for daffy fiber.
-var ConfigDefault = Config{ //nolint:gochecknoglobals
+// ConfigDefault is the default config for fiber.
+var ConfigDefault = Config{
 	Next:              nil,
 	CacheControlError: "max-age=0",
 }
@@ -55,7 +55,7 @@ func configDefault(config ...Config) Config {
 }
 
 // New creates a new fiber access logging middleware using zerolog.
-func New(config ...Config) fiber.Handler { //nolint:funlen
+func New(config ...Config) fiber.Handler {
 	var (
 		writers    []io.Writer
 		cfg        = configDefault(config...)
@@ -66,7 +66,7 @@ func New(config ...Config) fiber.Handler { //nolint:funlen
 
 	// if cfg.Config.Log.File.Enabled {
 	if cfg.Config.File.Enabled {
-		writers = append(writers, newRollingAccessFile(cfg.Config))
+		writers = append(writers, newRollingAccessFile(&cfg.Config))
 	}
 
 	// if Console Log is general enabled and if cfg.Config.Log.EnableAccessLogToConsole is enabled.
@@ -93,7 +93,7 @@ func New(config ...Config) fiber.Handler { //nolint:funlen
 	return func(ctx *fiber.Ctx) (err error) {
 		// Don't execute middleware if Next returns true
 		if cfg.Next != nil && cfg.Next(ctx) {
-			return ctx.Next() //nolint: wrapcheck
+			return ctx.Next()
 		}
 
 		// set error handler once
@@ -104,11 +104,10 @@ func New(config ...Config) fiber.Handler { //nolint:funlen
 		start = time.Now()
 		// Handle request, store err for logging
 		chainErr := ctx.Next()
-
 		if chainErr != nil {
 			if errH := errHandler(ctx, chainErr); errH != nil {
 				// set HTTP/1.1 500 Internal Server Error
-				_ = ctx.SendStatus(fiber.StatusInternalServerError)
+				_ = ctx.SendStatus(fiber.StatusInternalServerError) //nolint:errcheck // ok here
 				// ensure also 500 has a Cache-Control
 				ctx.Response().Header.Set(fiber.HeaderCacheControl, cfg.CacheControlError)
 			}
@@ -160,10 +159,10 @@ func New(config ...Config) fiber.Handler { //nolint:funlen
 }
 
 // newRollingAccessFile uses lumberjack to create file based access log.
-func newRollingAccessFile(cfg logger.Log) io.Writer {
+func newRollingAccessFile(cfg *logger.Log) io.Writer {
 	// create log folder if defined.
 	if cfg.File.Path != "" {
-		if err := os.MkdirAll(cfg.File.Path, 0o750); err != nil { //nolint:mnd
+		if err := os.MkdirAll(cfg.File.Path, 0o750); err != nil {
 			log.Error().Err(err).Str("path", cfg.File.Path).Msg("can't create log directory")
 
 			return nil

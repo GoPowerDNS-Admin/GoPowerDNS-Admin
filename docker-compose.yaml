@@ -24,6 +24,7 @@ services:
     image: powerdns/pdns-auth-49:4.9.6
     ports:
       - "53:53/udp"
+      - "53:53/tcp"
       - "8081:8081"
     volumes:
       - ./docker/pdns/etc/powerdns/pdns.d/dev.conf:/etc/powerdns/pdns.d/dev.conf:ro

@@ -18,7 +18,7 @@ type (
 	Settings struct {
 		APIServerURL string `form:"api_server_url" json:"apiServerUrl" validate:"required,url"`
 		APIKey       string `form:"api_key"        json:"apiKey"       validate:"required,min=8"`
-		VHost        string `form:"vhost"          json:"vhost"        validate:"required"`
+		VHost        string `form:"version"        json:"vhost"        validate:"required"`
 	}
 )
 
@@ -31,11 +31,7 @@ func (p *Settings) Load(db *gorm.DB) error {
 	}
 
 	// Unmarshal the JSON blob into the struct
-	if errJSON := json.Unmarshal(s.Value, p); errJSON != nil {
-		return errJSON
-	}
-
-	return nil
+	return json.Unmarshal(s.Value, p)
 }
 
 // Save saves the PDNS server settings to the database.
@@ -48,5 +44,6 @@ func (p *Settings) Save(db *gorm.DB) error {
 
 	// Save or update the setting in the database
 	_, err = setting.Set(db, SettingKeyPDNSServer, data)
+
 	return err
 }

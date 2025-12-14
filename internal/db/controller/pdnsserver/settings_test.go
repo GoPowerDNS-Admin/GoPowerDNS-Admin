@@ -39,6 +39,7 @@ func TestPDNSServerSettings_Save(t *testing.T) {
 
 	// Verify the setting was saved
 	var savedSetting models.Setting
+
 	err = db.Where("name = ?", SettingKeyPDNSServer).First(&savedSetting).Error
 	require.NoError(t, err)
 	assert.Equal(t, SettingKeyPDNSServer, savedSetting.Name)
@@ -109,6 +110,7 @@ func TestPDNSServerSettings_SaveAndLoadMultipleTimes(t *testing.T) {
 
 	// Verify only one setting exists in the database
 	var count int64
+
 	err = db.Model(&models.Setting{}).Where("name = ?", SettingKeyPDNSServer).Count(&count).Error
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), count)

@@ -32,44 +32,50 @@ func ReadConfig(path string) (Config, error) {
 	JSONConfigEnv = os.Getenv("GO_POWERDNS_ADMIN_CONFIG_JSON")
 
 	if JSONConfigEnv != "" {
-		c, err = decodeAndMergeConfig(c, JSONConfigEnv)
+		c, err = decodeAndMergeConfig(&c, JSONConfigEnv)
 		if err != nil {
 			return c, err
 		}
 	}
 
-	return c, validate(c)
-}
-
-func decodeAndMergeConfig(c Config, configAsJSON string) (Config, error) {
-	err := json.Unmarshal([]byte(configAsJSON), &c)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "failed to read main config file")
+	if errValidate := validate(&c); errValidate != nil {
+		return c, errValidate
 	}
 
 	return c, nil
 }
 
+func decodeAndMergeConfig(c *Config, configAsJSON string) (Config, error) {
+	err := json.Unmarshal([]byte(configAsJSON), &c)
+	if err != nil {
+		return Config{}, errors.Wrap(err, "failed to read main config file")
+	}
+
+	return *c, nil
+}
+
 // DumpConfig config as TOML String.
-func DumpConfig(c Config) (string, error) {
+func DumpConfig(c *Config) (string, error) {
 	var buffer bytes.Buffer
+
 	t := toml.NewEncoder(&buffer)
 
 	if err := t.Encode(c); err != nil {
-		return "", err //nolint: wrapcheck
+		return "", err
 	}
 
 	return buffer.String(), nil
 }
 
 // DumpConfigJSON config as JSON String.
-func DumpConfigJSON(c Config) (string, error) {
+func DumpConfigJSON(c *Config) (string, error) {
 	var buffer bytes.Buffer
+
 	j := json.NewEncoder(&buffer)
 	j.SetIndent("", "  ")
 
 	if err := j.Encode(c); err != nil {
-		return "", err //nolint: wrapcheck
+		return "", err
 	}
 
 	return buffer.String(), nil
@@ -78,7 +84,7 @@ func DumpConfigJSON(c Config) (string, error) {
 // validate minimal config settings for marvin.
 // Validates only a very small part of the params needed
 // by marvin.
-func validate(c Config) error {
+func validate(c *Config) error {
 	// validate webserver listening port
 	invalidErrMessage := "invalid config"
 

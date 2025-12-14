@@ -28,6 +28,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 // seedSettings inserts test data into the database.
 func seedSettings(t *testing.T, db *gorm.DB, settings []models.Setting) {
 	t.Helper()
+
 	for _, setting := range settings {
 		err := db.Create(&setting).Error
 		require.NoError(t, err, "failed to seed test data")
@@ -359,6 +360,7 @@ func TestSet(t *testing.T) {
 
 				// Verify the setting was created or updated in the database
 				var dbSetting models.Setting
+
 				err = tc.dbParam.Where("name = ?", tc.settingName).First(&dbSetting).Error
 				require.NoError(t, err)
 				assert.Equal(t, tc.settingValue, dbSetting.Value)

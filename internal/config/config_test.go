@@ -2,14 +2,17 @@ package config
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestReadConfig(t *testing.T) {
-	var err error
+	var (
+		err         error
+		projectRoot string
+	)
 
 	// Get the project root by going up from internal/config
-	var projectRoot string
 	projectRoot, err = filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("failed to get project root: %v", err)
@@ -18,6 +21,7 @@ func TestReadConfig(t *testing.T) {
 	configPath := filepath.Join(projectRoot, "etc") + string(filepath.Separator)
 
 	var cfg Config
+
 	cfg, err = ReadConfig(configPath)
 	if err != nil {
 		t.Fatalf("ReadConfig() error = %v", err)
@@ -52,9 +56,11 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestRecordTypeSettings(t *testing.T) {
-	var err error
+	var (
+		err         error
+		projectRoot string
+	)
 
-	var projectRoot string
 	projectRoot, err = filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("failed to get project root: %v", err)
@@ -63,6 +69,7 @@ func TestRecordTypeSettings(t *testing.T) {
 	configPath := filepath.Join(projectRoot, "etc") + string(filepath.Separator)
 
 	var cfg Config
+
 	cfg, err = ReadConfig(configPath)
 	if err != nil {
 		t.Fatalf("ReadConfig() error = %v", err)
@@ -145,7 +152,7 @@ func TestConfigValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validate(tt.config)
+			err := validate(&tt.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -154,9 +161,11 @@ func TestConfigValidation(t *testing.T) {
 }
 
 func TestReadConfigWithJSONOverride(t *testing.T) {
-	var err error
+	var (
+		err         error
+		projectRoot string
+	)
 
-	var projectRoot string
 	projectRoot, err = filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("failed to get project root: %v", err)
@@ -169,6 +178,7 @@ func TestReadConfigWithJSONOverride(t *testing.T) {
 	t.Setenv("GO_POWERDNS_ADMIN_CONFIG_JSON", jsonOverride)
 
 	var cfg Config
+
 	cfg, err = ReadConfig(configPath)
 	if err != nil {
 		t.Fatalf("ReadConfig() error = %v", err)
@@ -202,7 +212,8 @@ func TestDumpConfig(t *testing.T) {
 	}
 
 	var tomlStr string
-	tomlStr, err = DumpConfig(cfg)
+
+	tomlStr, err = DumpConfig(&cfg)
 	if err != nil {
 		t.Fatalf("DumpConfig() error = %v", err)
 	}
@@ -212,7 +223,7 @@ func TestDumpConfig(t *testing.T) {
 	}
 
 	// Check if output contains expected values
-	if !contains(tomlStr, "Test") {
+	if !strings.Contains(tomlStr, "Test") {
 		t.Error("DumpConfig() output should contain Title")
 	}
 }
@@ -230,7 +241,8 @@ func TestDumpConfigJSON(t *testing.T) {
 	}
 
 	var jsonStr string
-	jsonStr, err = DumpConfigJSON(cfg)
+
+	jsonStr, err = DumpConfigJSON(&cfg)
 	if err != nil {
 		t.Fatalf("DumpConfigJSON() error = %v", err)
 	}
@@ -240,22 +252,7 @@ func TestDumpConfigJSON(t *testing.T) {
 	}
 
 	// Check if output is valid JSON by checking for expected fields
-	if !contains(jsonStr, "Test") {
+	if !strings.Contains(jsonStr, "Test") {
 		t.Error("DumpConfigJSON() output should contain Title")
 	}
-}
-
-// Helper function to check if string contains substring.
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

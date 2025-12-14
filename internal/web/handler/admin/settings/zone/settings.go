@@ -28,11 +28,7 @@ func (r *RecordSettings) Load(db *gorm.DB) error {
 	}
 
 	// Unmarshal the JSON blob into the struct
-	if errJSON := json.Unmarshal(s.Value, r); errJSON != nil {
-		return errJSON
-	}
-
-	return nil
+	return json.Unmarshal(s.Value, r)
 }
 
 // Save saves the zone record settings to the database.
@@ -45,5 +41,6 @@ func (r *RecordSettings) Save(db *gorm.DB) error {
 
 	// Save or update the setting in the database
 	_, err = setting.Set(db, SettingKeyZoneRecords, data)
+
 	return err
 }

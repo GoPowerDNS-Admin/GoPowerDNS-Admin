@@ -15,13 +15,16 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
+	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
+	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
 )
 
 // Service represents the web service.
@@ -31,6 +34,7 @@ type Service struct {
 	fastShutDown bool
 	alive        atomic.Bool
 	db           *gorm.DB
+	authService  *auth.Service
 }
 
 // Start starts the web service on the given address.
@@ -115,6 +119,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 		for i := range result {
 			result[i] = i
 		}
+
 		return result
 	})
 	templateEngine.AddFunc("add", func(a, b int) int {
@@ -127,7 +132,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	// create fiber app
 	app := fiber.New(
 		fiber.Config{
-			ReadBufferSize: 8192, //nolint:mnd
+			ReadBufferSize: 8192,
 			AppName:        "GoPowerDNS-Admin",
 			CaseSensitive:  true,
 			Prefork:        false,
@@ -150,20 +155,29 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	// basic auth middleware
 	app.Use(AuthMiddleware)
 
+	// Initialize auth service
+	authService := auth.NewService(db)
+
+	// Add permissions to fiber.Locals middleware (after auth)
+	app.Use(auth.AddPermissionsToLocals(authService))
+
 	// init web service
 	service := &Service{
-		cfg: cfg,
-		App: app,
-		db:  db,
+		cfg:         cfg,
+		App:         app,
+		db:          db,
+		authService: authService,
 	}
 
-	// init login handler
-	_ = login.Handler.Init(app, cfg, db)
-	_ = dashboard.Handler.Init(app, cfg, db)
-	_ = pdnsserver.Handler.Init(app, cfg, db)
-	_ = zone.Handler.Init(app, cfg, db)
-	_ = zoneadd.Handler.Init(app, cfg, db)
-	_ = configuration.Handler.Init(app, cfg, db)
+	// init handlers (they register their own routes with permission checks)
+	login.Handler.Init(app, cfg, db)
+	oidchandler.Handler.Init(app, cfg, db)
+	dashboard.Handler.Init(app, cfg, db, authService)
+	pdnsserver.Handler.Init(app, cfg, db, authService)
+	zone.Handler.Init(app, cfg, db, authService)
+	zoneadd.Handler.Init(app, cfg, db, authService)
+	zoneedit.Handler.Init(app, cfg, db, authService)
+	configuration.Handler.Init(app, cfg, db, authService)
 
 	// redirect root to dashboard
 	app.Get("/", func(c *fiber.Ctx) error {

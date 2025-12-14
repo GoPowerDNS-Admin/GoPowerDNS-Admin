@@ -3,7 +3,6 @@ package dashboard
 
 import (
 	"context"
-	"errors"
 	"sort"
 	"strings"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
@@ -98,20 +98,20 @@ type Service struct {
 var Handler = Service{}
 
 // Init initializes the dashboard handler.
-func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
+func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authService *auth.Service) {
 	if app == nil || cfg == nil || db == nil {
-		return errors.New("app or db is nil")
+		log.Fatal().Msg(handler.ErrNilACDFatalLogMsg)
+		return
 	}
 
 	s.db = db
 	s.cfg = cfg
 
-	// register routes
-	app.Route(Path, func(router fiber.Router) {
-		router.Get(handler.RootPath, s.Get)
-	})
-
-	return nil
+	// register routes with permission checks
+	app.Get(Path,
+		auth.RequirePermission(authService, auth.PermDashboardView),
+		s.Get,
+	)
 }
 
 // Get handles the dashboard page rendering.
@@ -141,16 +141,18 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	if params.Page < 1 {
 		params.Page = 1
 	}
+
 	if params.PageSize < 1 || params.PageSize > 100 {
 		params.PageSize = DefaultPageSize
 	}
 
 	// Check if PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
-		log.Error().Msg("PowerDNS client not initialized")
+		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
+
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
-			"Error":      "PowerDNS client not initialized. Please configure PowerDNS server settings.",
+			"Error":      powerdns.ErrMsgClientNotInitializedDetailed,
 		}, handler.BaseLayout)
 	}
 
@@ -161,6 +163,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	apiZones, err := powerdns.Engine.Zones.List(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to fetch zones from PowerDNS")
+
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
 			"Error":      "Failed to fetch zones: " + err.Error(),
@@ -172,6 +175,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 
 	// Select zones for active tab
 	var zones []Zone
+
 	switch activeTab {
 	case TabReverseV4:
 		zones = reverseV4Zones
@@ -191,7 +195,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 
 	// Build TabData for active tab
 	params.Page = actualPaginatedPage // Update page if it was adjusted
-	tabData := buildTabData(paginatedZones, totalPages, params)
+	tabData := buildTabData(paginatedZones, totalPages, &params)
 	tabData.TotalItems = totalItems
 
 	// Build Data struct
@@ -241,7 +245,10 @@ func categorizeZones(apiZones []pdnsapi.Zone) (forward, reverseV4, reverseV6 []Z
 	reverseV4 = make([]Zone, 0)
 	reverseV6 = make([]Zone, 0)
 
-	for _, apiZone := range apiZones {
+	// Use index iteration to avoid copying potentially large pdnsapi.Zone values
+	for i := range apiZones {
+		apiZone := &apiZones[i]
+
 		if apiZone.Name == nil {
 			continue
 		}
@@ -278,22 +285,26 @@ func filterZones(zones []Zone, searchQuery, filterKind string) []Zone {
 	// Apply search filter
 	if searchQuery != "" {
 		filtered := make([]Zone, 0)
+
 		for _, zone := range zones {
 			if strings.Contains(strings.ToLower(zone.Name), strings.ToLower(searchQuery)) {
 				filtered = append(filtered, zone)
 			}
 		}
+
 		zones = filtered
 	}
 
 	// Apply kind filter
 	if filterKind != "" {
 		filtered := make([]Zone, 0)
+
 		for _, zone := range zones {
 			if zone.Kind == filterKind {
 				filtered = append(filtered, zone)
 			}
 		}
+
 		zones = filtered
 	}
 
@@ -308,6 +319,7 @@ func sortZones(zones []Zone, sortField, sortOrder string) {
 			if sortOrder == desc {
 				return strings.ToLower(zones[i].Name) > strings.ToLower(zones[j].Name)
 			}
+
 			return strings.ToLower(zones[i].Name) < strings.ToLower(zones[j].Name)
 		})
 	case "kind":
@@ -315,6 +327,7 @@ func sortZones(zones []Zone, sortField, sortOrder string) {
 			if sortOrder == desc {
 				return strings.ToLower(zones[i].Kind) > strings.ToLower(zones[j].Kind)
 			}
+
 			return strings.ToLower(zones[i].Kind) < strings.ToLower(zones[j].Kind)
 		})
 	case "serial":
@@ -322,6 +335,7 @@ func sortZones(zones []Zone, sortField, sortOrder string) {
 			if sortOrder == desc {
 				return zones[i].Serial > zones[j].Serial
 			}
+
 			return zones[i].Serial < zones[j].Serial
 		})
 	}
@@ -329,17 +343,25 @@ func sortZones(zones []Zone, sortField, sortOrder string) {
 
 // paginateZones calculates pagination and returns paginated zones.
 func paginateZones(zones []Zone, page, pageSize int) (paginatedZones []Zone, totalPages, actualPage int) {
-	totalItems := len(zones)
+	var (
+		totalItems = len(zones)
+	)
+
 	totalPages = (totalItems + pageSize - 1) / pageSize
+
 	if totalPages < 1 {
 		totalPages = 1
 	}
+
 	if page > totalPages {
 		page = totalPages
 	}
 
-	startIdx := (page - 1) * pageSize
-	endIdx := startIdx + pageSize
+	var (
+		startIdx = (page - 1) * pageSize
+		endIdx   = startIdx + pageSize
+	)
+
 	if endIdx > totalItems {
 		endIdx = totalItems
 	}
@@ -354,7 +376,7 @@ func paginateZones(zones []Zone, page, pageSize int) (paginatedZones []Zone, tot
 }
 
 // buildTabData creates TabData with pagination information.
-func buildTabData(zones []Zone, totalPages int, params QueryParams) TabData {
+func buildTabData(zones []Zone, totalPages int, params *QueryParams) TabData {
 	return TabData{
 		Zones:       zones,
 		CurrentPage: params.Page,

@@ -2,13 +2,13 @@ package pdnsserver
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	controller "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
@@ -38,22 +38,25 @@ type Service struct {
 var Handler = Service{}
 
 // Init initializes the pdns-server settings handler.
-func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
+func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authService *auth.Service) {
 	if app == nil || cfg == nil || db == nil {
-		return errors.New("app or db is nil")
+		log.Fatal().Msg(handler.ErrNilACDFatalLogMsg)
+		return
 	}
 
 	s.db = db
 	s.cfg = cfg
 	s.validator = validator.New()
 
-	// register routes
-	app.Route(Path, func(router fiber.Router) {
-		router.Get(handler.RootPath, s.Get)
-		router.Post(handler.RootPath, s.Post)
-	})
-
-	return nil
+	// register routes with permission checks
+	app.Get(Path,
+		auth.RequirePermission(authService, auth.PermAdminPDNSServer),
+		s.Get,
+	)
+	app.Post(Path,
+		auth.RequirePermission(authService, auth.PermAdminPDNSServer),
+		s.Post,
+	)
 }
 
 // Get handles the pdns-server settings page rendering.
@@ -70,6 +73,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 		// If settings don't exist yet, render form with empty values
 		if errors.Is(err, setting.ErrSettingNotFound) {
 			log.Debug().Msg("PDNS server settings not found, rendering empty form")
+
 			return c.Render(TemplateName, fiber.Map{
 				"Settings":   settings,
 				"Navigation": nav,
@@ -78,6 +82,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 
 		// Log and return error for other failures
 		log.Error().Err(err).Msg("failed to load PDNS server settings")
+
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load settings")
 	}
 
@@ -102,6 +107,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	settings := &controller.Settings{}
 	if err := c.BodyParser(settings); err != nil {
 		log.Error().Err(err).Msg("failed to parse PDNS server settings form")
+
 		return c.Status(fiber.StatusBadRequest).Render(
 			TemplateName, fiber.Map{
 				"Settings":   settings,
@@ -114,12 +120,14 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	if err := s.validator.Struct(settings); err != nil {
 		var validationErrors validator.ValidationErrors
 		errors.As(err, &validationErrors)
+
 		errorMessages := make([]string, len(validationErrors))
 		for i, ve := range validationErrors {
 			errorMessages[i] = "Field '" + ve.Field() + "' failed validation tag '" + ve.Tag() + "'"
 		}
 
 		log.Error().Err(err).Msg("validation failed for PDNS server settings")
+
 		return c.Status(fiber.StatusBadRequest).Render(
 			TemplateName, fiber.Map{
 				"Settings":   settings,
@@ -131,6 +139,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Save settings to database
 	if err := settings.Save(s.db); err != nil {
 		log.Error().Err(err).Msg("failed to save PDNS server settings")
+
 		return c.Status(fiber.StatusInternalServerError).Render(
 			TemplateName, fiber.Map{
 				"Settings":   settings,
@@ -145,27 +154,18 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		Str("version", settings.VHost).
 		Msg("PDNS server settings saved successfully")
 
-	// Re-initialize PowerDNS engine with new settings
-	if err := powerdns.Open(s.db); err != nil {
-		log.Error().Err(err).Msg("failed to initialize PowerDNS engine after settings update")
-		return c.Status(fiber.StatusInternalServerError).Render(
-			TemplateName, fiber.Map{
-				"Settings":   settings,
-				"Navigation": nav,
-				"Error":      "Failed to initialize PowerDNS engine with new settings",
-			}, handler.BaseLayout)
-	}
+	// Re-initialize PowerDNS engine with new settings asynchronously to avoid blocking the request
+	go func(db *gorm.DB) {
+		if err := powerdns.Open(db); err != nil {
+			log.Error().Err(err).Msg("failed to initialize PowerDNS engine after settings update")
+			return
+		}
 
-	// test PowerDNS API connection with new settings
-	if err := powerdns.Engine.Test(); err != nil {
-		log.Error().Err(err).Msg("failed to connect to PowerDNS API with new settings")
-		return c.Status(fiber.StatusInternalServerError).Render(
-			TemplateName, fiber.Map{
-				"Settings":   settings,
-				"Navigation": nav,
-				"Error":      fmt.Sprintf("Failed to connect to PowerDNS API with the provided settings (%s)", err),
-			}, handler.BaseLayout)
-	}
+		// Test PowerDNS API connection with new settings (non-blocking, log-only)
+		if err := powerdns.Engine.Test(); err != nil {
+			log.Error().Err(err).Msg("failed to connect to PowerDNS API with new settings")
+		}
+	}(s.db)
 
 	// Redirect to the same page with success message
 	return c.Render(

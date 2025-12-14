@@ -14,7 +14,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	err := logger.Init(logger.Log{
+	err := logger.Init(&logger.Log{
 		LogLevel:          "info",
 		LogEnv:            "test",
 		ReportCaller:      false,
@@ -35,10 +35,11 @@ func TestNew(t *testing.T) {
 	testLogger := stdlogger.New()
 
 	t.Log("zerolog stdlogger with InfoLevel was successfully created. No Debug should be shown")
+
 	arch := runtime.GOARCH
 	// this 3 log messages should be shown...
 	testLogger.Infof("%s: this testLogger implements Infof()", arch)
-	testLogger.Errorf("%v: this testLogger implements Errorf()", errors.New("this a generic error")) //nolint:goerr113
+	testLogger.Errorf("%v: this testLogger implements Errorf()", errors.New("this a generic error"))
 	testLogger.Warningf("%d: this testLogger implements Warningf()", runtime.NumCPU())
 
 	// this one not
@@ -86,8 +87,9 @@ func TestAdapter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := testLoggerConfig(t, tc.cfg)
+			out := testLoggerConfig(t, &tc.cfg)
 			t.Logf("out: %s", out)
+
 			if out == "" && tc.shouldHaveOutPut {
 				t.Errorf("expected no console output but got: %s", out)
 			}
@@ -95,7 +97,7 @@ func TestAdapter(t *testing.T) {
 	}
 }
 
-func testLoggerConfig(t *testing.T, cfg logger.Log) string {
+func testLoggerConfig(t *testing.T, cfg *logger.Log) string {
 	t.Helper()
 	// keep default std out
 	stdout := os.Stdout
@@ -122,10 +124,12 @@ func testLoggerConfig(t *testing.T, cfg logger.Log) string {
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
+
 		_, err = io.Copy(&buf, r)
 		if err != nil {
 			t.Error(err)
 		}
+
 		outC <- buf.String()
 	}()
 

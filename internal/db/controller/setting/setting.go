@@ -29,16 +29,19 @@ func Get(db *gorm.DB, name string) (*models.Setting, error) {
 	if db == nil {
 		return nil, ErrDBNil
 	}
+
 	if name == "" {
 		return nil, ErrSettingNameEmpty
 	}
 
 	var setting models.Setting
+
 	result := db.Where(nameQueryPattern, name).First(&setting)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrSettingNotFound
 		}
+
 		return nil, result.Error
 	}
 
@@ -52,11 +55,13 @@ func GetByID(db *gorm.DB, id uint64) (*models.Setting, error) {
 	}
 
 	var setting models.Setting
+
 	result := db.First(&setting, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrSettingNotFound
 		}
+
 		return nil, result.Error
 	}
 
@@ -70,6 +75,7 @@ func GetAll(db *gorm.DB) ([]models.Setting, error) {
 	}
 
 	var settings []models.Setting
+
 	result := db.Find(&settings)
 	if result.Error != nil {
 		return nil, result.Error
@@ -83,16 +89,19 @@ func Create(db *gorm.DB, name string, value []byte) (*models.Setting, error) {
 	if db == nil {
 		return nil, ErrDBNil
 	}
+
 	if name == "" {
 		return nil, ErrSettingNameEmpty
 	}
 
 	// Check if setting already exists
 	var existing models.Setting
+
 	result := db.Where(nameQueryPattern, name).First(&existing)
 	if result.Error == nil {
 		return nil, ErrSettingAlreadyExists
 	}
+
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
@@ -115,23 +124,27 @@ func Set(db *gorm.DB, name string, value []byte) (*models.Setting, error) {
 	if db == nil {
 		return nil, ErrDBNil
 	}
+
 	if name == "" {
 		return nil, ErrSettingNameEmpty
 	}
 
 	var setting models.Setting
+
 	result := db.Where(nameQueryPattern, name).First(&setting)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		// Setting doesn't exist, create it
 		return Create(db, name, value)
 	}
+
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
 	// Setting exists, update it
 	setting.Value = value
+
 	result = db.Save(&setting)
 	if result.Error != nil {
 		return nil, result.Error
@@ -147,15 +160,18 @@ func Update(db *gorm.DB, id uint64, value []byte) (*models.Setting, error) {
 	}
 
 	var setting models.Setting
+
 	result := db.First(&setting, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrSettingNotFound
 		}
+
 		return nil, result.Error
 	}
 
 	setting.Value = value
+
 	result = db.Save(&setting)
 	if result.Error != nil {
 		return nil, result.Error
@@ -169,20 +185,24 @@ func UpdateByName(db *gorm.DB, name string, value []byte) (*models.Setting, erro
 	if db == nil {
 		return nil, ErrDBNil
 	}
+
 	if name == "" {
 		return nil, ErrSettingNameEmpty
 	}
 
 	var setting models.Setting
+
 	result := db.Where(nameQueryPattern, name).First(&setting)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrSettingNotFound
 		}
+
 		return nil, result.Error
 	}
 
 	setting.Value = value
+
 	result = db.Save(&setting)
 	if result.Error != nil {
 		return nil, result.Error
@@ -201,6 +221,7 @@ func Delete(db *gorm.DB, id uint64) error {
 	if result.Error != nil {
 		return result.Error
 	}
+
 	if result.RowsAffected == 0 {
 		return ErrSettingNotFound
 	}
@@ -213,6 +234,7 @@ func DeleteByName(db *gorm.DB, name string) error {
 	if db == nil {
 		return ErrDBNil
 	}
+
 	if name == "" {
 		return ErrSettingNameEmpty
 	}
@@ -221,6 +243,7 @@ func DeleteByName(db *gorm.DB, name string) error {
 	if result.Error != nil {
 		return result.Error
 	}
+
 	if result.RowsAffected == 0 {
 		return ErrSettingNotFound
 	}

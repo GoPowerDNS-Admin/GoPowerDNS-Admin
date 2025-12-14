@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
@@ -41,22 +42,25 @@ var (
 )
 
 // Init initializes the zone record settings handler.
-func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) error {
+func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authService *auth.Service) {
 	if app == nil || cfg == nil || db == nil {
-		return errors.New("app, cfg, or db is nil")
+		log.Fatal().Msg(handler.ErrNilACDFatalLogMsg)
+		return
 	}
 
 	s.db = db
 	s.cfg = cfg
 	s.validator = validator.New()
 
-	// register routes
-	app.Route(Path, func(router fiber.Router) {
-		router.Get(handler.RootPath, s.Get)
-		router.Post(handler.RootPath, s.Post)
-	})
-
-	return nil
+	// register routes with permission checks
+	app.Get(Path,
+		auth.RequirePermission(authService, auth.PermAdminZoneRecords),
+		s.Get,
+	)
+	app.Post(Path,
+		auth.RequirePermission(authService, auth.PermAdminZoneRecords),
+		s.Post,
+	)
 }
 
 // Get handles the zone record settings page rendering.
@@ -73,7 +77,9 @@ func (s *Service) Get(c *fiber.Ctx) error {
 		// If settings don't exist yet, use default config values
 		if errors.Is(err, setting.ErrSettingNotFound) {
 			log.Debug().Msg("zone record settings not found, using config defaults")
+
 			settings.Records = s.cfg.Record
+
 			return c.Render(TemplateName, fiber.Map{
 				"Settings":   settings,
 				"Navigation": nav,
@@ -82,29 +88,32 @@ func (s *Service) Get(c *fiber.Ctx) error {
 
 		// Log and return error for other failures
 		log.Error().Err(err).Msg("failed to load zone record settings")
+
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load settings")
 	}
 
-	// Ensure all record types from config are present in loaded settings
-	if settings.Records == nil {
-		settings.Records = s.cfg.Record
-	} else {
-		// check if loaded settings match config, if not use config defaults
-		for k, v := range s.cfg.Record {
-			if _, ok := settings.Records[k]; !ok {
-				log.Debug().Str("record_type", k).Msg("adding missing record type from config defaults")
-				settings.Records[k] = v
+	// Normalize settings.Records based on config: ensure presence, merge fields, and drop unknowns
+	normalized := make(config.Record, len(s.cfg.Record))
+	for k, v := range s.cfg.Record {
+		merged := v
+		if existing, ok := settings.Records[k]; ok {
+			// Preserve boolean flags from existing settings
+			merged.Forward = existing.Forward
+			merged.Reverse = existing.Reverse
+			// Prefer existing text when provided; otherwise keep defaults
+			if existing.Description != "" {
+				merged.Description = existing.Description
+			}
+
+			if existing.Help != "" {
+				merged.Help = existing.Help
 			}
 		}
 
-		// remove any record types not in config
-		for k := range settings.Records {
-			if _, ok := s.cfg.Record[k]; !ok {
-				log.Debug().Str("record_type", k).Msg("removing unknown record type not in config")
-				delete(settings.Records, k)
-			}
-		}
+		normalized[k] = merged
 	}
+
+	settings.Records = normalized
 
 	// Render form with loaded settings
 	return c.Render(TemplateName, fiber.Map{
@@ -117,16 +126,20 @@ func (s *Service) Get(c *fiber.Ctx) error {
 func (s *Service) Post(c *fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("Zone Record Settings", "settings", "zone-records").
-		AddBreadcrumb("Home", "/dashboard", false).
+		AddBreadcrumb("Home", dashboard.Path, false).
 		AddBreadcrumb("Settings", "#", false).
-		AddBreadcrumb("Zone Records", "/settings/zone-records", true)
+		AddBreadcrumb("Zone Records", Path, true)
 
 	// Parse form data into settings struct
 	settings := &RecordSettings{Records: make(config.Record)}
 
 	// initialize settings with keys from config to ensure all keys are present
-	for k := range s.cfg.Record {
-		settings.Records[k] = config.RecordTypeSettings{}
+	// and preserve descriptions/help from config
+	for k, v := range s.cfg.Record {
+		settings.Records[k] = config.RecordTypeSettings{
+			Description: v.Description, // Preserve description from config
+			Help:        v.Help,        // Preserve help from config
+		}
 	}
 
 	// Manually parse checkbox inputs for dynamic record types
@@ -137,7 +150,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// We iterate over all POST args to find these keys
 	c.Request().PostArgs().VisitAll(func(key, value []byte) {
 		matches := recordKeyRegex.FindStringSubmatch(string(key))
-		if len(matches) != 3 { //nolint: mnd
+		if len(matches) != 3 {
 			return // not a record setting key
 		}
 
@@ -150,14 +163,21 @@ func (s *Service) Post(c *fiber.Ctx) error {
 			recordConfig = config.RecordTypeSettings{}
 		}
 
-		// Parse checkbox value
-		isChecked := string(value) == "true" || string(value) == "on"
-
 		switch fieldName {
 		case "forward":
+			// Parse checkbox value
+			isChecked := string(value) == "true" || string(value) == "on"
 			recordConfig.Forward = isChecked
 		case "reverse":
+			// Parse checkbox value
+			isChecked := string(value) == "true" || string(value) == "on"
 			recordConfig.Reverse = isChecked
+		case "description":
+			// Parse text value
+			recordConfig.Description = string(value)
+		case "help":
+			// Parse text value for help
+			recordConfig.Help = string(value)
 		}
 
 		settings.Records[recordType] = recordConfig
@@ -166,6 +186,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Validate settings
 	if err := s.validator.Struct(settings); err != nil {
 		log.Error().Err(err).Msg("validation failed for zone record settings")
+
 		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
 			"Settings":   settings,
 			"Navigation": nav,
@@ -176,6 +197,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Save settings to database
 	if err := settings.Save(s.db); err != nil {
 		log.Error().Err(err).Msg("failed to save zone record settings")
+
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
 			"Settings":   settings,
 			"Navigation": nav,

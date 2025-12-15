@@ -18,7 +18,7 @@ type (
 	Settings struct {
 		APIServerURL string `form:"api_server_url" json:"apiServerUrl" validate:"required,url"`
 		APIKey       string `form:"api_key"        json:"apiKey"       validate:"required,min=8"`
-		VHost        string `form:"version"        json:"vhost"        validate:"required"`
+		VHost        string `form:"vhost"          json:"vhost"        validate:"required"`
 	}
 )
 

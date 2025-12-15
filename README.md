@@ -59,6 +59,10 @@ Prerequisites:
 - `etc/` — example configuration
 - `docker/` — Docker/Compose helpers (including a PDNS setup)
 
+## Background & Inspiration
+
+The idea for this Go-based version came from the PowerDNS-Admin project (https://github.com/PowerDNS-Admin/PowerDNS-Admin), which is not further developed. This repository provides a Go implementation that follows similar goals while evolving independently.
+
 ## Configuration Highlights
 
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.

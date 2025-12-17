@@ -24,13 +24,13 @@ func RequirePermission(authService *Service, permission string) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 
-		// Check if session is valid
+		// Check if the session is valid
 		if sessionData.User.ID == 0 {
 			log.Error().Msg("Invalid session data")
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 
-		// Check if user has permission
+		// Check if the user has permission
 		hasPermission, err := authService.HasPermission(sessionData.User.ID, permission)
 		if err != nil {
 			log.Error().Err(err).Uint64("user_id", sessionData.User.ID).Str("permission", permission).

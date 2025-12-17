@@ -39,7 +39,9 @@ type User struct {
 	// LastName is the user's last or family name.
 	LastName string `gorm:"size:100"`
 	// RoleID is the ID of the role assigned to this user.
-	RoleID uint `gorm:"column:role_id;not null;default:0"`
+	RoleID uint `gorm:"column:role_id;not null"`
+	// Role is the associated role (enforced with a foreign key constraint).
+	Role Role `gorm:"foreignKey:RoleID;references:ID;constraint:OnDelete:RESTRICT,OnUpdate:CASCADE"`
 	// AuthSource indicates how this user authenticates (local, oidc, or ldap).
 	AuthSource AuthSource `gorm:"type:varchar(20);not null;default:'local'"`
 	// ExternalID is the external identifier for OIDC (sub claim) or LDAP (DN) users.

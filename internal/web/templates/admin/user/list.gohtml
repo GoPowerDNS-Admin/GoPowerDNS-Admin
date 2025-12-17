@@ -1,0 +1,124 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .Navigation }}{{ .Navigation.PageTitle }}{{ else }}Users{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <div class="d-flex mb-3 justify-content-between align-items-start gap-2 flex-wrap">
+                    <form class="d-flex" method="get" action="/admin/user">
+                        <input class="form-control me-2" type="search" placeholder="Search users..." aria-label="Search" name="search" value="{{ .Search }}">
+                        <button class="btn btn-outline-secondary" type="submit">Search</button>
+                    </form>
+                    <a href="/admin/user/new" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New User
+                    </a>
+                </div>
+
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Source</th>
+                                        <th>External ID</th>
+                                        <th>Created</th>
+                                        <th style="width: 180px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {{ if .Users }}
+                                    {{ range .Users }}
+                                        <tr>
+                                            <td>{{ .ID }}</td>
+                                            <td>{{ .Username }}</td>
+                                            <td>{{ .Email }}</td>
+                                            <td><span class="badge text-bg-info">{{ .Role.Name }}</span></td>
+                                            <td><span class="badge text-bg-secondary">{{ .AuthSource }}</span></td>
+                                            <td>{{ .ExternalID }}</td>
+                                            <td>{{ .CreatedAt }}</td>
+                                            <td class="text-end">
+                                                <a href="/admin/user/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                {{ $isCurrentUser := eq .ID $.CurrentUserID }}
+                                                {{ $isAdmin := eq .Role.Name "admin" }}
+                                                {{ if or $isCurrentUser $isAdmin }}
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" disabled title="{{ if $isCurrentUser }}Cannot delete yourself{{ else }}Cannot delete admin users{{ end }}">Delete</button>
+                                                {{ else }}
+                                                    <form action="/admin/user/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                {{ end }}
+                                            </td>
+                                        </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="8" class="text-center p-4">No users found</td>
+                                    </tr>
+                                {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <nav aria-label="Users pagination">
+                            <ul class="pagination mb-0">
+                                <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
+                                    <a class="page-link" href="?page={{ .PrevPage }}&pageSize={{ .PageSize }}&search={{ .Search }}">Previous</a>
+                                </li>
+                                {{ range $i := iterate .TotalPages }}
+                                    {{ $idx := add $i 1 }}
+                                    <li class="page-item {{ if eq $.Page $idx }}active{{ end }}">
+                                        <a class="page-link" href="?page={{ $idx }}&pageSize={{ $.PageSize }}&search={{ $.Search }}">{{ $idx }}</a>
+                                    </li>
+                                {{ end }}
+                                <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
+                                    <a class="page-link" href="?page={{ .NextPage }}&pageSize={{ .PageSize }}&search={{ .Search }}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

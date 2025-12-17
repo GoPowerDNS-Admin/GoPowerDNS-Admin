@@ -1,0 +1,136 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .Navigation }}{{ .Navigation.PageTitle }}{{ else }}Groups{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <div class="d-flex mb-3 justify-content-between align-items-start gap-2 flex-wrap">
+                    <form class="d-flex" method="get" action="/admin/group">
+                        <input class="form-control me-2" type="search" placeholder="Search groups..." aria-label="Search" name="search" value="{{ .Search }}">
+                        <button class="btn btn-outline-secondary" type="submit">Search</button>
+                    </form>
+                    <a href="/admin/group/new" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New Group
+                    </a>
+                </div>
+
+                <!--begin::Card-->
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">ID</th>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Source</th>
+                                        <th>Members</th>
+                                        <th>External ID</th>
+                                        <th>Description</th>
+                                        <th style="width: 180px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {{ if .Groups }}
+                                    {{ range .Groups }}
+                                        <tr>
+                                            <td>{{ .ID }}</td>
+                                            <td>{{ .Name }}</td>
+                                            <td>
+                                                {{ $roleName := index $.RoleMappings .ID }}
+                                                {{ if $roleName }}
+                                                    <span class="badge text-bg-success">{{ $roleName }}</span>
+                                                {{ else }}
+                                                    <span class="badge text-bg-warning">No role</span>
+                                                {{ end }}
+                                            </td>
+                                            <td><span class="badge text-bg-secondary">{{ .Source }}</span></td>
+                                            <td><span class="badge text-bg-info">{{ index $.MemberCounts .ID }} users</span></td>
+                                            <td>{{ .ExternalID }}</td>
+                                            <td>{{ .Description }}</td>
+                                            <td class="text-end">
+                                                <a href="/admin/group/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                <form action="/admin/group/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete this group?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="8" class="text-center p-4">No groups found</td>
+                                    </tr>
+                                {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <nav aria-label="Groups pagination">
+                            <ul class="pagination mb-0">
+                                <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
+                                    <a class="page-link" href="?page={{ .PrevPage }}&pageSize={{ .PageSize }}&search={{ .Search }}">Previous</a>
+                                </li>
+                                {{ range $i := iterate .TotalPages }}
+                                    {{ $idx := add $i 1 }}
+                                    <li class="page-item {{ if eq $.Page $idx }}active{{ end }}">
+                                        <a class="page-link" href="?page={{ $idx }}&pageSize={{ $.PageSize }}&search={{ $.Search }}">{{ $idx }}</a>
+                                    </li>
+                                {{ end }}
+                                <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
+                                    <a class="page-link" href="?page={{ .NextPage }}&pageSize={{ .PageSize }}&search={{ .Search }}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                <!--end::Card-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->

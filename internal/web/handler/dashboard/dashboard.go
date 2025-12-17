@@ -150,10 +150,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
-			"Navigation": nav,
-			"Error":      powerdns.ErrMsgClientNotInitializedDetailed,
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusInternalServerError).SendString(powerdns.ErrMsgClientNotInitializedDetailed)
 	}
 
 	// Fetch all zones from PowerDNS API
@@ -164,10 +161,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	if err != nil {
 		log.Error().Err(err).Msg("failed to fetch zones from PowerDNS")
 
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
-			"Navigation": nav,
-			"Error":      "Failed to fetch zones: " + err.Error(),
-		}, handler.BaseLayout)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch zones: " + err.Error())
 	}
 
 	// Convert API zones to template zones and categorize

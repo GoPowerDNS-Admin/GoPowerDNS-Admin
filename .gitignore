@@ -33,3 +33,7 @@ go.work.sum
 
 /bin/*
 /build/*
+
+# python cache
+__pycache__/
+*.pyc

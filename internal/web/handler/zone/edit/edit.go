@@ -199,7 +199,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 	dnssecEnabled := zone.DNSsec != nil && *zone.DNSsec
 
 	// Load allowed record types from settings
-	allowedRecordTypes := s.loadAllowedRecordTypes()
+	allowedRecordTypes := s.loadAllowedRecordTypes(zoneIsReverse(*zone.Name))
 
 	// Sort record types alphabetically by type
 	sort.Slice(allowedRecordTypes, func(i, j int) bool {
@@ -224,7 +224,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(ErrMsgZoneNameRequired)
 	}
 
-	// Ensure zone name ends with a dot
+	// Ensure the zone name ends with a dot
 	if !strings.HasSuffix(zoneName, ".") {
 		zoneName += "."
 	}
@@ -265,7 +265,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Check if PowerDNS client is initialized
+	// Check if the PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 
@@ -352,7 +352,7 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 		})
 	}
 
-	// Ensure zone name ends with a dot
+	// Ensure the zone name ends with a dot
 	if !strings.HasSuffix(zoneName, ".") {
 		zoneName += "."
 	}
@@ -368,7 +368,16 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 		})
 	}
 
-	// Check if PowerDNS client is initialized
+	// ensure only allowed record types are being modified
+	if errValidateRecordTypes := s.validateRecordsUpdateAreValidTypes(
+		c,
+		zoneName,
+		&request,
+		zoneIsReverse(zoneName)); errValidateRecordTypes != nil {
+		return errValidateRecordTypes
+	}
+
+	// Check if the PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 

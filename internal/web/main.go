@@ -17,14 +17,17 @@ import (
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/user"
 	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
+	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
 )
 
 // Service represents the web service.
@@ -132,12 +135,13 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	// create fiber app
 	app := fiber.New(
 		fiber.Config{
-			ReadBufferSize: 8192,
-			AppName:        "GoPowerDNS-Admin",
-			CaseSensitive:  true,
-			Prefork:        false,
-			Immutable:      true,
-			Views:          templateEngine,
+			ReadBufferSize:    8192,
+			AppName:           "GoPowerDNS-Admin",
+			CaseSensitive:     true,
+			Prefork:           false,
+			Immutable:         true,
+			Views:             templateEngine,
+			PassLocalsToViews: true,
 		},
 	)
 
@@ -153,7 +157,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	)
 
 	// basic auth middleware
-	app.Use(AuthMiddleware)
+	app.Use(authmiddleware.Middleware)
 
 	// Initialize auth service
 	authService := auth.NewService(db)
@@ -178,6 +182,8 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	zoneadd.Handler.Init(app, cfg, db, authService)
 	zoneedit.Handler.Init(app, cfg, db, authService)
 	configuration.Handler.Init(app, cfg, db, authService)
+	group.Handler.Init(app, cfg, db, authService)
+	user.Handler.Init(app, cfg, db, authService)
 
 	// redirect root to dashboard
 	app.Get("/", func(c *fiber.Ctx) error {

@@ -10,11 +10,10 @@ type GroupMapping struct {
 	// ID is the unique identifier for the group mapping.
 	ID uint `gorm:"primaryKey"`
 	// GroupID is the ID of the group being mapped.
-	// Combined with RoleID, this forms a unique constraint to prevent duplicate mappings.
-	GroupID uint `gorm:"not null;uniqueIndex:idx_group_role"`
+	// Enforced unique to ensure a group maps to exactly one role.
+	GroupID uint `gorm:"not null;uniqueIndex"`
 	// RoleID is the ID of the role that group members will receive.
-	// Combined with GroupID, this forms a unique constraint to prevent duplicate mappings.
-	RoleID uint `gorm:"not null;uniqueIndex:idx_group_role"`
+	RoleID uint `gorm:"not null"`
 	// Group is the associated group (loaded via foreign key).
 	// When a group is deleted, all its mappings are automatically removed (CASCADE).
 	Group Group `gorm:"foreignKey:GroupID;constraint:OnDelete:CASCADE"`

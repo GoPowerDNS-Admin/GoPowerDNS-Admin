@@ -1,0 +1,126 @@
+{{ define "admin/user/form" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .IsCreate }}New User{{ else }}Edit User{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <!--begin::Card-->
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ if .IsCreate }}Create a new user{{ else }}Update user details{{ end }}</h3>
+                        <div class="card-tools">
+                            <a href="/admin/user" class="btn btn-sm btn-outline-secondary">Back to list</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-4">
+                            • Username, Email, and Role are required. • For external sources (OIDC/LDAP), set the External ID.
+                            • For local users, you can {{ if .IsCreate }}set an initial password{{ else }}leave Password blank to keep the current one{{ end }}.
+                        </p>
+
+                        <form method="post" action="{{ if .IsCreate }}/admin/user{{ else }}/admin/user/{{ .User.ID }}{{ end }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ .User.Username }}" required maxlength="100">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ .User.Email }}" required maxlength="255">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="role_id" class="form-label">Role</label>
+                                    <select id="role_id" name="role_id" class="form-select" required>
+                                        {{ if .Roles }}
+                                            {{ range .Roles }}
+                                                <option value="{{ .ID }}" {{ if eq $.User.RoleID .ID }}selected{{ end }}>{{ .Name }}{{ if .Description }} - {{ .Description }}{{ end }}</option>
+                                            {{ end }}
+                                        {{ else }}
+                                            <option value="">No roles available</option>
+                                        {{ end }}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="source" class="form-label">Source</label>
+                                    <select id="source" name="source" class="form-select">
+                                        <option value="local" {{ if eq .User.AuthSource "local" }}selected{{ end }}>Local</option>
+                                        <option value="oidc" {{ if eq .User.AuthSource "oidc" }}selected{{ end }}>OIDC</option>
+                                        <option value="ldap" {{ if eq .User.AuthSource "ldap" }}selected{{ end }}>LDAP</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label for="external_id" class="form-label">External ID</label>
+                                    <input type="text" class="form-control" id="external_id" name="external_id" value="{{ .User.ExternalID }}" maxlength="255">
+                                    <div class="form-text">OIDC 'sub' claim or LDAP DN (required when Source is OIDC/LDAP)</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="password" class="form-label">Password (local only)</label>
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="{{ if .IsCreate }}Set initial password{{ else }}Leave blank to keep current{{ end }}">
+                                </div>
+
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="true" id="active" name="active" {{ if .User.Active }}checked{{ end }}>
+                                        <label class="form-check-label" for="active">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>
+                                <a href="/admin/user" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!--end::Card-->
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+{{ end }}

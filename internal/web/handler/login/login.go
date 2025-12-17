@@ -58,6 +58,10 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) {
 		router.Get(handler.RootPath, s.Get)
 		router.Post(handler.RootPath, s.Post)
 	})
+
+	// logout route (outside auth middleware protection)
+	app.Get(handler.RootPath+"logout", s.Logout)
+	app.Post(handler.RootPath+"logout", s.Logout)
 }
 
 // initLDAP initializes the LDAP auth provider when enabled, using guard clauses to reduce nesting.
@@ -255,4 +259,28 @@ func (s *Service) createSessionAndSetCookie(c *fiber.Ctx, user *models.User) err
 	c.Cookie(cookieSettings)
 
 	return nil
+}
+
+// Logout handles user logout by clearing the session.
+func (s *Service) Logout(c *fiber.Ctx) error {
+	// Get session cookie
+	sessionID := c.Cookies("session")
+	if sessionID != "" {
+		// Delete session from store
+		if err := session.Store.Storage.Delete(sessionID); err != nil {
+			log.Error().Err(err).Msg("failed to delete session")
+		}
+	}
+
+	// Clear the session cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
+
+	return c.Redirect(Path)
 }

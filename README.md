@@ -13,7 +13,7 @@ This project is under active, heavy development. Interfaces and configuration ma
 - Multiple authentication methods:
   - Local database (mostly implemented, mysql/mariadb supported, sqlite, postgres planned)
   - OpenID Connect (OIDC) (partially implemented)
-  - LDAP
+  - LDAP (partially implemented)
 - RBAC (Role-Based Access Control) (partially implemented)
 - Audit logging of user actions (planned)
 - Responsive web UI using Bootstrap 5

@@ -111,7 +111,14 @@ func (s *Service) List(c *fiber.Ctx) error {
 
 	if search != "" {
 		like := "%" + search + "%"
-		tx = tx.Where("username ILIKE ? OR email ILIKE ? OR external_id ILIKE ?", like, like, like)
+		tx = tx.Where(
+			"username ILIKE ? OR email ILIKE ? OR external_id ILIKE ? OR first_name ILIKE ? OR last_name ILIKE ?",
+			like,
+			like,
+			like,
+			like,
+			like,
+		)
 	}
 
 	if err := tx.Count(&totalCount).Error; err != nil {
@@ -201,6 +208,8 @@ func (s *Service) Create(c *fiber.Ctx) error {
 	var in struct {
 		Username   string `form:"username"    validate:"required,min=3,max=100"`
 		Email      string `form:"email"       validate:"required,email,max=255"`
+		FirstName  string `form:"firstname"   validate:"max=100"`
+		LastName   string `form:"lastname"    validate:"max=100"`
 		AuthSource string `form:"source"      validate:"required,oneof=local oidc ldap"`
 		ExternalID string `form:"external_id"`
 		Password   string `form:"password"`
@@ -239,6 +248,8 @@ func (s *Service) Create(c *fiber.Ctx) error {
 	user := models.User{
 		Username:   in.Username,
 		Email:      in.Email,
+		FirstName:  in.FirstName,
+		LastName:   in.LastName,
 		AuthSource: models.AuthSource(in.AuthSource),
 		ExternalID: in.ExternalID,
 		Active:     in.Active,
@@ -322,6 +333,8 @@ func (s *Service) Update(c *fiber.Ctx) error {
 	var in struct {
 		Username   string `form:"username"    validate:"required,min=3,max=100"`
 		Email      string `form:"email"       validate:"required,email,max=255"`
+		FirstName  string `form:"firstname"   validate:"max=100"`
+		LastName   string `form:"lastname"    validate:"max=100"`
 		AuthSource string `form:"source"      validate:"required,oneof=local oidc ldap"`
 		ExternalID string `form:"external_id"`
 		Password   string `form:"password"`
@@ -357,6 +370,8 @@ func (s *Service) Update(c *fiber.Ctx) error {
 
 	user.Username = in.Username
 	user.Email = in.Email
+	user.FirstName = in.FirstName
+	user.LastName = in.LastName
 	user.AuthSource = models.AuthSource(in.AuthSource)
 	user.ExternalID = in.ExternalID
 	user.Active = in.Active

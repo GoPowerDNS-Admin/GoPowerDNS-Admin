@@ -57,10 +57,10 @@
                                     <tr>
                                         <th style="width: 80px;">ID</th>
                                         <th>Username</th>
+                                        <th>Name</th>
                                         <th>Email</th>
                                         <th>Role</th>
                                         <th>Source</th>
-                                        <th>External ID</th>
                                         <th>Created</th>
                                         <th style="width: 180px;" class="text-end">Actions</th>
                                     </tr>
@@ -71,10 +71,10 @@
                                         <tr>
                                             <td>{{ .ID }}</td>
                                             <td>{{ .Username }}</td>
+                                            <td>{{ .FirstName }} {{ .LastName }}</td>
                                             <td>{{ .Email }}</td>
                                             <td><span class="badge text-bg-info">{{ .Role.Name }}</span></td>
                                             <td><span class="badge text-bg-secondary">{{ .AuthSource }}</span></td>
-                                            <td>{{ .ExternalID }}</td>
                                             <td>{{ .CreatedAt }}</td>
                                             <td class="text-end">
                                                 <a href="/admin/user/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>

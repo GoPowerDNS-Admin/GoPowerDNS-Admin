@@ -66,6 +66,15 @@
                                 </div>
 
                                 <div class="col-md-6">
+                                    <label for="firstname" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="firstname" name="firstname" value="{{ .User.FirstName }}" maxlength="100">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="lastname" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="lastname" name="lastname" value="{{ .User.LastName }}" maxlength="100">
+                                </div>
+
+                                <div class="col-md-6">
                                     <label for="role_id" class="form-label">Role</label>
                                     <select id="role_id" name="role_id" class="form-select" required>
                                         {{ if .Roles }}

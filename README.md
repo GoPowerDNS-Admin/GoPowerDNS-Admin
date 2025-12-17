@@ -8,12 +8,15 @@ This project is under active, heavy development. Interfaces and configuration ma
 
 ## Key Features
 
-- Zone and record management (create, edit, and manage DNS records)
-- PowerDNS server settings stored in the application database
+- Zone and record management (create, edit, and manage DNS records) (mostly implemented)
+- PowerDNS server settings stored in the application database (mostly implemented)
 - Multiple authentication methods:
-  - Local database
-  - OpenID Connect (OIDC)
+  - Local database (mostly implemented, mysql/mariadb supported, sqlite, postgres planned)
+  - OpenID Connect (OIDC) (partially implemented)
   - LDAP
+- RBAC (Role-Based Access Control) (partially implemented)
+- Audit logging of user actions (planned)
+- Responsive web UI using Bootstrap 5
 - Go backend with server-rendered templates and a small amount of client-side JS
 
 ## Getting Started (Development)

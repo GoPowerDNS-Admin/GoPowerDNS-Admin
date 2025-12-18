@@ -138,7 +138,7 @@ func TestService_Post_Success(t *testing.T) {
 	app.Post("/settings/pdns-server", service.Post)
 
 	// Create form data
-	formData := "api_server_url=https://pdns.example.com:8081&api_key=test-key-123&version=4.9.0"
+	formData := "api_server_url=https://pdns.example.com:8081&api_key=test-key-123&vhost=localhost"
 	req := httptest.NewRequest(http.MethodPost, "/settings/pdns-server", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -157,7 +157,7 @@ func TestService_Post_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "https://pdns.example.com:8081", loaded.APIServerURL)
 	assert.Equal(t, "test-key-123", loaded.APIKey)
-	assert.Equal(t, "4.9.0", loaded.VHost)
+	assert.Equal(t, "localhost", loaded.VHost)
 }
 
 func TestService_Post_InvalidFormData(t *testing.T) {
@@ -237,7 +237,7 @@ func TestService_Post_DatabaseError(t *testing.T) {
 	app.Post("/settings/pdns-server", service.Post)
 
 	// Create valid form data with API key that passes validation (at least 8 characters)
-	formData := "api_server_url=https://pdns.example.com&api_key=validkey123&version=4.9.0"
+	formData := "api_server_url=https://pdns.example.com&api_key=validkey123&vhost=localhost"
 	req := httptest.NewRequest(http.MethodPost, "/settings/pdns-server", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

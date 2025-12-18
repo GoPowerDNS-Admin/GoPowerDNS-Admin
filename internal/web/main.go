@@ -25,6 +25,7 @@ import (
 	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/logout"
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
 	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
@@ -175,6 +176,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 
 	// init handlers (they register their own routes with permission checks)
 	login.Handler.Init(app, cfg, db)
+	logout.Handler.Init(app, cfg)
 	oidchandler.Handler.Init(app, cfg, db)
 	dashboard.Handler.Init(app, cfg, db, authService)
 	pdnsserver.Handler.Init(app, cfg, db, authService)

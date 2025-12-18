@@ -1,4 +1,4 @@
-.PHONY: help linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
+.PHONY: help test linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
@@ -18,6 +18,7 @@ help:
 	@echo "  load-test-data    - Load PowerDNS test data into running instance"
 	@echo ""
 	@echo "Development:"
+	@echo "  test              - Run all tests"
 	@echo "  linter            - Run golangci-lint"
 	@echo "  pre-commit        - Run pre-commit checks"
 	@echo ""
@@ -26,6 +27,11 @@ help:
 	@echo "  vendor-bootstrap  - Update only Bootstrap"
 	@echo "  vendor-adminlte   - Update only AdminLTE"
 	@echo "  vendor-clean      - Remove all vendor dependencies"
+
+test:
+	@echo "Running tests..."
+	@go test ./...
+	@echo "✓ Tests passed"
 
 linter:
 	@echo "Running linter..."

@@ -1,4 +1,4 @@
-.PHONY: help test linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
+.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
@@ -19,6 +19,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  test              - Run all tests"
+	@echo "  test-race         - Run all tests with race detector"
 	@echo "  linter            - Run golangci-lint"
 	@echo "  pre-commit        - Run pre-commit checks"
 	@echo ""
@@ -31,6 +32,11 @@ help:
 test:
 	@echo "Running tests..."
 	@go test ./...
+	@echo "✓ Tests passed"
+
+test-race:
+	@echo "Running tests with race detector..."
+	@go test -race ./...
 	@echo "✓ Tests passed"
 
 linter:

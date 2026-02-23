@@ -1,4 +1,5 @@
-.PHONY: help test linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
+
+.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8

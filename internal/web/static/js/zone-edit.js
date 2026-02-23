@@ -243,6 +243,43 @@ function composeSOA(fields) {
 }
 
 /**
+ * Validate an IPv4 address
+ * @param {string} ip - The IP address to validate
+ * @returns {boolean} True if valid IPv4
+ */
+function isValidIPv4(ip) {
+    const parts = ip.trim().split('.');
+    if (parts.length !== 4) return false;
+    return parts.every(part => {
+        if (!/^\d+$/.test(part)) return false;
+        const n = Number(part);
+        return n >= 0 && n <= 255;
+    });
+}
+
+/**
+ * Validate an IPv6 address
+ * @param {string} ip - The IP address to validate
+ * @returns {boolean} True if valid IPv6
+ */
+function isValidIPv6(ip) {
+    ip = ip.trim();
+    // Use a URL object trick to validate IPv6
+    try {
+        // Remove brackets if present
+        const bare = ip.startsWith('[') && ip.endsWith(']') ? ip.slice(1, -1) : ip;
+        // Attempt to use URL parsing to validate
+        const url = new URL('http://[' + bare + ']');
+        return url.hostname === '[' + bare + ']';
+    } catch (_) {
+        // Fall back to regex validation
+    }
+    // Comprehensive IPv6 regex
+    const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/;
+    return ipv6Regex.test(ip);
+}
+
+/**
  * Canonicalize content for record types that require FQDN
  * @param {string} type - The DNS record type
  * @param {string} content - The record content to canonicalize
@@ -666,6 +703,19 @@ $(document).ready(function() {
         const isValid = form.checkValidity();
         if (isValid === false) {
             form.reportValidity();
+            return;
+        }
+
+        const recordTypeForValidation = $(SELECTORS.RECORD_TYPE_INPUT).val();
+        const contentForValidation = $(SELECTORS.RECORD_CONTENT_INPUT).val().trim();
+        if (recordTypeForValidation === 'A' && !isValidIPv4(contentForValidation)) {
+            showToast('Invalid IPv4 address for A record.', 'danger');
+            $(SELECTORS.RECORD_CONTENT_INPUT).focus();
+            return;
+        }
+        if (recordTypeForValidation === 'AAAA' && !isValidIPv6(contentForValidation)) {
+            showToast('Invalid IPv6 address for AAAA record.', 'danger');
+            $(SELECTORS.RECORD_CONTENT_INPUT).focus();
             return;
         }
 

@@ -3,6 +3,7 @@ package zoneedit
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -14,12 +15,14 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/activitylog"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
 
 // uriRecordRe matches the RFC 7553 content format for URI records:
@@ -280,6 +283,16 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
+	// Fetch the current zone state before the update so we can compute a diff.
+	currentZone, err := powerdns.Engine.Zones.Get(ctx, zoneName)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
+			"Navigation": nav,
+			"Form":       form,
+			"Error":      "Failed to fetch zone: " + err.Error(),
+		}, handler.BaseLayout)
+	}
+
 	// Prepare zone update
 	soaEditAPIStr := string(form.SOAEditAPI)
 	kind := pdnsapi.ZoneKind(form.Kind)
@@ -288,7 +301,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		Kind:       &kind,
 	}
 
-	// Add masters if zone type is Slave
+	// Add masters if a zone type is Slave
 	if form.Kind == "Slave" {
 		if form.Masters == "" {
 			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
@@ -318,7 +331,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		zoneUpdate.Masters = masters
 	}
 
-	err := powerdns.Engine.Zones.Change(ctx, zoneName, &zoneUpdate)
+	err = powerdns.Engine.Zones.Change(ctx, zoneName, &zoneUpdate)
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -337,6 +350,20 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		Str("zone_kind", form.Kind).
 		Str("soa_edit_api", string(form.SOAEditAPI)).
 		Msg("Zone updated successfully")
+
+	// Record activity: zone updated (include before/after diff)
+	userID, username := currentUserFromSession(c)
+	activitylog.Record(
+		&activitylog.Entry{
+			DB:           s.db,
+			UserID:       userID,
+			Username:     username,
+			Action:       activitylog.ActionZoneUpdated,
+			ResourceType: activitylog.ResourceTypeZone, ResourceName: zoneName,
+			Details:   buildZoneSettingsDiff(currentZone, form),
+			IPAddress: c.IP(),
+		},
+	)
 
 	// Redirect to dashboard with success message
 	return c.Redirect(dashboard.Path + "?success=Zone updated successfully")
@@ -391,6 +418,15 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
+	// Fetch the current zone state before patching so we can diff old vs. new.
+	currentZone, err := powerdns.Engine.Zones.Get(ctx, zoneName)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": fmt.Sprintf("failed to fetch zone: %v", err),
+		})
+	}
+
 	// Build list only with actual changes
 	// Pre-allocate capacity based on incoming changes to reduce reallocations
 	var rrSets = make([]pdnsapi.RRset, 0, len(request.Changes))
@@ -411,7 +447,7 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 			})
 		}
 
-		// Ensure name is in canonical format (ends with a dot)
+		// Ensure the name is in canonical format (ends with a dot)
 		name := change.Name
 		if !strings.HasSuffix(name, ".") {
 			name += "."
@@ -419,7 +455,7 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 
 		rrType := pdnsapi.RRType(change.Type)
 		ttl := change.TTL
-		// Decide change type: delete if RRset existed and now has no records
+		// Decide a change type: delete it if RRset existed and now has no records
 		var changeType pdnsapi.ChangeType
 		if change.Existed && len(records) == 0 {
 			changeType = pdnsapi.ChangeTypeDelete
@@ -430,8 +466,8 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 		// Prepare comments (always include to allow clearing)
 		var comments []pdnsapi.Comment
 
-		commentContent := change.Comment // include even if empty to allow clearing
-		commentAccount := ""             // Empty account field is required by PowerDNS
+		commentContent := change.Comment // include it even if empty to allow clearing
+		commentAccount := ""             // PowerDNS requires an empty account field
 		comments = []pdnsapi.Comment{
 			{
 				Content: &commentContent,
@@ -452,7 +488,7 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 	}
 
 	// Update records via PowerDNS API
-	err := powerdns.Engine.Records.Patch(ctx, zoneName, &pdnsapi.RRsets{
+	err = powerdns.Engine.Records.Patch(ctx, zoneName, &pdnsapi.RRsets{
 		Sets: rrSets,
 	})
 	if err != nil {
@@ -471,6 +507,21 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 		Str("zone_name", zoneName).
 		Int("changes_count", len(request.Changes)).
 		Msg("Zone records updated successfully")
+
+	// Record activity: record changed (include per-RRset before/after diff)
+	userID, username := currentUserFromSession(c)
+	activitylog.Record(
+		&activitylog.Entry{
+			DB:           s.db,
+			UserID:       userID,
+			Username:     username,
+			Action:       activitylog.ActionRecordChanged,
+			ResourceType: activitylog.ResourceTypeZone,
+			ResourceName: zoneName,
+			Details:      buildRecordsDiff(currentZone, request.Changes),
+			IPAddress:    c.IP(),
+		},
+	)
 
 	return c.JSON(fiber.Map{
 		"success": true,
@@ -524,6 +575,20 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 		Str("zone_name", zoneName).
 		Msg("Zone deleted successfully")
 
+	// Record activity: zone deleted
+	userID, username := currentUserFromSession(c)
+	activitylog.Record(
+		&activitylog.Entry{
+			DB:           s.db,
+			UserID:       userID,
+			Username:     username,
+			Action:       activitylog.ActionZoneDeleted,
+			ResourceType: activitylog.ResourceTypeZone,
+			ResourceName: zoneName,
+			IPAddress:    c.IP(),
+		},
+	)
+
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Zone deleted successfully",
@@ -555,4 +620,23 @@ func (s *Service) getZoneOrRender(c *fiber.Ctx, nav *navigation.Context, zoneNam
 	}
 
 	return zone, nil
+}
+
+// currentUserFromSession extracts the current user's ID and username from the
+// session cookie. Returns nil userID and an empty username when no valid session
+// is present.
+func currentUserFromSession(c *fiber.Ctx) (*uint64, string) {
+	sid := c.Cookies("session")
+	if sid == "" {
+		return nil, ""
+	}
+
+	sd := new(session.Data)
+	if err := sd.Read(sid); err != nil || sd.User.ID == 0 {
+		return nil, ""
+	}
+
+	id := sd.User.ID
+
+	return &id, sd.User.Username
 }

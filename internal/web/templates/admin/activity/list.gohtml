@@ -1,0 +1,250 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .Navigation }}{{ .Navigation.PageTitle }}{{ else }}Activity Log{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <!-- Filters -->
+                <form class="row g-2 mb-3" method="get" action="/admin/activity">
+                    <div class="col-sm-3">
+                        <input class="form-control" type="text" name="user" placeholder="Filter by username" value="{{ .FilterUser }}">
+                    </div>
+                    <div class="col-sm-2">
+                        <select class="form-select" name="action">
+                            <option value="">All actions</option>
+                            {{ range .Actions }}
+                                <option value="{{ . }}" {{ if eq . $.FilterAction }}selected{{ end }}>{{ . }}</option>
+                            {{ end }}
+                        </select>
+                    </div>
+                    <div class="col-sm-2">
+                        <input class="form-control" type="date" name="from" value="{{ .FilterFrom }}">
+                    </div>
+                    <div class="col-sm-2">
+                        <input class="form-control" type="date" name="to" value="{{ .FilterTo }}">
+                    </div>
+                    <div class="col-sm-auto">
+                        <button class="btn btn-outline-secondary" type="submit">Filter</button>
+                        <a href="/admin/activity" class="btn btn-outline-secondary ms-1">Reset</a>
+                    </div>
+                </form>
+
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">{{ .TotalItems }} entries found</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">ID</th>
+                                        <th style="width: 165px;">Timestamp</th>
+                                        <th style="width: 140px;">User</th>
+                                        <th style="width: 130px;">Action</th>
+                                        <th style="width: 180px;">Resource</th>
+                                        <th>Diff / Details</th>
+                                        <th style="width: 115px;">IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {{ if .Entries }}
+                                    {{ range .Entries }}
+                                        <tr>
+                                            <td class="text-muted small">{{ .ID }}</td>
+                                            <td><small>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</small></td>
+                                            <td>
+                                                <span class="fw-semibold">{{ .Username }}</span>
+                                                {{ if .UserID }}
+                                                    <br><small class="text-muted">#{{ .UserID }}</small>
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                {{ if eq .Action "login" }}
+                                                    <span class="badge text-bg-success">login</span>
+                                                {{ else if eq .Action "logout" }}
+                                                    <span class="badge text-bg-secondary">logout</span>
+                                                {{ else if eq .Action "login_failed" }}
+                                                    <span class="badge text-bg-danger">login failed</span>
+                                                {{ else if eq .Action "zone_created" }}
+                                                    <span class="badge text-bg-primary">zone created</span>
+                                                {{ else if eq .Action "zone_updated" }}
+                                                    <span class="badge text-bg-warning text-dark">zone updated</span>
+                                                {{ else if eq .Action "zone_deleted" }}
+                                                    <span class="badge text-bg-danger">zone deleted</span>
+                                                {{ else if eq .Action "record_changed" }}
+                                                    <span class="badge text-bg-info text-dark">record changed</span>
+                                                {{ else }}
+                                                    <span class="badge text-bg-light text-dark">{{ .Action }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                {{ if .ResourceName }}
+                                                    <small class="text-muted">{{ .ResourceType }}/</small><span class="fw-semibold">{{ .ResourceName }}</span>
+                                                {{ else if .ResourceType }}
+                                                    <span class="text-muted">{{ .ResourceType }}</span>
+                                                {{ else }}
+                                                    &mdash;
+                                                {{ end }}
+                                            </td>
+                                            <td>
+                                                {{- /* ── Zone settings diff ── */}}
+                                                {{ if .ZoneSettings }}
+                                                    {{ if .ZoneSettings.Fields }}
+                                                        <table class="table table-sm table-borderless mb-0 small">
+                                                            <thead><tr>
+                                                                <th class="text-muted ps-0" style="width:110px">Field</th>
+                                                                <th class="text-muted" style="width:120px">Before</th>
+                                                                <th class="text-muted" style="width:120px">After</th>
+                                                            </tr></thead>
+                                                            <tbody>
+                                                            {{ range .ZoneSettings.Fields }}
+                                                                <tr>
+                                                                    <td class="text-muted ps-0"><code>{{ .Field }}</code></td>
+                                                                    <td>
+                                                                        {{ if .Old }}
+                                                                            <span class="text-danger text-decoration-line-through">{{ .Old }}</span>
+                                                                        {{ else }}
+                                                                            <span class="text-muted fst-italic">unknown</span>
+                                                                        {{ end }}
+                                                                    </td>
+                                                                    <td><span class="text-success fw-semibold">{{ .New }}</span></td>
+                                                                </tr>
+                                                            {{ end }}
+                                                            </tbody>
+                                                        </table>
+                                                    {{ else }}
+                                                        <span class="text-muted fst-italic small">no settings changed</span>
+                                                    {{ end }}
+
+                                                {{- /* ── Records diff ── */}}
+                                                {{ else if .RecordsDiff }}
+                                                    {{ if .RecordsDiff.Records }}
+                                                        <div class="small">
+                                                        {{ range .RecordsDiff.Records }}
+                                                            <div class="mb-2 border-start border-2 ps-2
+                                                                {{ if eq .Action "added"    }}border-success{{ end }}
+                                                                {{ if eq .Action "modified" }}border-warning{{ end }}
+                                                                {{ if eq .Action "deleted"  }}border-danger{{ end }}
+                                                            ">
+                                                                <div class="d-flex align-items-center gap-1 mb-1">
+                                                                    <code class="text-body">{{ .Name }}</code>
+                                                                    <span class="badge text-bg-light text-dark">{{ .Type }}</span>
+                                                                    {{ if eq .Action "added"    }}<span class="badge text-bg-success">added</span>{{ end }}
+                                                                    {{ if eq .Action "modified" }}<span class="badge text-bg-warning text-dark">modified</span>{{ end }}
+                                                                    {{ if eq .Action "deleted"  }}<span class="badge text-bg-danger">deleted</span>{{ end }}
+                                                                </div>
+
+                                                                {{- /* TTL change */}}
+                                                                {{ if and .OldTTL .NewTTL }}
+                                                                    {{ if ne .OldTTL .NewTTL }}
+                                                                        <div class="text-muted">
+                                                                            TTL:
+                                                                            <span class="text-danger text-decoration-line-through">{{ .OldTTL }}</span>
+                                                                            &rarr;
+                                                                            <span class="text-success">{{ .NewTTL }}</span>
+                                                                        </div>
+                                                                    {{ end }}
+                                                                {{ end }}
+
+                                                                {{- /* Old records */}}
+                                                                {{ if .Old }}
+                                                                    <div class="text-danger">
+                                                                        {{ range .Old }}
+                                                                            <div>&minus; <code>{{ . }}</code></div>
+                                                                        {{ end }}
+                                                                    </div>
+                                                                {{ end }}
+
+                                                                {{- /* New records */}}
+                                                                {{ if .New }}
+                                                                    <div class="text-success">
+                                                                        {{ range .New }}
+                                                                            <div>&plus; <code>{{ . }}</code></div>
+                                                                        {{ end }}
+                                                                    </div>
+                                                                {{ end }}
+                                                            </div>
+                                                        {{ end }}
+                                                        </div>
+                                                    {{ else }}
+                                                        <span class="text-muted fst-italic small">no records changed</span>
+                                                    {{ end }}
+
+                                                {{- /* ── Other actions: raw JSON details ── */}}
+                                                {{ else if .Details }}
+                                                    <code class="small">{{ .Details }}</code>
+                                                {{ else }}
+                                                    <span class="text-muted">&mdash;</span>
+                                                {{ end }}
+                                            </td>
+                                            <td><small class="text-muted">{{ .IPAddress }}</small></td>
+                                        </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="7" class="text-center p-4">No activity entries found</td>
+                                    </tr>
+                                {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <nav aria-label="Activity log pagination">
+                            <ul class="pagination mb-0">
+                                <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
+                                    <a class="page-link" href="?page={{ .PrevPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Previous</a>
+                                </li>
+                                {{ range $i := iterate .TotalPages }}
+                                    {{ $idx := add $i 1 }}
+                                    <li class="page-item {{ if eq $.Page $idx }}active{{ end }}">
+                                        <a class="page-link" href="?page={{ $idx }}&pageSize={{ $.PageSize }}&user={{ $.FilterUser }}&action={{ $.FilterAction }}&from={{ $.FilterFrom }}&to={{ $.FilterTo }}">{{ $idx }}</a>
+                                    </li>
+                                {{ end }}
+                                <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
+                                    <a class="page-link" href="?page={{ .NextPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

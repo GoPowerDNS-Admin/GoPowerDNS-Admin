@@ -25,20 +25,16 @@ jobs:
     name: Build
     needs: validate-pr-title
     runs-on: ["self-hosted", "Linux"]
+    container:
+      image: golang:1.25-bookworm
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: false
-
       - name: Install dependencies
-        run: sudo apt-get install -y gcc libsqlite3-dev pre-commit
+        run: apt-get update && apt-get install -y gcc libsqlite3-dev pre-commit
 
       - name: Run pre-commit checks
         run: pre-commit run --all-files

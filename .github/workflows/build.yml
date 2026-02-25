@@ -9,8 +9,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ["self-hosted", "Linux"]
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          configuration_path: ".github/pr-title-checker-config.json"
+
   build:
     name: Build
+    needs: validate-pr-title
     runs-on: ["self-hosted", "Linux"]
     permissions:
       contents: read

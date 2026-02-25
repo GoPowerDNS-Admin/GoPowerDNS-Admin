@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: apt-get update && apt-get install -y gcc libsqlite3-dev pre-commit git
+        run: apt-get update && apt-get install -y gcc libsqlite3-dev pre-commit git nodejs
 
       - name: Configure git safe directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

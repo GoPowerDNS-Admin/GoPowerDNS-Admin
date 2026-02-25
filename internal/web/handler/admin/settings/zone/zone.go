@@ -148,10 +148,10 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	// Example keys: record[AAAA].forward, record[A].reverse
 	// Values are "on" if checked, absent if unchecked
 	// We iterate over all POST args to find these keys
-	c.Request().PostArgs().VisitAll(func(key, value []byte) {
+	for key, value := range c.Request().PostArgs().All() {
 		matches := recordKeyRegex.FindStringSubmatch(string(key))
 		if len(matches) != 3 {
-			return // not a record setting key
+			continue // not a record setting key
 		}
 
 		recordType := matches[1] // e.g., "AAAA"
@@ -181,7 +181,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		}
 
 		settings.Records[recordType] = recordConfig
-	})
+	}
 
 	// Validate settings
 	if err := s.validator.Struct(settings); err != nil {

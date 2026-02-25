@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ["self-hosted", "Linux"]
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          configuration_path: ".github/pr-title-checker-config.json"
+
+  build:
+    name: Build
+    needs: validate-pr-title
+    runs-on: ["self-hosted", "Linux"]
+    container:
+      image: golang:1.25-bookworm
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y gcc libsqlite3-dev git nodejs python3-pip && pip3 install pre-commit --break-system-packages
+
+      - name: Configure git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Run pre-commit checks
+        run: pre-commit run --all-files
+
+      - name: Build
+        run: go build -v ./...
+        env:
+          CGO_ENABLED: "1"
+
+      - name: Test
+        run: go test ./...
+        env:
+          CGO_ENABLED: "1"

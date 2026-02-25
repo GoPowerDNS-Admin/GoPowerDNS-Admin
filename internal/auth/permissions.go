@@ -34,4 +34,6 @@ const (
 	PermAdminGroups = "admin.groups"
 	// PermAdminGroupMappings allows managing mappings between external groups and internal roles.
 	PermAdminGroupMappings = "admin.group.mappings"
+	// PermAdminActivityLog allows viewing the activity / audit log.
+	PermAdminActivityLog = "admin.activity.log"
 )

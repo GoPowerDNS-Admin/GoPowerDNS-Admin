@@ -17,6 +17,7 @@ import (
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/activity"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
@@ -176,7 +177,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 
 	// init handlers (they register their own routes with permission checks)
 	login.Handler.Init(app, cfg, db)
-	logout.Handler.Init(app, cfg)
+	logout.Handler.Init(app, cfg, db)
 	oidchandler.Handler.Init(app, cfg, db)
 	dashboard.Handler.Init(app, cfg, db, authService)
 	pdnsserver.Handler.Init(app, cfg, db, authService)
@@ -186,6 +187,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	configuration.Handler.Init(app, cfg, db, authService)
 	group.Handler.Init(app, cfg, db, authService)
 	user.Handler.Init(app, cfg, db, authService)
+	activity.Handler.Init(app, cfg, db, authService)
 
 	// redirect root to dashboard
 	app.Get("/", func(c *fiber.Ctx) error {

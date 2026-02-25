@@ -47,6 +47,7 @@ func New(cfg *config.Config) *Daemon {
 		&models.Group{},
 		&models.GroupMapping{},
 		&models.UserGroup{},
+		&models.ActivityLog{},
 	); err != nil {
 		log.Fatal().Err(err).Msg("failed to migrate database")
 	}

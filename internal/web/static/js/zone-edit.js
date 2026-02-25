@@ -391,6 +391,36 @@ $(document).ready(function() {
     }
 
 
+    // Collect all current records for a given name+type from the table.
+    // When excludeContent is provided that specific content string is skipped,
+    // which is used when deleting one record from a multi-record RRset so the
+    // remaining siblings are preserved in the pending change.
+    function collectRRsetRecords(name, type, excludeContent) {
+        const results = [];
+
+        function processRow($row) {
+            if ($row.data('full-name') !== name) return;
+            const rowType = $row.find('td').eq(1).text().trim();
+            if (rowType !== type) return;
+            const content = $row.find('td').eq(4).find('span').attr('title') || $row.find('td').eq(4).text().trim();
+            if (excludeContent !== undefined && content === excludeContent) return;
+            const disabled = $row.find('td').eq(3).find('.badge').hasClass('bg-danger');
+            results.push({ content, disabled });
+        }
+
+        if (dataTable) {
+            dataTable.rows().every(function() {
+                processRow($(this.node()));
+            });
+        } else {
+            $(SELECTORS.RECORDS_TBODY).find('tr').each(function() {
+                processRow($(this));
+            });
+        }
+
+        return results;
+    }
+
     // Update changes indicator
     function updateChangesIndicator() {
         const count = pendingChanges.size;
@@ -808,13 +838,15 @@ $(document).ready(function() {
         if (hasExistingChange === false) {
             // Check if this is a new RRset or existed in database
             const existedInDB = originalRecords.has(key);
+            // Pre-populate with the sibling records already in the table so they
+            // are not lost when the server replaces the entire RRset.
             pendingChanges.set(key, {
                 name: record.name,
                 type: record.type,
                 ttl: record.ttl,
                 comment: record.comment,
-                records: [],
-                existed: existedInDB, // Flag indicating if this RRset existed in the database
+                records: existedInDB ? collectRRsetRecords(record.name, record.type) : [],
+                existed: existedInDB,
                 changed: true
             });
         }
@@ -887,14 +919,16 @@ $(document).ready(function() {
                     change.records = change.records.filter(r => r.content !== content);
                     change.changed = true;
                 } else {
-                    // Create empty record set to mark for deletion
+                    // Collect the siblings that must be kept (row is still in the
+                    // DOM here, so exclude the content being deleted explicitly).
+                    const ttl = parseInt($row.find('td').eq(2).text(), 10) || 0;
                     pendingChanges.set(key, {
                         name: fullName,
                         type: type,
-                        ttl: 0,
+                        ttl: ttl,
                         comment: '',
-                        records: [],
-                        existed: true, // This RRset existed in the database
+                        records: collectRRsetRecords(fullName, type, content),
+                        existed: true,
                         changed: true
                     });
                 }

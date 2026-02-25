@@ -38,7 +38,7 @@ jobs:
           cache: false
 
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: python3 -m pip install pre-commit
 
       - name: Run pre-commit checks
         run: pre-commit run --all-files

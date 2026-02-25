@@ -156,6 +156,12 @@ func seedPermissions(db *gorm.DB) {
 			Action:      "activity.log",
 			Description: "View the activity / audit log",
 		},
+		{
+			Name:        "admin.activity.log.undo",
+			Resource:    "admin",
+			Action:      "activity.log.undo",
+			Description: "Undo record changes from the activity log",
+		},
 	}
 
 	for _, perm := range permissions {
@@ -206,6 +212,7 @@ func seedRolePermissions(db *gorm.DB) {
 		"zone.update",
 		"zone.delete",
 		"zone.list",
+		"admin.activity.log",
 	}
 	assignPermissionsToRole(db, userRole.ID, userPermissions)
 
@@ -215,6 +222,7 @@ func seedRolePermissions(db *gorm.DB) {
 		"zone.read",
 		"zone.list",
 		"admin.server.config",
+		"admin.activity.log",
 	}
 	assignPermissionsToRole(db, viewerRole.ID, viewerPermissions)
 

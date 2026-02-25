@@ -235,7 +235,7 @@
                                             </td>
                                             <td><small class="text-muted">{{ .IPAddress }}</small></td>
                                             <td>
-                                                {{ if eq .Action "record_changed" }}
+                                                {{ if and $.CanUndo (eq .Action "record_changed") }}
                                                 <form method="post" action="/admin/activity/{{ .ID }}/undo"
                                                       onsubmit="return confirm('Undo these record changes?');">
                                                     <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>

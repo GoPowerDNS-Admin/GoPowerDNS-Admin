@@ -51,8 +51,9 @@ type activityFilters struct {
 // Service provides the read-only activity log view.
 type Service struct {
 	handler.Service
-	cfg *config.Config
-	db  *gorm.DB
+	cfg         *config.Config
+	db          *gorm.DB
+	authService *auth.Service
 }
 
 // Handler is the exported singleton instance.
@@ -67,6 +68,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 
 	s.cfg = cfg
 	s.db = db
+	s.authService = authService
 
 	app.Get(Path,
 		auth.RequirePermission(authService, auth.PermAdminActivityLog),
@@ -74,7 +76,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	)
 
 	app.Post(Path+"/:id/undo",
-		auth.RequirePermission(authService, auth.PermAdminActivityLog),
+		auth.RequirePermission(authService, auth.PermAdminActivityLogUndo),
 		s.PostUndo,
 	)
 }
@@ -151,6 +153,7 @@ func (s *Service) List(c *fiber.Ctx) error {
 		"NextPage":     page + 1,
 		"Success":      c.Query("success"),
 		"Error":        c.Query("error"),
+		"CanUndo":      auth.HasPermissionInContext(c, s.authService, auth.PermAdminActivityLogUndo),
 	}, handler.BaseLayout)
 }
 

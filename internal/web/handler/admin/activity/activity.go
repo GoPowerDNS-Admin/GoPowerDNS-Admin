@@ -36,6 +36,8 @@ type EntryView struct {
 	ZoneSettings *activitylog.ZoneSettingsDiff
 	// RecordsDiff is populated with record_changed entries.
 	RecordsDiff *activitylog.RecordsDiff
+	// UndoDetails is populated for record_undone entries.
+	UndoDetails *activitylog.RecordUndoneDetails
 }
 
 // activityFilters holds the query parameters for filtering the activity log.
@@ -69,6 +71,11 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	app.Get(Path,
 		auth.RequirePermission(authService, auth.PermAdminActivityLog),
 		s.List,
+	)
+
+	app.Post(Path+"/:id/undo",
+		auth.RequirePermission(authService, auth.PermAdminActivityLog),
+		s.PostUndo,
 	)
 }
 
@@ -142,6 +149,8 @@ func (s *Service) List(c *fiber.Ctx) error {
 		"HasNext":      page < totalPages,
 		"PrevPage":     page - 1,
 		"NextPage":     page + 1,
+		"Success":      c.Query("success"),
+		"Error":        c.Query("error"),
 	}, handler.BaseLayout)
 }
 
@@ -195,6 +204,11 @@ func getActivityViews(entries []models.ActivityLog) []EntryView {
 			var diff activitylog.RecordsDiff
 			if err := json.Unmarshal([]byte(entries[i].Details), &diff); err == nil {
 				views[i].RecordsDiff = &diff
+			}
+		case activitylog.ActionRecordUndone:
+			var ud activitylog.RecordUndoneDetails
+			if err := json.Unmarshal([]byte(entries[i].Details), &ud); err == nil {
+				views[i].UndoDetails = &ud
 			}
 		}
 	}

@@ -19,6 +19,7 @@ const (
 	ActionZoneUpdated   = "zone_updated"
 	ActionZoneDeleted   = "zone_deleted"
 	ActionRecordChanged = "record_changed"
+	ActionRecordUndone  = "record_undone"
 )
 
 // ResourceType constants categorize the resource affected by an action.

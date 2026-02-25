@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: apt-get update && apt-get install -y gcc libsqlite3-dev pre-commit git
 
+      - name: Configure git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Run pre-commit checks
         run: pre-commit run --all-files
 

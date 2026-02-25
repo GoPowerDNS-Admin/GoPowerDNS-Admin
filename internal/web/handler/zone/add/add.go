@@ -13,12 +13,14 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/activitylog"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
 
 const (
@@ -250,6 +252,33 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		Str("zone_kind", string(form.Kind)).
 		Str("soa_edit_api", string(form.SOAEditAPI)).
 		Msg("Zone created successfully")
+
+	// Record activity: zone created
+	var (
+		userID   *uint64
+		username string
+	)
+
+	if sid := c.Cookies("session"); sid != "" {
+		sd := new(session.Data)
+		if err := sd.Read(sid); err == nil && sd.User.ID > 0 {
+			id := sd.User.ID
+			userID = &id
+			username = sd.User.Username
+		}
+	}
+
+	activitylog.Record(
+		&activitylog.Entry{
+			DB: s.db, UserID: userID,
+			Username:     username,
+			Action:       activitylog.ActionZoneCreated,
+			ResourceType: activitylog.ResourceTypeZone,
+			ResourceName: form.Name,
+			Details:      map[string]any{"kind": string(form.Kind), "soa_edit_api": string(form.SOAEditAPI)},
+			IPAddress:    c.IP(),
+		},
+	)
 
 	// Redirect to dashboard with success message
 	return c.Redirect(dashboard.Path + "?success=Zone created successfully")

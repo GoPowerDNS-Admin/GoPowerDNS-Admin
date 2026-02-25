@@ -150,6 +150,12 @@ func seedPermissions(db *gorm.DB) {
 			Action:      "group.mappings",
 			Description: "Manage group-to-role mappings",
 		},
+		{
+			Name:        "admin.activity.log",
+			Resource:    "admin",
+			Action:      "activity.log",
+			Description: "View the activity / audit log",
+		},
 	}
 
 	for _, perm := range permissions {

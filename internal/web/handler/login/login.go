@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/activitylog"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
@@ -135,19 +136,42 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		return s.renderError(c, err.Error())
 	}
 
-	// Authenticate user according to the selected auth type
+	// Authenticate a user according to the selected auth type
 	authenticatedUser, err := s.authenticate(authType, form.Username, form.Password)
 	if err != nil {
+		activitylog.Record(
+			&activitylog.Entry{
+				DB:           s.db,
+				Username:     form.Username,
+				Action:       activitylog.ActionLoginFailed,
+				ResourceType: activitylog.ResourceTypeAuth,
+				Details:      map[string]any{"auth_type": authType, "reason": err.Error()},
+				IPAddress:    c.IP(),
+			},
+		)
+
 		return s.renderError(c, err.Error())
 	}
 
-	// Create session and set cookie
+	// Create a session and set a cookie
 	if err := s.createSessionAndSetCookie(c, authenticatedUser); err != nil {
 		return s.renderError(c, ErrInternalServerError.Error())
 	}
 
 	log.Info().Str("username", authenticatedUser.Username).Str("auth_type", authType).
 		Msg("User logged in successfully")
+
+	userID := authenticatedUser.ID
+	activitylog.Record(
+		&activitylog.Entry{
+			DB:     s.db,
+			UserID: &userID, Username: authenticatedUser.Username,
+			Action:       activitylog.ActionLogin,
+			ResourceType: activitylog.ResourceTypeAuth,
+			Details:      map[string]any{"auth_type": authType},
+			IPAddress:    c.IP(),
+		},
+	)
 
 	return c.Redirect(dashboard.Path)
 }

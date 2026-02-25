@@ -24,8 +24,15 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      - name: Install build dependencies
+        run: sudo apt-get install -y gcc libsqlite3-dev
+
       - name: Build
         run: go build -v ./...
+        env:
+          CGO_ENABLED: "1"
 
       - name: Test
         run: go test ./...
+        env:
+          CGO_ENABLED: "1"

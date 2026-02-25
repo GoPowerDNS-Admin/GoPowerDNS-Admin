@@ -34,3 +34,11 @@ type RecordEntryDiff struct {
 type RecordsDiff struct {
 	Records []RecordEntryDiff `json:"records"`
 }
+
+// RecordUndoneDetails is stored with record_undone activity entries.
+type RecordUndoneDetails struct {
+	// OriginalID is the ID of the record_changed entry that was reversed.
+	OriginalID uint64 `json:"original_id"`
+	// OriginalUsername is the user who made the original change.
+	OriginalUsername string `json:"original_username,omitempty"`
+}

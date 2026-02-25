@@ -32,6 +32,12 @@
         <!--begin::App Content-->
         <div class="app-content">
             <div class="container-fluid">
+                {{ if .Success }}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ .Success }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
                 {{ if .Error }}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{ .Error }}
@@ -80,6 +86,7 @@
                                         <th style="width: 180px;">Resource</th>
                                         <th>Diff / Details</th>
                                         <th style="width: 115px;">IP Address</th>
+                                        <th style="width: 90px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -109,6 +116,8 @@
                                                     <span class="badge text-bg-danger">zone deleted</span>
                                                 {{ else if eq .Action "record_changed" }}
                                                     <span class="badge text-bg-info text-dark">record changed</span>
+                                                {{ else if eq .Action "record_undone" }}
+                                                    <span class="badge text-bg-secondary">record undone</span>
                                                 {{ else }}
                                                     <span class="badge text-bg-light text-dark">{{ .Action }}</span>
                                                 {{ end }}
@@ -206,6 +215,17 @@
                                                         <span class="text-muted fst-italic small">no records changed</span>
                                                     {{ end }}
 
+                                                {{- /* ── Undo details ── */}}
+                                                {{ else if .UndoDetails }}
+                                                    <span class="small text-muted">
+                                                        Reverted changes from entry
+                                                        <strong>#{{ .UndoDetails.OriginalID }}</strong>
+                                                        {{ if .UndoDetails.OriginalUsername }}
+                                                            originally made by
+                                                            <strong>{{ .UndoDetails.OriginalUsername }}</strong>
+                                                        {{ end }}
+                                                    </span>
+
                                                 {{- /* ── Other actions: raw JSON details ── */}}
                                                 {{ else if .Details }}
                                                     <code class="small">{{ .Details }}</code>
@@ -214,11 +234,19 @@
                                                 {{ end }}
                                             </td>
                                             <td><small class="text-muted">{{ .IPAddress }}</small></td>
+                                            <td>
+                                                {{ if eq .Action "record_changed" }}
+                                                <form method="post" action="/admin/activity/{{ .ID }}/undo"
+                                                      onsubmit="return confirm('Undo these record changes?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>
+                                                </form>
+                                                {{ end }}
+                                            </td>
                                         </tr>
                                     {{ end }}
                                 {{ else }}
                                     <tr>
-                                        <td colspan="7" class="text-center p-4">No activity entries found</td>
+                                        <td colspan="8" class="text-center p-4">No activity entries found</td>
                                     </tr>
                                 {{ end }}
                                 </tbody>

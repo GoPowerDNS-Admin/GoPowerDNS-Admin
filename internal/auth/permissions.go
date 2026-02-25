@@ -36,4 +36,6 @@ const (
 	PermAdminGroupMappings = "admin.group.mappings"
 	// PermAdminActivityLog allows viewing the activity / audit log.
 	PermAdminActivityLog = "admin.activity.log"
+	// PermAdminActivityLogUndo allows undoing record changes from the activity log.
+	PermAdminActivityLogUndo = "admin.activity.log.undo"
 )

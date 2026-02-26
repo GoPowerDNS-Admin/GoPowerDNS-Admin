@@ -107,14 +107,13 @@ vendor-overlayscrollbars:
 
 vendor-bootstrap-icons:
 	@echo "Downloading Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION)..."
-	@mkdir -p $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font
-	@mkdir -p $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/fonts
+	@mkdir -p $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/fonts
 	@curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/bootstrap-icons.min.css" \
 		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/bootstrap-icons.min.css
 	@curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/fonts/bootstrap-icons.woff2" \
-		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/fonts/bootstrap-icons.woff2
+		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff2
 	@curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/fonts/bootstrap-icons.woff" \
-		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/fonts/bootstrap-icons.woff
+		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff
 	@echo "✓ Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION) installed"
 
 vendor-source-sans-3:

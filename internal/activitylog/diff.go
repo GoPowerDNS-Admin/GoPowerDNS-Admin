@@ -42,3 +42,27 @@ type RecordUndoneDetails struct {
 	// OriginalUsername is the user who made the original change.
 	OriginalUsername string `json:"original_username,omitempty"`
 }
+
+// RRsetSnapshot holds the essential data of a single RRset for zone restoration.
+type RRsetSnapshot struct {
+	Name    string   `json:"name"`
+	Type    string   `json:"type"`
+	TTL     uint32   `json:"ttl"`
+	Records []string `json:"records"`
+}
+
+// ZoneSnapshot captures the complete state of a zone before deletion.
+type ZoneSnapshot struct {
+	Kind       string          `json:"kind"`
+	SOAEditAPI string          `json:"soa_edit_api,omitempty"`
+	Masters    []string        `json:"masters,omitempty"`
+	RRsets     []RRsetSnapshot `json:"rrsets,omitempty"`
+}
+
+// ZoneDeletedUndoneDetails is stored with zone_deleted_undone activity entries.
+type ZoneDeletedUndoneDetails struct {
+	// OriginalID is the ID of the zone_deleted entry that was reversed.
+	OriginalID uint64 `json:"original_id"`
+	// OriginalUsername is the user who made the original deletion.
+	OriginalUsername string `json:"original_username,omitempty"`
+}

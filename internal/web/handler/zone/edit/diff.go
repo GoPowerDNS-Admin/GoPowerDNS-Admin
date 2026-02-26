@@ -138,6 +138,41 @@ func extractOldRRSetData(oldRRSet *pdnsapi.RRset, exists bool) ([]string, uint32
 	return oldContents, oldTTL
 }
 
+// buildZoneSnapshot captures the full state of a zone for activity log storage.
+func buildZoneSnapshot(zone *pdnsapi.Zone) *activitylog.ZoneSnapshot {
+	snapshot := &activitylog.ZoneSnapshot{}
+
+	if zone.Kind != nil {
+		snapshot.Kind = string(*zone.Kind)
+	}
+
+	snapshot.SOAEditAPI = string(getSOAEditAPIFromZone(zone))
+	snapshot.Masters = zone.Masters
+
+	for _, rr := range zone.RRsets {
+		if rr.Name == nil || rr.Type == nil || rr.TTL == nil {
+			continue
+		}
+
+		var records []string
+
+		for _, r := range rr.Records {
+			if r.Content != nil {
+				records = append(records, *r.Content)
+			}
+		}
+
+		snapshot.RRsets = append(snapshot.RRsets, activitylog.RRsetSnapshot{
+			Name:    *rr.Name,
+			Type:    string(*rr.Type),
+			TTL:     *rr.TTL,
+			Records: records,
+		})
+	}
+
+	return snapshot
+}
+
 func determineRecordChangeAction(change *RecordChange, hasOld bool) string {
 	switch {
 	case !change.Existed || !hasOld:

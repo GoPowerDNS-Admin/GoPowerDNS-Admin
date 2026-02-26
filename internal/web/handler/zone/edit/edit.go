@@ -554,6 +554,18 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 		})
 	}
 
+	// Fetch zone snapshot before deletion for potential undo.
+	var snapshot *activitylog.ZoneSnapshot
+
+	snapCtx, snapCancel := context.WithTimeout(context.Background(), defaultTimeout)
+	zone, snapErr := powerdns.Engine.Zones.Get(snapCtx, zoneName)
+
+	snapCancel()
+
+	if snapErr == nil && zone != nil {
+		snapshot = buildZoneSnapshot(zone)
+	}
+
 	// Delete zone via PowerDNS API
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -575,7 +587,7 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 		Str("zone_name", zoneName).
 		Msg("Zone deleted successfully")
 
-	// Record activity: zone deleted
+	// Record activity: zone deleted (include snapshot for potential undo)
 	userID, username := currentUserFromSession(c)
 	activitylog.Record(
 		&activitylog.Entry{
@@ -585,6 +597,7 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 			Action:       activitylog.ActionZoneDeleted,
 			ResourceType: activitylog.ResourceTypeZone,
 			ResourceName: zoneName,
+			Details:      snapshot,
 			IPAddress:    c.IP(),
 		},
 	)

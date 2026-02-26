@@ -118,6 +118,8 @@
                                                     <span class="badge text-bg-info text-dark">record changed</span>
                                                 {{ else if eq .Action "record_undone" }}
                                                     <span class="badge text-bg-secondary">record undone</span>
+                                                {{ else if eq .Action "zone_deleted_undone" }}
+                                                    <span class="badge text-bg-secondary">zone restored</span>
                                                 {{ else }}
                                                     <span class="badge text-bg-light text-dark">{{ .Action }}</span>
                                                 {{ end }}
@@ -215,7 +217,7 @@
                                                         <span class="text-muted fst-italic small">no records changed</span>
                                                     {{ end }}
 
-                                                {{- /* ── Undo details ── */}}
+                                                {{- /* ── Undo details (record_undone) ── */}}
                                                 {{ else if .UndoDetails }}
                                                     <span class="small text-muted">
                                                         Reverted changes from entry
@@ -223,6 +225,30 @@
                                                         {{ if .UndoDetails.OriginalUsername }}
                                                             originally made by
                                                             <strong>{{ .UndoDetails.OriginalUsername }}</strong>
+                                                        {{ end }}
+                                                    </span>
+
+                                                {{- /* ── Zone snapshot (zone_deleted) ── */}}
+                                                {{ else if .ZoneSnapshot }}
+                                                    <span class="small text-muted">
+                                                        kind: <strong>{{ .ZoneSnapshot.Kind }}</strong>
+                                                        {{ if .ZoneSnapshot.SOAEditAPI }}
+                                                            &nbsp;&middot;&nbsp;SOA-EDIT-API: <strong>{{ .ZoneSnapshot.SOAEditAPI }}</strong>
+                                                        {{ end }}
+                                                        {{ if .ZoneSnapshot.Masters }}
+                                                            &nbsp;&middot;&nbsp;masters: <strong>{{ range $i, $m := .ZoneSnapshot.Masters }}{{ if $i }}, {{ end }}{{ $m }}{{ end }}</strong>
+                                                        {{ end }}
+                                                        &nbsp;&middot;&nbsp;{{ len .ZoneSnapshot.RRsets }} RRset(s) captured
+                                                    </span>
+
+                                                {{- /* ── Zone restored (zone_deleted_undone) ── */}}
+                                                {{ else if .ZoneDeletedUndoneDetails }}
+                                                    <span class="small text-muted">
+                                                        Restored zone from entry
+                                                        <strong>#{{ .ZoneDeletedUndoneDetails.OriginalID }}</strong>
+                                                        {{ if .ZoneDeletedUndoneDetails.OriginalUsername }}
+                                                            originally deleted by
+                                                            <strong>{{ .ZoneDeletedUndoneDetails.OriginalUsername }}</strong>
                                                         {{ end }}
                                                     </span>
 
@@ -235,11 +261,18 @@
                                             </td>
                                             <td><small class="text-muted">{{ .IPAddress }}</small></td>
                                             <td>
-                                                {{ if and $.CanUndo (eq .Action "record_changed") }}
-                                                <form method="post" action="/admin/activity/{{ .ID }}/undo"
-                                                      onsubmit="return confirm('Undo these record changes?');">
-                                                    <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>
-                                                </form>
+                                                {{ if $.CanUndo }}
+                                                    {{ if eq .Action "record_changed" }}
+                                                    <form method="post" action="/admin/activity/{{ .ID }}/undo"
+                                                          onsubmit="return confirm('Undo these record changes?');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>
+                                                    </form>
+                                                    {{ else if eq .Action "zone_deleted" }}
+                                                    <form method="post" action="/admin/activity/{{ .ID }}/undo"
+                                                          onsubmit="return confirm('Restore this deleted zone? This will recreate it in PowerDNS.');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>
+                                                    </form>
+                                                    {{ end }}
                                                 {{ end }}
                                             </td>
                                         </tr>

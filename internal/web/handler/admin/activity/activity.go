@@ -38,6 +38,10 @@ type EntryView struct {
 	RecordsDiff *activitylog.RecordsDiff
 	// UndoDetails is populated for record_undone entries.
 	UndoDetails *activitylog.RecordUndoneDetails
+	// ZoneSnapshot is populated for zone_deleted entries.
+	ZoneSnapshot *activitylog.ZoneSnapshot
+	// ZoneDeletedUndoneDetails is populated for zone_deleted_undone entries.
+	ZoneDeletedUndoneDetails *activitylog.ZoneDeletedUndoneDetails
 }
 
 // activityFilters holds the query parameters for filtering the activity log.
@@ -212,6 +216,16 @@ func getActivityViews(entries []models.ActivityLog) []EntryView {
 			var ud activitylog.RecordUndoneDetails
 			if err := json.Unmarshal([]byte(entries[i].Details), &ud); err == nil {
 				views[i].UndoDetails = &ud
+			}
+		case activitylog.ActionZoneDeleted:
+			var snap activitylog.ZoneSnapshot
+			if err := json.Unmarshal([]byte(entries[i].Details), &snap); err == nil {
+				views[i].ZoneSnapshot = &snap
+			}
+		case activitylog.ActionZoneDeletedUndone:
+			var ud activitylog.ZoneDeletedUndoneDetails
+			if err := json.Unmarshal([]byte(entries[i].Details), &ud); err == nil {
+				views[i].ZoneDeletedUndoneDetails = &ud
 			}
 		}
 	}

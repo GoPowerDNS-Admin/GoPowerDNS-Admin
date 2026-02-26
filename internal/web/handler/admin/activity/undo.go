@@ -37,10 +37,18 @@ func (s *Service) PostUndo(c *fiber.Ctx) error {
 		return c.Redirect(redirectBase + "&error=Activity+log+entry+not+found")
 	}
 
-	if entry.Action != activitylog.ActionRecordChanged {
-		return c.Redirect(redirectBase + "&error=Undo+is+only+available+for+record_changed+entries")
+	switch entry.Action {
+	case activitylog.ActionRecordChanged:
+		return s.undoRecordChanged(c, id, &entry, redirectBase)
+	case activitylog.ActionZoneDeleted:
+		return s.undoZoneDeleted(c, id, &entry, redirectBase)
+	default:
+		return c.Redirect(redirectBase + "&error=Undo+is+only+available+for+record_changed+and+zone_deleted+entries")
 	}
+}
 
+// undoRecordChanged reverses a record_changed activity log entry.
+func (s *Service) undoRecordChanged(c *fiber.Ctx, id int, entry *models.ActivityLog, redirectBase string) error {
 	// Parse the stored diff.
 	var diff activitylog.RecordsDiff
 	if err := json.Unmarshal([]byte(entry.Details), &diff); err != nil {
@@ -107,6 +115,108 @@ func (s *Service) PostUndo(c *fiber.Ctx) error {
 		"&success=Record+changes+from+entry+%23" +
 		strconv.Itoa(id) +
 		"+have+been+undone")
+}
+
+// undoZoneDeleted restores a deleted zone from the snapshot stored in the activity log.
+func (s *Service) undoZoneDeleted(c *fiber.Ctx, id int, entry *models.ActivityLog, redirectBase string) error {
+	if entry.Details == "" {
+		return c.Redirect(redirectBase + "&error=No+zone+snapshot+available+to+restore")
+	}
+
+	var snap activitylog.ZoneSnapshot
+	if err := json.Unmarshal([]byte(entry.Details), &snap); err != nil {
+		log.Error().Err(err).Int("id", id).Msg("undo: failed to parse zone snapshot")
+		return c.Redirect(redirectBase + "&error=Failed+to+parse+zone+snapshot")
+	}
+
+	if snap.Kind == "" {
+		return c.Redirect(redirectBase + "&error=Zone+snapshot+is+incomplete+(missing+kind)")
+	}
+
+	if powerdns.Engine.Client == nil {
+		log.Error().Msg("undo: PowerDNS client not initialized")
+		return c.Redirect(redirectBase + "&error=PowerDNS+client+not+initialized")
+	}
+
+	zoneName := entry.ResourceName
+
+	// Build the zone object for recreation. RRsets are included in the zone
+	// creation payload so that records are restored atomically in a single API
+	// call, avoiding a race where a subsequent PATCH would return 404 on a
+	// zone that was not yet fully committed by PowerDNS.
+	zoneKind := pdnsapi.ZoneKind(snap.Kind)
+	soaEditAPI := snap.SOAEditAPI
+
+	zone := &pdnsapi.Zone{
+		Name:       &zoneName,
+		Kind:       &zoneKind,
+		SOAEditAPI: &soaEditAPI,
+		Masters:    snap.Masters,
+	}
+
+	for _, rr := range snap.RRsets {
+		if len(rr.Records) == 0 {
+			continue
+		}
+
+		name := rr.Name
+		if !strings.HasSuffix(name, ".") {
+			name += "."
+		}
+
+		rrType := pdnsapi.RRType(rr.Type)
+		ttl := rr.TTL
+
+		var records []pdnsapi.Record
+
+		for _, content := range rr.Records {
+			disabled := false
+			records = append(records, pdnsapi.Record{
+				Content:  &content,
+				Disabled: &disabled,
+			})
+		}
+
+		// No ChangeType: zone creation does not use changetype in rrsets.
+		zone.RRsets = append(zone.RRsets, pdnsapi.RRset{
+			Name:    &name,
+			Type:    &rrType,
+			TTL:     &ttl,
+			Records: records,
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), undoTimeout)
+	defer cancel()
+
+	if _, err := powerdns.Engine.Zones.Add(ctx, zone); err != nil {
+		log.Error().Err(err).Int("id", id).Str("zone", zoneName).Msg("undo: failed to recreate zone")
+		return c.Redirect(redirectBase + "&error=Failed+to+recreate+zone:+" + url.QueryEscape(err.Error()))
+	}
+
+	// Record the undo action.
+	userID, username := currentUserFromSession(c)
+	activitylog.Record(&activitylog.Entry{
+		DB:           s.db,
+		UserID:       userID,
+		Username:     username,
+		Action:       activitylog.ActionZoneDeletedUndone,
+		ResourceType: activitylog.ResourceTypeZone,
+		ResourceName: zoneName,
+		Details: activitylog.ZoneDeletedUndoneDetails{
+			OriginalID:       entry.ID,
+			OriginalUsername: entry.Username,
+		},
+		IPAddress: c.IP(),
+	})
+
+	log.Info().Int("original_id", id).Str("zone", zoneName).Str("user", username).
+		Msg("zone deletion undone successfully")
+
+	return c.Redirect(redirectBase +
+		"&success=Zone+" + url.QueryEscape(zoneName) +
+		"+has+been+restored+from+entry+%23" +
+		strconv.Itoa(id))
 }
 
 // buildReverseRRSet constructs the inverse RRset operation for a single diff entry:

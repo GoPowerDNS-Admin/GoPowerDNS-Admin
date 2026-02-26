@@ -4,6 +4,11 @@
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
 ADMINLTE_VERSION := 4.0.0-rc4
+JQUERY_VERSION := 3.7.1
+DATATABLES_VERSION := 2.1.8
+OVERLAYSCROLLBARS_VERSION := 2.11.0
+BOOTSTRAP_ICONS_VERSION := 1.13.1
+SOURCE_SANS_3_VERSION := 5.0.12
 
 # Directories
 VENDOR_DIR := internal/web/static/vendor
@@ -24,10 +29,15 @@ help:
 	@echo "  pre-commit        - Run pre-commit checks"
 	@echo ""
 	@echo "Vendor Dependencies:"
-	@echo "  vendor-update     - Update all vendor dependencies"
-	@echo "  vendor-bootstrap  - Update only Bootstrap"
-	@echo "  vendor-adminlte   - Update only AdminLTE"
-	@echo "  vendor-clean      - Remove all vendor dependencies"
+	@echo "  vendor-update            - Update all vendor dependencies"
+	@echo "  vendor-bootstrap         - Update only Bootstrap"
+	@echo "  vendor-adminlte          - Update only AdminLTE"
+	@echo "  vendor-jquery            - Update only jQuery"
+	@echo "  vendor-datatables        - Update only DataTables"
+	@echo "  vendor-overlayscrollbars - Update only OverlayScrollbars"
+	@echo "  vendor-bootstrap-icons   - Update only Bootstrap Icons"
+	@echo "  vendor-source-sans-3     - Update only Source Sans 3 font"
+	@echo "  vendor-clean             - Remove all vendor dependencies"
 
 test:
 	@echo "Running tests..."
@@ -44,7 +54,7 @@ pre-commit: linter
 	@pre-commit run --all-files
 	@echo "✓ Pre-commit checks passed"
 
-vendor-update: vendor-bootstrap vendor-adminlte
+vendor-update: vendor-bootstrap vendor-adminlte vendor-jquery vendor-datatables vendor-overlayscrollbars vendor-bootstrap-icons vendor-source-sans-3
 	@echo "✓ All vendor dependencies updated"
 
 vendor-bootstrap:
@@ -66,10 +76,67 @@ vendor-adminlte:
 	@curl -sL https://cdn.jsdelivr.net/npm/admin-lte@$(ADMINLTE_VERSION)/dist/js/adminlte.js -o $(VENDOR_DIR)/adminlte-v4/js/adminlte.js
 	@echo "✓ AdminLTE $(ADMINLTE_VERSION) installed"
 
+vendor-jquery:
+	@echo "Downloading jQuery $(JQUERY_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/jquery-$(JQUERY_VERSION)
+	@curl -sL "https://cdn.jsdelivr.net/npm/jquery@$(JQUERY_VERSION)/dist/jquery.min.js" \
+		-o $(VENDOR_DIR)/jquery-$(JQUERY_VERSION)/jquery.min.js
+	@echo "✓ jQuery $(JQUERY_VERSION) installed"
+
+vendor-datatables:
+	@echo "Downloading DataTables $(DATATABLES_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/datatables-$(DATATABLES_VERSION)/css
+	@mkdir -p $(VENDOR_DIR)/datatables-$(DATATABLES_VERSION)/js
+	@curl -sL "https://cdn.datatables.net/$(DATATABLES_VERSION)/css/dataTables.bootstrap5.min.css" \
+		-o $(VENDOR_DIR)/datatables-$(DATATABLES_VERSION)/css/dataTables.bootstrap5.min.css
+	@curl -sL "https://cdn.datatables.net/$(DATATABLES_VERSION)/js/dataTables.min.js" \
+		-o $(VENDOR_DIR)/datatables-$(DATATABLES_VERSION)/js/dataTables.min.js
+	@curl -sL "https://cdn.datatables.net/$(DATATABLES_VERSION)/js/dataTables.bootstrap5.min.js" \
+		-o $(VENDOR_DIR)/datatables-$(DATATABLES_VERSION)/js/dataTables.bootstrap5.min.js
+	@echo "✓ DataTables $(DATATABLES_VERSION) installed"
+
+vendor-overlayscrollbars:
+	@echo "Downloading OverlayScrollbars $(OVERLAYSCROLLBARS_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/overlayscrollbars-$(OVERLAYSCROLLBARS_VERSION)/styles
+	@mkdir -p $(VENDOR_DIR)/overlayscrollbars-$(OVERLAYSCROLLBARS_VERSION)/browser
+	@curl -sL "https://cdn.jsdelivr.net/npm/overlayscrollbars@$(OVERLAYSCROLLBARS_VERSION)/styles/overlayscrollbars.min.css" \
+		-o $(VENDOR_DIR)/overlayscrollbars-$(OVERLAYSCROLLBARS_VERSION)/styles/overlayscrollbars.min.css
+	@curl -sL "https://cdn.jsdelivr.net/npm/overlayscrollbars@$(OVERLAYSCROLLBARS_VERSION)/browser/overlayscrollbars.browser.es6.min.js" \
+		-o $(VENDOR_DIR)/overlayscrollbars-$(OVERLAYSCROLLBARS_VERSION)/browser/overlayscrollbars.browser.es6.min.js
+	@echo "✓ OverlayScrollbars $(OVERLAYSCROLLBARS_VERSION) installed"
+
+vendor-bootstrap-icons:
+	@echo "Downloading Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/fonts
+	@curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/bootstrap-icons.min.css" \
+		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/bootstrap-icons.min.css
+	@curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff2" \
+		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff2
+	@curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff" \
+		-o $(VENDOR_DIR)/bootstrap-icons-$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff
+	@echo "✓ Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION) installed"
+
+vendor-source-sans-3:
+	@echo "Downloading Source Sans 3 $(SOURCE_SANS_3_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/source-sans-3-$(SOURCE_SANS_3_VERSION)/files
+	@curl -sL "https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@$(SOURCE_SANS_3_VERSION)/index.css" \
+		-o $(VENDOR_DIR)/source-sans-3-$(SOURCE_SANS_3_VERSION)/index.css
+	@grep -oE '\./files/[^)"]+' $(VENDOR_DIR)/source-sans-3-$(SOURCE_SANS_3_VERSION)/index.css | \
+		sort -u | sed 's|\./||' | while read -r file; do \
+		curl -sL "https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@$(SOURCE_SANS_3_VERSION)/$$file" \
+			-o "$(VENDOR_DIR)/source-sans-3-$(SOURCE_SANS_3_VERSION)/$$file"; \
+	done
+	@echo "✓ Source Sans 3 $(SOURCE_SANS_3_VERSION) installed"
+
 vendor-clean:
 	@echo "Cleaning vendor dependencies..."
 	@rm -rf $(VENDOR_DIR)/bootstrap-*
 	@rm -rf $(VENDOR_DIR)/adminlte-*
+	@rm -rf $(VENDOR_DIR)/jquery-*
+	@rm -rf $(VENDOR_DIR)/datatables-*
+	@rm -rf $(VENDOR_DIR)/overlayscrollbars-*
+	@rm -rf $(VENDOR_DIR)/bootstrap-icons-*
+	@rm -rf $(VENDOR_DIR)/source-sans-3-*
 	@echo "✓ Vendor dependencies cleaned"
 
 docker-up:

@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/signal"
@@ -9,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
-	"github.com/gofiber/template/html/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/static"
+	"github.com/gofiber/template/html/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -140,7 +141,6 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			ReadBufferSize:    8192,
 			AppName:           "GoPowerDNS-Admin",
 			CaseSensitive:     true,
-			Prefork:           false,
 			Immutable:         true,
 			Views:             templateEngine,
 			PassLocalsToViews: true,
@@ -148,14 +148,16 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	)
 
 	// serve embedded static files
+	staticFS, err := fs.Sub(embeddedStaticFiles, "static")
+	if err != nil {
+		panic("failed to create static sub-filesystem: " + err.Error())
+	}
+
 	app.Use("/static",
-		filesystem.New(
-			filesystem.Config{
-				Root:       http.FS(embeddedStaticFiles),
-				PathPrefix: "static",
-				Browse:     true,
-			},
-		),
+		static.New("", static.Config{
+			FS:     staticFS,
+			Browse: true,
+		}),
 	)
 
 	// basic auth middleware
@@ -190,8 +192,8 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	activity.Handler.Init(app, cfg, db, authService)
 
 	// redirect root to dashboard
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Redirect("/dashboard")
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.Redirect().To("/dashboard")
 	})
 
 	return service

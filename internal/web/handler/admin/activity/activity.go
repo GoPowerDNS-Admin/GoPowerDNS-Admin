@@ -4,7 +4,7 @@ package activity
 import (
 	"encoding/json"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -86,18 +86,18 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // List renders the paginated activity log with optional filters.
-func (s *Service) List(c *fiber.Ctx) error {
+func (s *Service) List(c fiber.Ctx) error {
 	nav := navigation.NewContext("Activity Log", "admin", "activity").
 		AddBreadcrumb("Home", dashboard.Path, false).
 		AddBreadcrumb("Admin", "#", false).
 		AddBreadcrumb("Activity Log", Path, true)
 
-	page := c.QueryInt("page", 1)
+	page := fiber.Query[int](c, "page", 1)
 	if page < 1 {
 		page = 1
 	}
 
-	pageSize := c.QueryInt("pageSize", DefaultPageSize)
+	pageSize := fiber.Query[int](c, "pageSize", DefaultPageSize)
 	if pageSize < 1 || pageSize > 200 {
 		pageSize = DefaultPageSize
 	}
@@ -161,7 +161,7 @@ func (s *Service) List(c *fiber.Ctx) error {
 	}, handler.BaseLayout)
 }
 
-func parseActivityFilters(c *fiber.Ctx) activityFilters {
+func parseActivityFilters(c fiber.Ctx) activityFilters {
 	return activityFilters{
 		User:   c.Query("user", ""),
 		Action: c.Query("action", ""),

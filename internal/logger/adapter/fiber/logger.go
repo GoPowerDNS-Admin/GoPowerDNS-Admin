@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -22,7 +22,7 @@ type Config struct {
 	// Next defines a function to skip this middleware when returned true.
 	//
 	// Optional. Default: nil
-	Next func(c *fiber.Ctx) bool
+	Next func(c fiber.Ctx) bool
 
 	// Config of the logger.
 	Config logger.Log
@@ -90,7 +90,7 @@ func New(config ...Config) fiber.Handler {
 		Logger().
 		Level(zerolog.NoLevel)
 
-	return func(ctx *fiber.Ctx) (err error) {
+	return func(ctx fiber.Ctx) (err error) {
 		// Don't execute middleware if Next returns true
 		if cfg.Next != nil && cfg.Next(ctx) {
 			return ctx.Next()

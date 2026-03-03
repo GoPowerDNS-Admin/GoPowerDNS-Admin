@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	pdnsapi "github.com/joeig/go-powerdns/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -115,7 +115,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // Get handles the dashboard page rendering.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("Dashboard", "dashboard", "dashboard").
 		AddBreadcrumb("Home", Path, false).
@@ -129,8 +129,8 @@ func (s *Service) Get(c *fiber.Ctx) error {
 
 	// Parse query parameters
 	params := QueryParams{
-		Page:        c.QueryInt("page", 1),
-		PageSize:    c.QueryInt("pageSize", DefaultPageSize),
+		Page:        fiber.Query[int](c, "page", 1),
+		PageSize:    fiber.Query[int](c, "pageSize", DefaultPageSize),
 		SearchQuery: c.Query("search", ""),
 		FilterKind:  c.Query("kind", ""),
 		SortField:   c.Query("sort", "name"),

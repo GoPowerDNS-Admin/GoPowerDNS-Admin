@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	sessionmysql "github.com/gofiber/storage/mysql"
+	sessionmysql "github.com/gofiber/storage/mysql/v2"
 	"github.com/rs/zerolog/log"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"

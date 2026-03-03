@@ -6,14 +6,18 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/gofiber/fiber/v2/middleware/session"
-	"github.com/gofiber/storage"
-
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 )
 
-// Store is the global session store instance.
-var Store *session.Store
+// storageBackend is the minimal interface for session storage.
+type storageBackend interface {
+	Get(key string) ([]byte, error)
+	Set(key string, val []byte, exp time.Duration) error
+	Delete(key string) error
+}
+
+// store is the global session storage backend.
+var store storageBackend
 
 // Data represents the session data structure.
 type Data struct {
@@ -27,12 +31,12 @@ func (s *Data) Write(sessionID string, exp time.Duration) error {
 		return err
 	}
 
-	return Store.Storage.Set(sessionID, out, exp)
+	return store.Set(sessionID, out, exp)
 }
 
 // Read reads the session data for the given session ID.
 func (s *Data) Read(sessionID string) error {
-	byteData, err := Store.Storage.Get(sessionID)
+	byteData, err := store.Get(sessionID)
 	if err != nil {
 		return err
 	}
@@ -40,15 +44,18 @@ func (s *Data) Read(sessionID string) error {
 	return json.Unmarshal(byteData, s)
 }
 
+// DeleteSession deletes the session with the given session ID from the store.
+func DeleteSession(sessionID string) error {
+	return store.Delete(sessionID)
+}
+
 // Init initializes the session store with the provided storage backend.
-func Init(fiberStorage storage.Storage) {
-	if fiberStorage == nil {
+func Init(s storageBackend) {
+	if s == nil {
 		panic("storage is nil")
 	}
 
-	Store = session.New(session.Config{
-		Storage: fiberStorage,
-	})
+	store = s
 }
 
 // GenerateSessionID generates a new secure random session ID.

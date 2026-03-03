@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -85,7 +85,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // Get handles the server configuration page rendering with pagination.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("PowerDNS Server Configuration", "server", "configuration").
 		AddBreadcrumb("Home", "/"+dashboard.Path, false).
@@ -164,13 +164,13 @@ func (s *Service) Get(c *fiber.Ctx) error {
 }
 
 // getPaginationParams parses and normalizes page and pageSize query parameters.
-func getPaginationParams(c *fiber.Ctx) (int, int) {
-	page := c.QueryInt("page", 1)
+func getPaginationParams(c fiber.Ctx) (int, int) {
+	page := fiber.Query[int](c, "page", 1)
 	if page < 1 {
 		page = 1
 	}
 
-	pageSize := c.QueryInt("pageSize", DefaultPageSize)
+	pageSize := fiber.Query[int](c, "pageSize", DefaultPageSize)
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = DefaultPageSize
 	}
@@ -179,7 +179,7 @@ func getPaginationParams(c *fiber.Ctx) (int, int) {
 }
 
 // getSearchAndFilter extracts search and type filter from the request.
-func getSearchAndFilter(c *fiber.Ctx) (string, string) {
+func getSearchAndFilter(c fiber.Ctx) (string, string) {
 	return c.Query("search", ""), c.Query("type", "")
 }
 

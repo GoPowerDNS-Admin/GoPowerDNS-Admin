@@ -1,7 +1,7 @@
 package group
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -9,7 +9,7 @@ import (
 )
 
 // updateOrCreateGroupMapping updates or creates a group-role mapping in the database.
-func (s *Service) updateOrCreateGroupMapping(c *fiber.Ctx, tx *gorm.DB, groupID, roleID uint) error {
+func (s *Service) updateOrCreateGroupMapping(c fiber.Ctx, tx *gorm.DB, groupID, roleID uint) error {
 	// Delete existing mapping
 	if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupMapping{}).Error; err != nil {
 		tx.Rollback()

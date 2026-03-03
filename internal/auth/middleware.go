@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
@@ -9,7 +9,7 @@ import (
 
 // RequirePermission creates Fiber middleware that requires a specific permission.
 func RequirePermission(authService *Service, permission string) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Get session cookie
 		sessionID := c.Cookies("session")
 		if sessionID == "" {
@@ -53,7 +53,7 @@ func RequirePermission(authService *Service, permission string) fiber.Handler {
 
 // RequireAnyPermission creates Fiber middleware that requires at least one of the given permissions.
 func RequireAnyPermission(authService *Service, permissions ...string) fiber.Handler { //nolint:dupl // ok for now
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Get session cookie
 		sessionID := c.Cookies("session")
 		if sessionID == "" {
@@ -93,7 +93,7 @@ func RequireAnyPermission(authService *Service, permissions ...string) fiber.Han
 
 // RequireAllPermissions creates Fiber middleware that requires all the given permissions.
 func RequireAllPermissions(authService *Service, permissions ...string) fiber.Handler { //nolint:dupl // ok for now
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Get session cookie
 		sessionID := c.Cookies("session")
 		if sessionID == "" {
@@ -134,7 +134,7 @@ func RequireAllPermissions(authService *Service, permissions ...string) fiber.Ha
 // RequireAuthenticated ensures the user is authenticated (already handled by AuthMiddleware).
 // This is a no-op middleware for explicit route protection.
 func RequireAuthenticated() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Session already checked by AuthMiddleware
 		return c.Next()
 	}
@@ -142,7 +142,7 @@ func RequireAuthenticated() fiber.Handler {
 
 // HasPermissionInContext checks if the current user in the Fiber context has a permission.
 // Useful for conditional rendering in handlers.
-func HasPermissionInContext(c *fiber.Ctx, authService *Service, permission string) bool {
+func HasPermissionInContext(c fiber.Ctx, authService *Service, permission string) bool {
 	sessionID := c.Cookies("session")
 	if sessionID == "" {
 		return false
@@ -166,7 +166,7 @@ func HasPermissionInContext(c *fiber.Ctx, authService *Service, permission strin
 }
 
 // GetUserPermissionsFromContext retrieves all permissions for the current user.
-func GetUserPermissionsFromContext(c *fiber.Ctx, authService *Service) ([]string, error) {
+func GetUserPermissionsFromContext(c fiber.Ctx, authService *Service) ([]string, error) {
 	sessionID := c.Cookies("session")
 	if sessionID == "" {
 		return nil, nil
@@ -187,7 +187,7 @@ func GetUserPermissionsFromContext(c *fiber.Ctx, authService *Service) ([]string
 // AddPermissionsToLocals is a Fiber middleware that adds user permissions to fiber.Locals.
 // This allows templates to access permissions for conditional rendering.
 func AddPermissionsToLocals(authService *Service) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		sessionID := c.Cookies("session")
 		if sessionID == "" {
 			// Not authenticated, continue without permissions

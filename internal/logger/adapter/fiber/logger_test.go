@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 
 	adapter "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/logger/adapter/fiber"
@@ -136,7 +136,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "get multi slash and params",
 			args: arguments{
-				targetPath: "//?test=123",
+				targetPath: "//a?test=123",
 				config: adapter.Config{
 					Next: nil,
 					Config: logger.Log{
@@ -152,7 +152,7 @@ func TestNew(t *testing.T) {
 				output: &expectedLoggerJSONFormat{
 					IP:     net.ParseIP("0.0.0.0"),
 					Status: 404,
-					URI:    "//?test=123",
+					URI:    "//a?test=123",
 					Method: fiber.MethodGet,
 					Host:   "example.com",
 				},
@@ -265,11 +265,11 @@ func testMiddlewareHelper(t *testing.T, targetPath string, adapterConfig *adapte
 	app.Use(adapter.New(*adapterConfig))
 
 	// create minimal endpoint
-	app.Get("/", func(ctx *fiber.Ctx) error {
+	app.Get("/", func(ctx fiber.Ctx) error {
 		return ctx.SendString("hello test")
 	})
 
-	resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, targetPath, http.NoBody), 100000)
+	resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, targetPath, http.NoBody), fiber.TestConfig{Timeout: 100 * time.Second})
 	if err != nil {
 		_ = w.Close()
 		return "", err

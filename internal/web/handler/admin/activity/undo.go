@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	pdnsapi "github.com/joeig/go-powerdns/v3"
 	"github.com/rs/zerolog/log"
 
@@ -22,19 +22,19 @@ const undoTimeout = 30 * time.Second
 
 // PostUndo reverses a record_changed activity log entry by applying the inverse
 // of its recorded diff back to PowerDNS.
-func (s *Service) PostUndo(c *fiber.Ctx) error {
+func (s *Service) PostUndo(c fiber.Ctx) error {
 	redirectBase := Path + "?" + buildQueryString(c)
 
-	id, err := c.ParamsInt("id")
-	if err != nil || id <= 0 {
-		return c.Redirect(redirectBase + "&error=Invalid+activity+log+ID")
+	id := fiber.Params[int](c, "id")
+	if id <= 0 {
+		return c.Redirect().To(redirectBase + "&error=Invalid+activity+log+ID")
 	}
 
 	// Load the activity log entry.
 	var entry models.ActivityLog
 	if err := s.db.First(&entry, uint64(id)).Error; err != nil {
 		log.Error().Err(err).Int("id", id).Msg("undo: activity log entry not found")
-		return c.Redirect(redirectBase + "&error=Activity+log+entry+not+found")
+		return c.Redirect().To(redirectBase + "&error=Activity+log+entry+not+found")
 	}
 
 	switch entry.Action {
@@ -43,27 +43,27 @@ func (s *Service) PostUndo(c *fiber.Ctx) error {
 	case activitylog.ActionZoneDeleted:
 		return s.undoZoneDeleted(c, id, &entry, redirectBase)
 	default:
-		return c.Redirect(redirectBase + "&error=Undo+is+only+available+for+record_changed+and+zone_deleted+entries")
+		return c.Redirect().To(redirectBase + "&error=Undo+is+only+available+for+record_changed+and+zone_deleted+entries")
 	}
 }
 
 // undoRecordChanged reverses a record_changed activity log entry.
-func (s *Service) undoRecordChanged(c *fiber.Ctx, id int, entry *models.ActivityLog, redirectBase string) error {
+func (s *Service) undoRecordChanged(c fiber.Ctx, id int, entry *models.ActivityLog, redirectBase string) error {
 	// Parse the stored diff.
 	var diff activitylog.RecordsDiff
 	if err := json.Unmarshal([]byte(entry.Details), &diff); err != nil {
 		log.Error().Err(err).Int("id", id).Msg("undo: failed to parse records diff")
-		return c.Redirect(redirectBase + "&error=Failed+to+parse+activity+log+diff")
+		return c.Redirect().To(redirectBase + "&error=Failed+to+parse+activity+log+diff")
 	}
 
 	if len(diff.Records) == 0 {
-		return c.Redirect(redirectBase + "&error=No+record+changes+to+undo")
+		return c.Redirect().To(redirectBase + "&error=No+record+changes+to+undo")
 	}
 
 	// Check that the PowerDNS client is available.
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg("undo: PowerDNS client not initialized")
-		return c.Redirect(redirectBase + "&error=PowerDNS+client+not+initialized")
+		return c.Redirect().To(redirectBase + "&error=PowerDNS+client+not+initialized")
 	}
 
 	// Build the reverse RRsets.
@@ -79,7 +79,7 @@ func (s *Service) undoRecordChanged(c *fiber.Ctx, id int, entry *models.Activity
 	}
 
 	if len(rrSets) == 0 {
-		return c.Redirect(redirectBase + "&error=Nothing+to+undo+(no+restorable+changes)")
+		return c.Redirect().To(redirectBase + "&error=Nothing+to+undo+(no+restorable+changes)")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), undoTimeout)
@@ -89,7 +89,7 @@ func (s *Service) undoRecordChanged(c *fiber.Ctx, id int, entry *models.Activity
 		Sets: rrSets,
 	}); err != nil {
 		log.Error().Err(err).Int("id", id).Str("zone", entry.ResourceName).Msg("undo: failed to patch records")
-		return c.Redirect(redirectBase + "&error=Failed+to+apply+undo+to+PowerDNS:+" + url.QueryEscape(err.Error()))
+		return c.Redirect().To(redirectBase + "&error=Failed+to+apply+undo+to+PowerDNS:+" + url.QueryEscape(err.Error()))
 	}
 
 	// Record a new activity log entry for the undo operation.
@@ -111,31 +111,31 @@ func (s *Service) undoRecordChanged(c *fiber.Ctx, id int, entry *models.Activity
 	log.Info().Int("original_id", id).Str("zone", entry.ResourceName).Str("user", username).
 		Msg("record changes undone successfully")
 
-	return c.Redirect(redirectBase +
+	return c.Redirect().To(redirectBase +
 		"&success=Record+changes+from+entry+%23" +
 		strconv.Itoa(id) +
 		"+have+been+undone")
 }
 
 // undoZoneDeleted restores a deleted zone from the snapshot stored in the activity log.
-func (s *Service) undoZoneDeleted(c *fiber.Ctx, id int, entry *models.ActivityLog, redirectBase string) error {
+func (s *Service) undoZoneDeleted(c fiber.Ctx, id int, entry *models.ActivityLog, redirectBase string) error {
 	if entry.Details == "" {
-		return c.Redirect(redirectBase + "&error=No+zone+snapshot+available+to+restore")
+		return c.Redirect().To(redirectBase + "&error=No+zone+snapshot+available+to+restore")
 	}
 
 	var snap activitylog.ZoneSnapshot
 	if err := json.Unmarshal([]byte(entry.Details), &snap); err != nil {
 		log.Error().Err(err).Int("id", id).Msg("undo: failed to parse zone snapshot")
-		return c.Redirect(redirectBase + "&error=Failed+to+parse+zone+snapshot")
+		return c.Redirect().To(redirectBase + "&error=Failed+to+parse+zone+snapshot")
 	}
 
 	if snap.Kind == "" {
-		return c.Redirect(redirectBase + "&error=Zone+snapshot+is+incomplete+(missing+kind)")
+		return c.Redirect().To(redirectBase + "&error=Zone+snapshot+is+incomplete+(missing+kind)")
 	}
 
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg("undo: PowerDNS client not initialized")
-		return c.Redirect(redirectBase + "&error=PowerDNS+client+not+initialized")
+		return c.Redirect().To(redirectBase + "&error=PowerDNS+client+not+initialized")
 	}
 
 	zoneName := entry.ResourceName
@@ -191,7 +191,7 @@ func (s *Service) undoZoneDeleted(c *fiber.Ctx, id int, entry *models.ActivityLo
 
 	if _, err := powerdns.Engine.Zones.Add(ctx, zone); err != nil {
 		log.Error().Err(err).Int("id", id).Str("zone", zoneName).Msg("undo: failed to recreate zone")
-		return c.Redirect(redirectBase + "&error=Failed+to+recreate+zone:+" + url.QueryEscape(err.Error()))
+		return c.Redirect().To(redirectBase + "&error=Failed+to+recreate+zone:+" + url.QueryEscape(err.Error()))
 	}
 
 	// Record the undo action.
@@ -213,7 +213,7 @@ func (s *Service) undoZoneDeleted(c *fiber.Ctx, id int, entry *models.ActivityLo
 	log.Info().Int("original_id", id).Str("zone", zoneName).Str("user", username).
 		Msg("zone deletion undone successfully")
 
-	return c.Redirect(redirectBase +
+	return c.Redirect().To(redirectBase +
 		"&success=Zone+" + url.QueryEscape(zoneName) +
 		"+has+been+restored+from+entry+%23" +
 		strconv.Itoa(id))
@@ -281,7 +281,7 @@ func buildReverseRRSet(rec *activitylog.RecordEntryDiff) *pdnsapi.RRset {
 
 // currentUserFromSession extracts the current user's ID and username from the
 // session cookie. Returns nil userID and empty username when no valid session exists.
-func currentUserFromSession(c *fiber.Ctx) (*uint64, string) {
+func currentUserFromSession(c fiber.Ctx) (*uint64, string) {
 	sid := c.Cookies("session")
 	if sid == "" {
 		return nil, ""
@@ -299,7 +299,7 @@ func currentUserFromSession(c *fiber.Ctx) (*uint64, string) {
 
 // buildQueryString preserves the existing filter/page query params so the
 // redirect lands back on the same filtered view.
-func buildQueryString(c *fiber.Ctx) string {
+func buildQueryString(c fiber.Ctx) string {
 	var params []string
 
 	for _, key := range []string{"page", "pageSize", "user", "action", "from", "to"} {

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 )
@@ -31,7 +32,7 @@ func TestGet_ReturnsEarlyWhenPDNSClientNil(t *testing.T) {
 
 	req := httptest.NewRequest(fiber.MethodGet, "/zones/example.com/edit", http.NoBody)
 
-	resp, err := app.Test(req, -1)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 30 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test returned error: %v", err)
 	}

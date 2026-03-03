@@ -1,7 +1,7 @@
 package zoneedit
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 
 	zonesettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
@@ -37,7 +37,7 @@ func (s *Service) loadAllowedRecordTypes(reverse bool) []RecordTypeOption {
 
 // validateRecordsUpdateAreValidTypes checks if all provided record types are allowed.
 func (s *Service) validateRecordsUpdateAreValidTypes(
-	c *fiber.Ctx,
+	c fiber.Ctx,
 	zoneName string,
 	request *RecordsUpdateRequest,
 	reverse bool) error {

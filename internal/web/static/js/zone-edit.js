@@ -809,14 +809,33 @@ $(document).ready(function() {
                     const oldChange = pendingChanges.get(oldKey);
                     oldChange.records = oldChange.records.filter(r => r.content !== originalContent);
                 } else {
-                    // Create empty record set to mark for deletion
+                    // Collect sibling records (same name/type, excluding the renamed one)
+                    // so multi-record RRsets are only partially updated, not fully deleted.
+                    let oldTTL = 0;
+                    if (dataTable) {
+                        dataTable.rows().every(function() {
+                            const $n = $(this.node());
+                            if ($n.data('full-name') === originalName && $n.find('td').eq(1).text().trim() === originalType) {
+                                oldTTL = Number.parseInt($n.find('td').eq(2).text(), 10) || 0;
+                                return false;
+                            }
+                        });
+                    } else {
+                        $(SELECTORS.RECORDS_TBODY).find('tr').each(function() {
+                            if ($(this).data('full-name') === originalName && $(this).find('td').eq(1).text().trim() === originalType) {
+                                oldTTL = Number.parseInt($(this).find('td').eq(2).text(), 10) || 0;
+                                return false;
+                            }
+                        });
+                    }
                     pendingChanges.set(oldKey, {
                         name: originalName,
                         type: originalType,
-                        ttl: 0,
+                        ttl: oldTTL,
                         comment: '',
-                        records: [],
-                        existed: true // This RRset existed in the database
+                        records: collectRRsetRecords(originalName, originalType, originalContent),
+                        existed: true,
+                        changed: true
                     });
                 }
             } else {

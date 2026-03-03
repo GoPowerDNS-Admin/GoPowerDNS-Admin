@@ -431,8 +431,10 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 	// Pre-allocate capacity based on incoming changes to reduce reallocations
 	var rrSets = make([]pdnsapi.RRset, 0, len(request.Changes))
 	for _, change := range request.Changes {
-		// Skip entries that aren't marked as changed (defensive; frontend should only submit changed ones)
-		if !change.Changed {
+		// Always process a deletion of an existing RRset (existed=true, no records),
+		// even if the frontend forgot to set changed=true (defensive).
+		isDeletion := change.Existed && len(change.Records) == 0
+		if !change.Changed && !isDeletion {
 			continue
 		}
 

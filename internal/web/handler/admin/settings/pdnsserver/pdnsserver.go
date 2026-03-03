@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -60,7 +60,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // Get handles the pdns-server settings page rendering.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("PowerDNS Server Settings", "settings", "pdns-server").
 		AddBreadcrumb("Home", dashboard.Path, false).
@@ -96,7 +96,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 }
 
 // Post handles the pdns-server settings form submission.
-func (s *Service) Post(c *fiber.Ctx) error {
+func (s *Service) Post(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("PowerDNS Server Settings", "settings", "pdns-server").
 		AddBreadcrumb("Home", "/dashboard", false).
@@ -105,7 +105,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	// Parse form data into settings struct
 	settings := &controller.Settings{}
-	if err := c.BodyParser(settings); err != nil {
+	if err := c.Bind().Body(settings); err != nil {
 		log.Error().Err(err).Msg("failed to parse PDNS server settings form")
 
 		return c.Status(fiber.StatusBadRequest).Render(

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -142,18 +142,18 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // List shows groups with simple pagination and search.
-func (s *Service) List(c *fiber.Ctx) error {
+func (s *Service) List(c fiber.Ctx) error {
 	nav := navigation.NewContext(TitleGroups, NavSectionAdmin, NavEntityGroup).
 		AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
 		AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
 		AddBreadcrumb(BreadcrumbGroupsLbl, Path, true)
 
-	page := c.QueryInt(QueryPage, 1)
+	page := fiber.Query[int](c, QueryPage, 1)
 	if page < 1 {
 		page = 1
 	}
 
-	pageSize := c.QueryInt(QueryPageSize, DefaultPageSize)
+	pageSize := fiber.Query[int](c, QueryPageSize, DefaultPageSize)
 	if pageSize < 1 || pageSize > MaxPageSize {
 		pageSize = DefaultPageSize
 	}
@@ -234,7 +234,7 @@ func (s *Service) List(c *fiber.Ctx) error {
 }
 
 // New renders empty form.
-func (s *Service) New(c *fiber.Ctx) error {
+func (s *Service) New(c fiber.Ctx) error {
 	nav := navigation.NewContext(TitleNewGroup, NavSectionAdmin, NavEntityGroup).
 		AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
 		AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
@@ -272,7 +272,7 @@ func (s *Service) New(c *fiber.Ctx) error {
 }
 
 // Create handles form submission for creating a group.
-func (s *Service) Create(c *fiber.Ctx) error {
+func (s *Service) Create(c fiber.Ctx) error {
 	// Get user IDs from form
 	userIDsBytes := c.Request().PostArgs().PeekMulti("user_ids")
 
@@ -385,11 +385,11 @@ func (s *Service) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save group")
 	}
 
-	return c.Redirect(Path)
+	return c.Redirect().To(Path)
 }
 
 // Edit renders edit form for a group.
-func (s *Service) Edit(c *fiber.Ctx) error {
+func (s *Service) Edit(c fiber.Ctx) error {
 	idStr := c.Params("id")
 
 	id, err := strconv.Atoi(idStr)
@@ -461,7 +461,7 @@ func (s *Service) Edit(c *fiber.Ctx) error {
 }
 
 // Update handles updating an existing group.
-func (s *Service) Update(c *fiber.Ctx) error {
+func (s *Service) Update(c fiber.Ctx) error {
 	idStr := c.Params("id")
 
 	id, err := strconv.Atoi(idStr)
@@ -565,11 +565,11 @@ func (s *Service) Update(c *fiber.Ctx) error {
 		return errGMS
 	}
 
-	return c.Redirect(Path)
+	return c.Redirect().To(Path)
 }
 
 // Delete removes a group.
-func (s *Service) Delete(c *fiber.Ctx) error {
+func (s *Service) Delete(c fiber.Ctx) error {
 	idStr := c.Params("id")
 
 	id, err := strconv.Atoi(idStr)
@@ -582,5 +582,5 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(ErrFailedDeleteGroup)
 	}
 
-	return c.Redirect(Path)
+	return c.Redirect().To(Path)
 }

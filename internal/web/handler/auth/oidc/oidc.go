@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -94,7 +94,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) {
 }
 
 // Login initiates the OIDC login flow.
-func (s *Service) Login(c *fiber.Ctx) error {
+func (s *Service) Login(c fiber.Ctx) error {
 	if s.oidcProvider == nil {
 		return c.Status(fiber.StatusServiceUnavailable).SendString("OIDC authentication is not available")
 	}
@@ -113,11 +113,11 @@ func (s *Service) Login(c *fiber.Ctx) error {
 	authURL := s.oidcProvider.GetAuthURL(state)
 
 	// Redirect to OIDC provider
-	return c.Redirect(authURL)
+	return c.Redirect().To(authURL)
 }
 
 // Callback handles the OIDC callback.
-func (s *Service) Callback(c *fiber.Ctx) error {
+func (s *Service) Callback(c fiber.Ctx) error {
 	if s.oidcProvider == nil {
 		return c.Status(fiber.StatusServiceUnavailable).SendString("OIDC authentication is not available")
 	}
@@ -198,11 +198,11 @@ func (s *Service) Callback(c *fiber.Ctx) error {
 
 	log.Info().Str("username", authenticatedUser.Username).Msg("User logged in successfully via OIDC")
 
-	return c.Redirect(dashboard.Path)
+	return c.Redirect().To(dashboard.Path)
 }
 
 // Logout handles OIDC logout.
-func (s *Service) Logout(c *fiber.Ctx) error {
+func (s *Service) Logout(c fiber.Ctx) error {
 	// Clear session
 	c.ClearCookie("session")
 
@@ -213,12 +213,12 @@ func (s *Service) Logout(c *fiber.Ctx) error {
 		logoutURL := s.oidcProvider.GetLogoutURL("", postLogoutRedirectURI)
 
 		if logoutURL != "" {
-			return c.Redirect(logoutURL)
+			return c.Redirect().To(logoutURL)
 		}
 	}
 
 	// Redirect to login page
-	return c.Redirect("/login")
+	return c.Redirect().To("/login")
 }
 
 // cleanupStates periodically removes expired state tokens.

@@ -6,7 +6,7 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -64,7 +64,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // Get handles the zone record settings page rendering.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("Zone Record Settings", "settings", "zone-records").
 		AddBreadcrumb("Home", dashboard.Path, false).
@@ -123,7 +123,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 }
 
 // Post handles the zone record settings form submission.
-func (s *Service) Post(c *fiber.Ctx) error {
+func (s *Service) Post(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext("Zone Record Settings", "settings", "zone-records").
 		AddBreadcrumb("Home", dashboard.Path, false).

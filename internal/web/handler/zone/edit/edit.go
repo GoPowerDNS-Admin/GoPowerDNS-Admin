@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	pdnsapi "github.com/joeig/go-powerdns/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -159,7 +159,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // Get handles the edit zone page rendering.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	zoneName := c.Params("name")
 	if zoneName == "" {
 		return c.Status(fiber.StatusBadRequest).SendString(ErrMsgZoneNameRequired)
@@ -221,7 +221,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 }
 
 // Post handles the edit zone form submission.
-func (s *Service) Post(c *fiber.Ctx) error {
+func (s *Service) Post(c fiber.Ctx) error {
 	zoneName := c.Params("name")
 	if zoneName == "" {
 		return c.Status(fiber.StatusBadRequest).SendString(ErrMsgZoneNameRequired)
@@ -239,7 +239,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	// Parse form data
 	form := &ZoneForm{}
-	if err := c.BodyParser(form); err != nil {
+	if err := c.Bind().Body(form); err != nil {
 		log.Error().Err(err).Msg("failed to parse edit zone form")
 
 		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
@@ -366,11 +366,11 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	)
 
 	// Redirect to dashboard with success message
-	return c.Redirect(dashboard.Path + "?success=Zone updated successfully")
+	return c.Redirect().To(dashboard.Path + "?success=Zone updated successfully")
 }
 
 // PostRecords handles the record updates for a zone.
-func (s *Service) PostRecords(c *fiber.Ctx) error {
+func (s *Service) PostRecords(c fiber.Ctx) error {
 	zoneName := c.Params("name")
 	if zoneName == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -386,7 +386,7 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 
 	// Parse JSON request
 	var request RecordsUpdateRequest
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		log.Error().Err(err).Msg("failed to parse records update request")
 
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -530,7 +530,7 @@ func (s *Service) PostRecords(c *fiber.Ctx) error {
 }
 
 // Delete handles the zone deletion.
-func (s *Service) Delete(c *fiber.Ctx) error {
+func (s *Service) Delete(c fiber.Ctx) error {
 	zoneName := c.Params("name")
 	if zoneName == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -609,7 +609,7 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 }
 
 // getZoneOrRender validates PDNS client availability and fetches the zone; renders errors when needed.
-func (s *Service) getZoneOrRender(c *fiber.Ctx, nav *navigation.Context, zoneName string) (*pdnsapi.Zone, error) {
+func (s *Service) getZoneOrRender(c fiber.Ctx, nav *navigation.Context, zoneName string) (*pdnsapi.Zone, error) {
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 
@@ -638,7 +638,7 @@ func (s *Service) getZoneOrRender(c *fiber.Ctx, nav *navigation.Context, zoneNam
 // currentUserFromSession extracts the current user's ID and username from the
 // session cookie. Returns nil userID and an empty username when no valid session
 // is present.
-func currentUserFromSession(c *fiber.Ctx) (*uint64, string) {
+func currentUserFromSession(c fiber.Ctx) (*uint64, string) {
 	sid := c.Cookies("session")
 	if sid == "" {
 		return nil, ""

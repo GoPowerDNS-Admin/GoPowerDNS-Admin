@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -85,18 +85,18 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 // fiber.Map with handler.BaseLayout for rendering, mirroring existing handlers (e.g., Groups).
 
 // List shows users with simple pagination and search.
-func (s *Service) List(c *fiber.Ctx) error {
+func (s *Service) List(c fiber.Ctx) error {
 	nav := navigation.NewContext("Users", "admin", "user").
 		AddBreadcrumb("Home", dashboard.Path, false).
 		AddBreadcrumb("Admin", "#", false).
 		AddBreadcrumb("Users", Path, true)
 
-	page := c.QueryInt("page", 1)
+	page := fiber.Query[int](c, "page", 1)
 	if page < 1 {
 		page = 1
 	}
 
-	pageSize := c.QueryInt("pageSize", DefaultPageSize)
+	pageSize := fiber.Query[int](c, "pageSize", DefaultPageSize)
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = DefaultPageSize
 	}
@@ -178,7 +178,7 @@ func (s *Service) List(c *fiber.Ctx) error {
 }
 
 // New shows the creation form.
-func (s *Service) New(c *fiber.Ctx) error {
+func (s *Service) New(c fiber.Ctx) error {
 	nav := navigation.NewContext("New User", "admin", "user").
 		AddBreadcrumb("Home", dashboard.Path, false).
 		AddBreadcrumb("Admin", "#", false).
@@ -204,7 +204,7 @@ func (s *Service) New(c *fiber.Ctx) error {
 }
 
 // Create creates a new user.
-func (s *Service) Create(c *fiber.Ctx) error {
+func (s *Service) Create(c fiber.Ctx) error {
 	var in struct {
 		Username   string `form:"username"    validate:"required,min=3,max=100"`
 		Email      string `form:"email"       validate:"required,email,max=255"`
@@ -217,7 +217,7 @@ func (s *Service) Create(c *fiber.Ctx) error {
 		RoleID     uint   `form:"role_id"`
 	}
 
-	if err := c.BodyParser(&in); err != nil {
+	if err := c.Bind().Body(&in); err != nil {
 		nav := navigation.NewContext("Users", "admin", "user").
 			AddBreadcrumb("Home", dashboard.Path, false).
 			AddBreadcrumb("Admin", "#", false).
@@ -279,20 +279,20 @@ func (s *Service) Create(c *fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	return c.Redirect(Path)
+	return c.Redirect().To(Path)
 }
 
 // Edit shows the edit form for a user.
-func (s *Service) Edit(c *fiber.Ctx) error {
+func (s *Service) Edit(c fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil || id <= 0 {
-		return c.Redirect(Path)
+		return c.Redirect().To(Path)
 	}
 
 	var user models.User
 	if err := s.db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Redirect(Path)
+			return c.Redirect().To(Path)
 		}
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
@@ -324,10 +324,10 @@ func (s *Service) Edit(c *fiber.Ctx) error {
 }
 
 // Update updates a user.
-func (s *Service) Update(c *fiber.Ctx) error {
+func (s *Service) Update(c fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil || id <= 0 {
-		return c.Redirect(Path)
+		return c.Redirect().To(Path)
 	}
 
 	var in struct {
@@ -341,7 +341,7 @@ func (s *Service) Update(c *fiber.Ctx) error {
 		Active     bool   `form:"active"`
 		RoleID     uint   `form:"role_id"`
 	}
-	if err := c.BodyParser(&in); err != nil {
+	if err := c.Bind().Body(&in); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
 			"Error": "Invalid form data",
 		}, handler.BaseLayout)
@@ -360,7 +360,7 @@ func (s *Service) Update(c *fiber.Ctx) error {
 	var user models.User
 	if err := s.db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Redirect(Path)
+			return c.Redirect().To(Path)
 		}
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
@@ -387,21 +387,21 @@ func (s *Service) Update(c *fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	return c.Redirect(Path)
+	return c.Redirect().To(Path)
 }
 
 // Delete removes a user.
-func (s *Service) Delete(c *fiber.Ctx) error {
+func (s *Service) Delete(c fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil || id <= 0 {
-		return c.Redirect(Path)
+		return c.Redirect().To(Path)
 	}
 
 	// Load the user to check if they can be deleted
 	var user models.User
 	if err := s.db.Preload("Role").First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Redirect(Path)
+			return c.Redirect().To(Path)
 		}
 
 		nav := navigation.NewContext("Users", "admin", "user").
@@ -459,7 +459,7 @@ func (s *Service) Delete(c *fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	return c.Redirect(Path)
+	return c.Redirect().To(Path)
 }
 
 // helper methods not needed; using inline rendering consistent with other handlers

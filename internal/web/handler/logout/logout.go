@@ -1,7 +1,7 @@
 package logout
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -38,7 +38,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB) {
 }
 
 // Logout handles user logout by clearing the session.
-func (s *Service) Logout(c *fiber.Ctx) error {
+func (s *Service) Logout(c fiber.Ctx) error {
 	// Get session cookie
 	sessionID := c.Cookies("session")
 	if sessionID != "" {
@@ -59,7 +59,7 @@ func (s *Service) Logout(c *fiber.Ctx) error {
 		}
 
 		// Delete session from the store
-		if err := session.Store.Storage.Delete(sessionID); err != nil {
+		if err := session.DeleteSession(sessionID); err != nil {
 			log.Error().Err(err).Msg("failed to delete session")
 		}
 	}
@@ -74,5 +74,5 @@ func (s *Service) Logout(c *fiber.Ctx) error {
 		SameSite: "Lax",
 	})
 
-	return c.Redirect(login.Path)
+	return c.Redirect().To(login.Path)
 }

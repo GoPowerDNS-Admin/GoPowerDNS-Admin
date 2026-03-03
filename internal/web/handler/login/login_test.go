@@ -11,8 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/storage"
+	"github.com/gofiber/fiber/v3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -84,9 +83,6 @@ type testStorage struct {
 	data map[string][]byte
 }
 
-// Ensure testStorage implements the storage.Storage interface.
-// This also prevents the storage import from being marked as unused in some environments.
-var _ storage.Storage = (*testStorage)(nil)
 
 func (s *testStorage) Get(key string) ([]byte, error) {
 	s.mu.RLock()
@@ -225,7 +221,7 @@ func performPost(t *testing.T, app *fiber.App, target string, form url.Values) *
 	req := httptest.NewRequest(http.MethodPost, target, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := app.Test(req, -1)
+	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("app.Test failed: %v", err)
 	}
@@ -259,8 +255,8 @@ func TestPost_Local_Success_SetsCookieAndRedirects(t *testing.T) {
 	}
 	resp := performPost(t, app, Path+"/", form)
 
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected 302 Found, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("expected 303 See Other, got %d", resp.StatusCode)
 	}
 
 	defer func() {
@@ -311,8 +307,8 @@ func TestPost_Local_Success_DevModeDisablesSecure(t *testing.T) {
 		_ = resp.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected 302 Found, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("expected 303 See Other, got %d", resp.StatusCode)
 	}
 
 	setCookie := resp.Header.Get("Set-Cookie")
@@ -335,7 +331,7 @@ func TestPost_InvalidForm_RendersError(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, Path+"/", strings.NewReader("{"))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req, -1)
+	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("app.Test failed: %v", err)
 	}

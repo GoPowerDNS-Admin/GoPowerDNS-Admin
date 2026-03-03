@@ -3,7 +3,7 @@ package group
 import (
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -11,7 +11,7 @@ import (
 )
 
 // updateOrCreateGroupMembership updates or creates group memberships in the database.
-func (s *Service) updateOrCreateGroupMembership(c *fiber.Ctx, tx *gorm.DB, groupID uint, input *formInput) error {
+func (s *Service) updateOrCreateGroupMembership(c fiber.Ctx, tx *gorm.DB, groupID uint, input *formInput) error {
 	// Delete existing group members
 	if err := tx.Where("group_id = ?", groupID).Delete(&models.UserGroup{}).Error; err != nil {
 		tx.Rollback()

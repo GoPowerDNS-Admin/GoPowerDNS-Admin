@@ -3,7 +3,7 @@ package login
 import (
 	"errors"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -109,7 +109,7 @@ func (s *Service) initLDAP() {
 }
 
 // Get handles the login page rendering.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	return c.Render(TemplateName, fiber.Map{
 		"local_db_enabled": s.cfg.Auth.LocalDB.Enabled,
 		"ldap_enabled":     s.cfg.Auth.LDAP.Enabled,
@@ -118,7 +118,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 }
 
 // Post handles the login form submission.
-func (s *Service) Post(c *fiber.Ctx) error {
+func (s *Service) Post(c fiber.Ctx) error {
 	type LoginForm struct {
 		Username string `form:"username"`
 		Password string `form:"password"`
@@ -126,7 +126,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	}
 
 	form := new(LoginForm)
-	if err := c.BodyParser(form); err != nil {
+	if err := c.Bind().Body(form); err != nil {
 		return s.renderError(c, ErrInvalidFormData.Error())
 	}
 
@@ -173,11 +173,11 @@ func (s *Service) Post(c *fiber.Ctx) error {
 		},
 	)
 
-	return c.Redirect(dashboard.Path)
+	return c.Redirect().To(dashboard.Path)
 }
 
 // renderError renders the login page with an error message.
-func (s *Service) renderError(c *fiber.Ctx, errorMsg string) error {
+func (s *Service) renderError(c fiber.Ctx, errorMsg string) error {
 	return c.Render(TemplateName, fiber.Map{
 		"local_db_enabled": s.cfg.Auth.LocalDB.Enabled,
 		"ldap_enabled":     s.cfg.Auth.LDAP.Enabled,
@@ -251,7 +251,7 @@ func (s *Service) authenticate(authType, username, password string) (*models.Use
 
 // createSessionAndSetCookie creates a user session, writes it to the store,
 // and sets the corresponding session cookie on the response.
-func (s *Service) createSessionAndSetCookie(c *fiber.Ctx, user *models.User) error {
+func (s *Service) createSessionAndSetCookie(c fiber.Ctx, user *models.User) error {
 	sessionID, err := session.GenerateSessionID()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to generate session ID")

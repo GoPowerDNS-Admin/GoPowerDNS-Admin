@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	pdnsapi "github.com/joeig/go-powerdns/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -109,7 +109,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 }
 
 // Get handles the add zone page rendering.
-func (s *Service) Get(c *fiber.Ctx) error {
+func (s *Service) Get(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext(PageTitle, "zones", "add").
 		AddBreadcrumb("Home", dashboard.Path, false).
@@ -124,7 +124,7 @@ func (s *Service) Get(c *fiber.Ctx) error {
 }
 
 // Post handles the add zone form submission.
-func (s *Service) Post(c *fiber.Ctx) error {
+func (s *Service) Post(c fiber.Ctx) error {
 	// Create navigation context
 	nav := navigation.NewContext(PageTitle, "zones", "add").
 		AddBreadcrumb("Home", dashboard.Path, false).
@@ -133,7 +133,7 @@ func (s *Service) Post(c *fiber.Ctx) error {
 
 	// Parse form data
 	form := &ZoneForm{}
-	if err := c.BodyParser(form); err != nil {
+	if err := c.Bind().Body(form); err != nil {
 		log.Error().Err(err).Msg("failed to parse add zone form")
 
 		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
@@ -281,5 +281,5 @@ func (s *Service) Post(c *fiber.Ctx) error {
 	)
 
 	// Redirect to dashboard with success message
-	return c.Redirect(dashboard.Path + "?success=Zone created successfully")
+	return c.Redirect().To(dashboard.Path + "?success=Zone created successfully")
 }

@@ -3,14 +3,14 @@ package auth
 import (
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
 
 // Middleware is a Fiber middleware that checks for user authentication.
-func Middleware(c *fiber.Ctx) error {
+func Middleware(c fiber.Ctx) error {
 	var (
 		isLoginPage   = IsLoginPage(c)
 		isLogoutPage  = IsLogoutPage(c)
@@ -32,7 +32,7 @@ func Middleware(c *fiber.Ctx) error {
 
 	// if no session cookie, redirect to login page
 	if loginCookie == "" && !isLoginPage {
-		return c.Redirect(login.Path)
+		return c.Redirect().To(login.Path)
 	}
 
 	// check session validity
@@ -43,7 +43,7 @@ func Middleware(c *fiber.Ctx) error {
 			return c.Next()
 		}
 
-		return c.Redirect(login.Path)
+		return c.Redirect().To(login.Path)
 	}
 
 	// valid data in session
@@ -54,20 +54,20 @@ func Middleware(c *fiber.Ctx) error {
 	}
 
 	if sessDataValid && isLoginPage {
-		return c.Redirect("/dashboard")
+		return c.Redirect().To("/dashboard")
 	}
 
 	return c.Next()
 }
 
 // IsLoginPage checks if the current request is for the login page.
-func IsLoginPage(c *fiber.Ctx) bool {
+func IsLoginPage(c fiber.Ctx) bool {
 	originalURL := strings.ToLower(c.OriginalURL())
 	return strings.HasPrefix(originalURL, login.Path)
 }
 
 // IsLogoutPage checks if the current request is for the logout page.
-func IsLogoutPage(c *fiber.Ctx) bool {
+func IsLogoutPage(c fiber.Ctx) bool {
 	originalURL := strings.ToLower(c.OriginalURL())
 	return strings.HasPrefix(originalURL, "/logout")
 }

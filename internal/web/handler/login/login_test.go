@@ -188,7 +188,7 @@ func TestAuthenticate_Local(t *testing.T) {
 	// Create a local user
 	lp := auth.NewLocalProvider(db)
 
-	user, err := lp.CreateUser("alice", "alice@example.com", "secret", "Alice", "Doe", 0)
+	user, err := lp.CreateUser("alice", "alice@example.com", "secret", "Alice Doe", 0)
 	if err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
@@ -243,7 +243,7 @@ func TestPost_Local_Success_SetsCookieAndRedirects(t *testing.T) {
 
 	// Create user for local auth
 	lp := auth.NewLocalProvider(db)
-	if _, err := lp.CreateUser("bob", "bob@example.com", "s3cr3t", "Bob", "Doe", 0); err != nil {
+	if _, err := lp.CreateUser("bob", "bob@example.com", "s3cr3t", "Bob Doe", 0); err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
 
@@ -292,7 +292,7 @@ func TestPost_Local_Success_DevModeDisablesSecure(t *testing.T) {
 	s.Init(app, cfg, db)
 
 	lp := auth.NewLocalProvider(db)
-	if _, err := lp.CreateUser("carol", "carol@example.com", "pass", "Carol", "Doe", 0); err != nil {
+	if _, err := lp.CreateUser("carol", "carol@example.com", "pass", "Carol Doe", 0); err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
 

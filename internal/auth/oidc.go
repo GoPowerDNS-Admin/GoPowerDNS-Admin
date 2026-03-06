@@ -126,7 +126,7 @@ func (p *OIDCProvider) HandleCallback(ctx context.Context, code string) (*models
 		Name          string   `json:"name"`
 		GivenName     string   `json:"given_name"`
 		FamilyName    string   `json:"family_name"`
-		Groups        []string `json:"groups"` // This might be under a different claim
+		Groups        []string `json:"groups"`
 	}
 
 	if err = idToken.Claims(&claims); err != nil {
@@ -136,7 +136,7 @@ func (p *OIDCProvider) HandleCallback(ctx context.Context, code string) (*models
 	// Resolve groups via helper to keep this function's complexity low
 	groups := p.groupsFromToken(idToken, claims.Groups)
 
-	// Find or create user
+	// Find or create a user
 	var user models.User
 
 	err = p.db.Where("external_id = ? AND auth_source = ?", claims.Sub, models.AuthSourceOIDC).
@@ -144,18 +144,23 @@ func (p *OIDCProvider) HandleCallback(ctx context.Context, code string) (*models
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		// Create new user
+		// Resolve the viewer role to satisfy the non-null FK constraint.
+		var viewerRole models.Role
+		if err = p.db.Where("name = ?", "viewer").First(&viewerRole).Error; err != nil {
+			return nil, nil, fmt.Errorf("failed to find viewer role for new OIDC user: %w", err)
+		}
+
+		// Create a new user
 		user = models.User{
-			Active:     true,
-			Username:   claims.Email, // Use email as username
-			Email:      claims.Email,
-			FirstName:  claims.GivenName,
-			LastName:   claims.FamilyName,
-			AuthSource: models.AuthSourceOIDC,
-			ExternalID: claims.Sub,
-			RoleID:     0, // No direct role, permissions come from groups
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
+			Active:      true,
+			Username:    claims.Email,
+			Email:       claims.Email,
+			DisplayName: claims.Name,
+			AuthSource:  models.AuthSourceOIDC,
+			ExternalID:  claims.Sub,
+			RoleID:      viewerRole.ID,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 
 		if err = p.db.Create(&user).Error; err != nil {
@@ -166,8 +171,7 @@ func (p *OIDCProvider) HandleCallback(ctx context.Context, code string) (*models
 	default:
 		// Update existing user
 		user.Email = claims.Email
-		user.FirstName = claims.GivenName
-		user.LastName = claims.FamilyName
+		user.DisplayName = claims.Name
 		user.UpdatedAt = time.Now()
 
 		if err = p.db.Save(&user).Error; err != nil {
@@ -243,7 +247,7 @@ func (p *OIDCProvider) GetLogoutURL(idToken, postLogoutRedirectURI string) strin
 	return logoutURL
 }
 
-// RefreshToken obtains a new access token using a refresh token.
+// RefreshToken gets a new access token using a refresh token.
 // This allows extending the user's session without requiring re-authentication.
 // Returns the new token set or an error if the refresh token is invalid or expired.
 func (p *OIDCProvider) RefreshToken(ctx context.Context, refreshToken string) (*oauth2.Token, error) {

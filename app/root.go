@@ -9,7 +9,6 @@ import (
 
 var (
 	dumpConfig *bool
-	jsonOutput *bool
 	cfg        config.Config
 
 	rootCmd = &cobra.Command{
@@ -20,18 +19,13 @@ that provides an easy-to-use interface for managing domains, records, and users.
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Handle --dump-config flag
 			if dumpConfig != nil && *dumpConfig {
-				var out string
-
 				if cfg, err = config.ReadConfig(configPath); err != nil {
 					return err
 				}
 
-				if jsonOutput != nil && *jsonOutput {
-					out, err = config.DumpConfigJSON(&cfg)
-				} else {
-					out, err = config.DumpConfig(&cfg)
-				}
+				var out string
 
+				out, err = config.DumpConfigJSON(&cfg)
 				if err != nil {
 					return err
 				}
@@ -48,8 +42,7 @@ that provides an easy-to-use interface for managing domains, records, and users.
 
 // Execute runs the root command.
 func Execute() error {
-	dumpConfig = rootCmd.PersistentFlags().Bool("dump-config", false, "dump config file")
-	jsonOutput = rootCmd.PersistentFlags().Bool("json", false, "output in JSON format")
+	dumpConfig = rootCmd.PersistentFlags().Bool("dump-config", false, "dump effective config as JSON")
 
 	rootCmd.PersistentFlags().StringVarP(
 		&configPath,

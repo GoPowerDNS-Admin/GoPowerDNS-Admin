@@ -50,6 +50,17 @@
           </div>
           {{ end }}
 
+          {{ if .oidc_enabled }}
+          <div class="mb-3">
+            <a href="/auth/oidc/login" class="btn btn-outline-primary w-100">
+              <span class="bi bi-box-arrow-in-right me-1"></span> Sign in with SSO
+            </a>
+          </div>
+          {{ if or .ldap_enabled .local_db_enabled }}
+          <hr class="my-3">
+          {{ end }}
+          {{ end }}
+
           {{ if or .ldap_enabled .local_db_enabled }}
           <form action="" method="post">
             <input type="hidden" name="_csrf_token" value="">
@@ -118,14 +129,8 @@
     </div>
     <!-- /.login-box -->
     <div class="text-center pt-3">
-      <p>Powered by <a href="https://powerdnsadmin.org" target="_blank">PowerDNS-Admin</a></p>
+      <p>Powered by <a href="https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin" target="_blank">PowerDNS-Admin</a></p>
     </div>
-    <!--begin::Required Plugin(popperjs for Bootstrap 5)-->
-    <!-- <script
-      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-      crossorigin="anonymous"
-    ></script> -->
-    <!--end::Required Plugin(popperjs for Bootstrap 5)-->
     <!--begin::Required Plugin(Bootstrap 5)-->
     <script
       src="static/vendor/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"
@@ -135,7 +140,6 @@
     <!--begin::Required Plugin(AdminLTE)-->
     <script src="static/vendor/adminlte-v4/js/adminlte.min.js"></script>
     <!--end::Required Plugin(AdminLTE)-->
-
   </body>
   <!--end::Body-->
 </html>

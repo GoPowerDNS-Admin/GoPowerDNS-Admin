@@ -283,6 +283,8 @@ func (p *LDAPProvider) authenticateAsUser(conn *ldap.Conn, userDN, password stri
 
 // upsertLDAPUser creates or updates a user record based on LDAP attributes.
 func (p *LDAPProvider) upsertLDAPUser(username, userDN, email, firstName, lastName string) (*models.User, error) {
+	displayName := strings.TrimSpace(firstName + " " + lastName)
+
 	var user models.User
 
 	err := p.db.Where("external_id = ? AND auth_source = ?", userDN, models.AuthSourceLDAP).
@@ -292,16 +294,15 @@ func (p *LDAPProvider) upsertLDAPUser(username, userDN, email, firstName, lastNa
 
 	if notFound {
 		user = models.User{
-			Active:     true,
-			Username:   username,
-			Email:      email,
-			FirstName:  firstName,
-			LastName:   lastName,
-			AuthSource: models.AuthSourceLDAP,
-			ExternalID: userDN,
-			RoleID:     0,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
+			Active:      true,
+			Username:    username,
+			Email:       email,
+			DisplayName: displayName,
+			AuthSource:  models.AuthSourceLDAP,
+			ExternalID:  userDN,
+			RoleID:      0,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 
 		if err = p.db.Create(&user).Error; err != nil {
@@ -317,8 +318,7 @@ func (p *LDAPProvider) upsertLDAPUser(username, userDN, email, firstName, lastNa
 
 	// Update existing user
 	user.Email = email
-	user.FirstName = firstName
-	user.LastName = lastName
+	user.DisplayName = displayName
 	user.UpdatedAt = time.Now()
 
 	if err = p.db.Save(&user).Error; err != nil {

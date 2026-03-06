@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
+	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
@@ -22,8 +23,8 @@ func Middleware(c fiber.Ctx) error {
 		return c.Next()
 	}
 
-	// Allow logout page without authentication
-	if isLogoutPage {
+	// Allow logout and OIDC flow pages without authentication
+	if isLogoutPage || isOIDCPage(c) {
 		return c.Next()
 	}
 
@@ -70,4 +71,13 @@ func IsLoginPage(c fiber.Ctx) bool {
 func IsLogoutPage(c fiber.Ctx) bool {
 	originalURL := strings.ToLower(c.OriginalURL())
 	return strings.HasPrefix(originalURL, "/logout")
+}
+
+// isOIDCPage checks if the current request is part of the OIDC authentication flow.
+func isOIDCPage(c fiber.Ctx) bool {
+	originalURL := strings.ToLower(c.OriginalURL())
+
+	return strings.HasPrefix(originalURL, oidchandler.LoginPath) ||
+		strings.HasPrefix(originalURL, oidchandler.CallbackPath) ||
+		strings.HasPrefix(originalURL, oidchandler.LogoutPath)
 }

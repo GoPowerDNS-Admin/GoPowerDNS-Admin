@@ -8,41 +8,41 @@ import (
 
 // Session settings.
 type Session struct {
-	ExpiryTime time.Duration
+	ExpiryTime time.Duration `mapstructure:"expirytime"`
 }
 
 // Config overall data structure.
 type Config struct {
-	DevMode   bool // enable dev mode for development
-	DB        DB
-	Log       logger.Log
-	Title     string
-	Webserver Webserver
-	Record    Record `toml:"record"` // DNS record type settings
-	Auth      Auth   // Authentication settings
+	DevMode   bool       `mapstructure:"devmode"`
+	DB        DB         `mapstructure:"db"`
+	Log       logger.Log `mapstructure:"log"`
+	Title     string     `mapstructure:"title"`
+	Webserver Webserver  `mapstructure:"webserver"`
+	Record    Record     `mapstructure:"record"`
+	Auth      Auth       `mapstructure:"auth"`
 }
 
 // Webserver implement webserver settings.
 type Webserver struct {
-	BrowseStatic        bool    // enable static file browsing (for development purposes only)
-	CacheEnabled        bool    // true = enable cache, false = disable cache
-	CleanPath           bool    // use clean path middleware to allow multi slash requests
-	DisableRecover      bool    // disable recover middleware
-	Domain              string  // domain name for the webserver
-	Port                int     // listening port for the webserver
-	ShutDownTime        int     // wait time for shutdown
-	URL                 string  // base url for the webserver
-	CookieEncryptionKey string  // encryption key for cookies
-	Argon2Salt          string  // salt for argon2 hashing
-	Session             Session // session settings
+	BrowseStatic        bool    `mapstructure:"browsestatic"`
+	CacheEnabled        bool    `mapstructure:"cacheenabled"`
+	CleanPath           bool    `mapstructure:"cleanpath"`
+	DisableRecover      bool    `mapstructure:"disablerecover"`
+	Domain              string  `mapstructure:"domain"`
+	Port                int     `mapstructure:"port"`
+	ShutDownTime        int     `mapstructure:"shutdowntime"`
+	URL                 string  `mapstructure:"url"`
+	CookieEncryptionKey string  `mapstructure:"cookieencryptionkey"`
+	Argon2Salt          string  `mapstructure:"argon2salt"`
+	Session             Session `mapstructure:"session"`
 }
 
 // RecordTypeSettings defines whether a DNS record type can be edited in forward or reverse zones.
 type RecordTypeSettings struct {
-	Description string `form:"description" json:"description" toml:"description"`
-	Forward     bool   `form:"forward"     json:"forward"     toml:"forward"`
-	Reverse     bool   `form:"reverse"     json:"reverse"     toml:"reverse"`
-	Help        string `form:"help"        json:"help"        toml:"help"`
+	Description string `form:"description" json:"description" mapstructure:"description"`
+	Forward     bool   `form:"forward"     json:"forward"     mapstructure:"forward"`
+	Reverse     bool   `form:"reverse"     json:"reverse"     mapstructure:"reverse"`
+	Help        string `form:"help"        json:"help"        mapstructure:"help"`
 }
 
 // Record holds configuration for DNS record type editing permissions.
@@ -51,47 +51,47 @@ type Record map[string]RecordTypeSettings
 
 // Auth holds authentication configuration.
 type Auth struct {
-	LocalDB LocalDBAuth // Local database authentication
-	OIDC    OIDCAuth    // OpenID Connect authentication
-	LDAP    LDAPAuth    // LDAP authentication
+	LocalDB LocalDBAuth `mapstructure:"localdb"`
+	OIDC    OIDCAuth    `mapstructure:"oidc"`
+	LDAP    LDAPAuth    `mapstructure:"ldap"`
 }
 
 // LocalDBAuth holds local database authentication settings.
 type LocalDBAuth struct {
-	Enabled bool `toml:"enabled"` // Enable local database authentication
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // OIDCAuth holds OIDC authentication settings.
 type OIDCAuth struct {
-	Enabled      bool     `toml:"enabled"`       // Enable OIDC authentication
-	ProviderURL  string   `toml:"provider_url"`  // OIDC provider URL (e.g., https://accounts.google.com)
-	ClientID     string   `toml:"client_id"`     // OAuth2 client ID
-	ClientSecret string   `toml:"client_secret"` // OAuth2 client secret
-	RedirectURL  string   `toml:"redirect_url"`  // OAuth2 redirect URL
-	Scopes       []string `toml:"scopes"`        // OAuth2 scopes (default: openid, profile, email)
-	GroupsClaim  string   `toml:"groups_claim"`  // Claim name for groups (default: "groups")
+	Enabled      bool     `mapstructure:"enabled"`
+	ProviderURL  string   `mapstructure:"provider_url"`
+	ClientID     string   `mapstructure:"client_id"`
+	ClientSecret string   `mapstructure:"client_secret"`
+	RedirectURL  string   `mapstructure:"redirect_url"`
+	Scopes       []string `mapstructure:"scopes"`
+	GroupsClaim  string   `mapstructure:"groups_claim"`
 }
 
 // LDAPAuth holds LDAP authentication settings.
 type LDAPAuth struct {
-	Enabled         bool     `toml:"enabled"`           // Enable LDAP authentication
-	Host            string   `toml:"host"`              // LDAP server hostname
-	Port            int      `toml:"port"`              // LDAP server port (389 for LDAP, 636 for LDAPS)
-	UseSSL          bool     `toml:"use_ssl"`           // Use LDAPS (SSL/TLS)
-	UseTLS          bool     `toml:"use_tls"`           // Use StartTLS
-	SkipVerify      bool     `toml:"skip_verify"`       // Skip TLS certificate verification
-	BindDN          string   `toml:"bind_dn"`           // DN to bind with for searches
-	BindPassword    string   `toml:"bind_password"`     // Password for bind DN
-	BaseDN          string   `toml:"base_dn"`           // Base DN for user searches
-	UserFilter      string   `toml:"user_filter"`       // LDAP filter for users (e.g., "(uid={username})")
-	GroupBaseDN     string   `toml:"group_base_dn"`     // Base DN for group searches
-	GroupFilter     string   `toml:"group_filter"`      // LDAP filter for groups (e.g., "(member={userdn})")
-	GroupMemberAttr string   `toml:"group_member_attr"` // Attribute for group membership (default: "member")
-	UsernameAttr    string   `toml:"username_attr"`     // Attribute for username (default: "uid")
-	EmailAttr       string   `toml:"email_attr"`        // Attribute for email (default: "mail")
-	FirstNameAttr   string   `toml:"first_name_attr"`   // Attribute for first name (default: "givenName")
-	LastNameAttr    string   `toml:"last_name_attr"`    // Attribute for last name (default: "sn")
-	GroupNameAttr   string   `toml:"group_name_attr"`   // Attribute for group name (default: "cn")
-	Timeout         int      `toml:"timeout"`           // Connection timeout in seconds
-	SearchAttrs     []string `toml:"search_attrs"`      // Additional attributes to retrieve
+	Enabled         bool     `mapstructure:"enabled"`
+	Host            string   `mapstructure:"host"`
+	Port            int      `mapstructure:"port"`
+	UseSSL          bool     `mapstructure:"use_ssl"`
+	UseTLS          bool     `mapstructure:"use_tls"`
+	SkipVerify      bool     `mapstructure:"skip_verify"`
+	BindDN          string   `mapstructure:"bind_dn"`
+	BindPassword    string   `mapstructure:"bind_password"`
+	BaseDN          string   `mapstructure:"base_dn"`
+	UserFilter      string   `mapstructure:"user_filter"`
+	GroupBaseDN     string   `mapstructure:"group_base_dn"`
+	GroupFilter     string   `mapstructure:"group_filter"`
+	GroupMemberAttr string   `mapstructure:"group_member_attr"`
+	UsernameAttr    string   `mapstructure:"username_attr"`
+	EmailAttr       string   `mapstructure:"email_attr"`
+	FirstNameAttr   string   `mapstructure:"first_name_attr"`
+	LastNameAttr    string   `mapstructure:"last_name_attr"`
+	GroupNameAttr   string   `mapstructure:"group_name_attr"`
+	Timeout         int      `mapstructure:"timeout"`
+	SearchAttrs     []string `mapstructure:"search_attrs"`
 }

@@ -3,12 +3,14 @@ package oidc
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/activitylog"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
@@ -35,7 +37,8 @@ type Service struct {
 	db           *gorm.DB
 	oidcProvider *auth.OIDCProvider
 	authService  *auth.Service
-	stateStore   map[string]time.Time // Simple in-memory state store (use Redis in production)
+	stateMu      sync.Mutex
+	stateStore   map[string]time.Time // in-memory state store protected by stateMu
 }
 
 // Handler is the OIDC handler.
@@ -107,7 +110,9 @@ func (s *Service) Login(c fiber.Ctx) error {
 	}
 
 	// Store state with expiration (5 minutes)
+	s.stateMu.Lock()
 	s.stateStore[state] = time.Now().Add(5 * time.Minute)
+	s.stateMu.Unlock()
 
 	// Get authorization URL
 	authURL := s.oidcProvider.GetAuthURL(state)
@@ -132,21 +137,20 @@ func (s *Service) Callback(c fiber.Ctx) error {
 	}
 
 	// Verify state
+	s.stateMu.Lock()
 	expiration, exists := s.stateStore[state]
+	delete(s.stateStore, state)
+	s.stateMu.Unlock()
+
 	if !exists {
 		log.Error().Str("state", state).Msg("Invalid state token")
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid state token")
 	}
 
 	if time.Now().After(expiration) {
-		delete(s.stateStore, state)
 		log.Error().Str("state", state).Msg("Expired state token")
-
 		return c.Status(fiber.StatusBadRequest).SendString("Expired state token")
 	}
-
-	// Remove used state
-	delete(s.stateStore, state)
 
 	// Handle callback
 	ctx := context.Background()
@@ -154,6 +158,14 @@ func (s *Service) Callback(c fiber.Ctx) error {
 	authenticatedUser, groups, err := s.oidcProvider.HandleCallback(ctx, code)
 	if err != nil {
 		log.Error().Err(err).Msg("OIDC authentication failed")
+		activitylog.Record(&activitylog.Entry{
+			DB:           s.db,
+			Action:       activitylog.ActionLoginFailed,
+			ResourceType: activitylog.ResourceTypeAuth,
+			Details:      map[string]any{"auth_type": "oidc", "reason": err.Error()},
+			IPAddress:    c.IP(),
+		})
+
 		return c.Status(fiber.StatusUnauthorized).SendString("Authentication failed")
 	}
 
@@ -198,17 +210,53 @@ func (s *Service) Callback(c fiber.Ctx) error {
 
 	log.Info().Str("username", authenticatedUser.Username).Msg("User logged in successfully via OIDC")
 
+	userID := authenticatedUser.ID
+	activitylog.Record(&activitylog.Entry{
+		DB:           s.db,
+		UserID:       &userID,
+		Username:     authenticatedUser.Username,
+		Action:       activitylog.ActionLogin,
+		ResourceType: activitylog.ResourceTypeAuth,
+		Details:      map[string]any{"auth_type": "oidc"},
+		IPAddress:    c.IP(),
+	})
+
 	return c.Redirect().To(dashboard.Path)
 }
 
 // Logout handles OIDC logout.
 func (s *Service) Logout(c fiber.Ctx) error {
-	// Clear session
-	c.ClearCookie("session")
+	sessionID := c.Cookies("session")
+	if sessionID != "" {
+		sessData := new(session.Data)
+		if err := sessData.Read(sessionID); err == nil && sessData.User.ID > 0 {
+			userID := sessData.User.ID
+			activitylog.Record(&activitylog.Entry{
+				DB:           s.db,
+				UserID:       &userID,
+				Username:     sessData.User.Username,
+				Action:       activitylog.ActionLogout,
+				ResourceType: activitylog.ResourceTypeAuth,
+				IPAddress:    c.IP(),
+			})
+		}
+
+		if err := session.DeleteSession(sessionID); err != nil {
+			log.Error().Err(err).Msg("Failed to delete session")
+		}
+	}
+
+	// Expire the session cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
 
 	if s.oidcProvider != nil {
-		// Get OIDC logout URL if supported
-		// Note: You'd need to store the ID token in the session to support full OIDC logout
 		postLogoutRedirectURI := s.cfg.Webserver.URL
 		logoutURL := s.oidcProvider.GetLogoutURL("", postLogoutRedirectURI)
 
@@ -217,7 +265,6 @@ func (s *Service) Logout(c fiber.Ctx) error {
 		}
 	}
 
-	// Redirect to login page
 	return c.Redirect().To("/login")
 }
 
@@ -228,10 +275,15 @@ func (s *Service) cleanupStates() {
 
 	for range ticker.C {
 		now := time.Now()
+
+		s.stateMu.Lock()
+
 		for state, expiration := range s.stateStore {
 			if now.After(expiration) {
 				delete(s.stateStore, state)
 			}
 		}
+
+		s.stateMu.Unlock()
 	}
 }

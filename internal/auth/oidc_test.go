@@ -197,7 +197,10 @@ func newOIDCTestDB(t *testing.T) *gorm.DB {
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&models.User{}))
+	require.NoError(t, db.AutoMigrate(&models.Role{}, &models.User{}))
+
+	// Seed the viewer role required when creating new OIDC users.
+	require.NoError(t, db.Create(&models.Role{Name: "viewer"}).Error)
 
 	return db
 }
@@ -277,8 +280,7 @@ func TestHandleCallback(t *testing.T) {
 				t.Helper()
 				assert.Equal(t, "test@example.com", u.Username)
 				assert.Equal(t, "test@example.com", u.Email)
-				assert.Equal(t, "Test", u.FirstName)
-				assert.Equal(t, "User", u.LastName)
+				assert.Equal(t, "Test User", u.DisplayName)
 				assert.Equal(t, models.AuthSourceOIDC, u.AuthSource)
 				assert.Equal(t, "user123", u.ExternalID)
 				assert.True(t, u.Active)
@@ -288,19 +290,17 @@ func TestHandleCallback(t *testing.T) {
 		{
 			name: "updates existing user",
 			seedUser: &models.User{
-				Active:     true,
-				Username:   "old@example.com",
-				Email:      "old@example.com",
-				FirstName:  "Old",
-				LastName:   "Name",
-				AuthSource: models.AuthSourceOIDC,
-				ExternalID: "user123",
+				Active:      true,
+				Username:    "old@example.com",
+				Email:       "old@example.com",
+				DisplayName: "Old Name",
+				AuthSource:  models.AuthSourceOIDC,
+				ExternalID:  "user123",
 			},
 			checkUser: func(t *testing.T, u *models.User) {
 				t.Helper()
 				assert.Equal(t, "test@example.com", u.Email)
-				assert.Equal(t, "Test", u.FirstName)
-				assert.Equal(t, "User", u.LastName)
+				assert.Equal(t, "Test User", u.DisplayName)
 			},
 		},
 		{

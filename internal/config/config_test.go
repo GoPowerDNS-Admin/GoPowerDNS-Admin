@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -160,26 +161,53 @@ func TestConfigValidation(t *testing.T) {
 	}
 }
 
-func TestReadConfigWithJSONOverride(t *testing.T) {
-	var (
-		err         error
-		projectRoot string
-	)
+func TestReadConfigWithOverlayFile(t *testing.T) {
+	projectRoot, err := filepath.Abs("../../")
+	if err != nil {
+		t.Fatalf("failed to get project root: %v", err)
+	}
 
-	projectRoot, err = filepath.Abs("../../")
+	// Write a temporary overlay that changes only the Title.
+	overlayDir := filepath.Join(projectRoot, "etc", "local")
+	if err = os.MkdirAll(overlayDir, 0o750); err != nil {
+		t.Fatalf("failed to create overlay dir: %v", err)
+	}
+
+	overlayFile := filepath.Join(overlayDir, "test-overlay.toml")
+	if err = os.WriteFile(overlayFile, []byte(`title = "Overlay Title"`), 0o600); err != nil {
+		t.Fatalf("failed to write overlay file: %v", err)
+	}
+
+	t.Cleanup(func() { _ = os.Remove(overlayFile) })
+
+	cfg, err := ReadConfig(overlayFile)
+	if err != nil {
+		t.Fatalf("ReadConfig() error = %v", err)
+	}
+
+	if cfg.Title != "Overlay Title" {
+		t.Errorf("Title = %q, want %q", cfg.Title, "Overlay Title")
+	}
+
+	// Fields not in the overlay must still come from main.toml.
+	if cfg.Webserver.Port == 0 {
+		t.Error("Webserver.Port should be set from main.toml")
+	}
+}
+
+func TestReadConfigWithEnvOverride(t *testing.T) {
+	projectRoot, err := filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("failed to get project root: %v", err)
 	}
 
 	configPath := filepath.Join(projectRoot, "etc") + string(filepath.Separator)
 
-	// Set JSON override environment variable
-	jsonOverride := `{"Title":"Test Override","Webserver":{"Port":9090}}`
-	t.Setenv("GO_POWERDNS_ADMIN_CONFIG_JSON", jsonOverride)
+	// Viper env vars: prefix GPDNS_ + uppercase key path with _ separator.
+	t.Setenv("GPDNS_TITLE", "Test Override")
+	t.Setenv("GPDNS_WEBSERVER_PORT", "9090")
 
-	var cfg Config
-
-	cfg, err = ReadConfig(configPath)
+	cfg, err := ReadConfig(configPath)
 	if err != nil {
 		t.Fatalf("ReadConfig() error = %v", err)
 	}
@@ -193,40 +221,6 @@ func TestReadConfigWithJSONOverride(t *testing.T) {
 	}
 }
 
-func TestDumpConfig(t *testing.T) {
-	var err error
-
-	cfg := Config{
-		Title:   "Test",
-		DevMode: true,
-		Webserver: Webserver{
-			Port: 8080,
-			URL:  "http://localhost:8080",
-		},
-		Record: Record{
-			"A": RecordTypeSettings{
-				Forward: true,
-				Reverse: false,
-			},
-		},
-	}
-
-	var tomlStr string
-
-	tomlStr, err = DumpConfig(&cfg)
-	if err != nil {
-		t.Fatalf("DumpConfig() error = %v", err)
-	}
-
-	if tomlStr == "" {
-		t.Error("DumpConfig() returned empty string")
-	}
-
-	// Check if output contains expected values
-	if !strings.Contains(tomlStr, "Test") {
-		t.Error("DumpConfig() output should contain Title")
-	}
-}
 
 func TestDumpConfigJSON(t *testing.T) {
 	var err error

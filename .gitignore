@@ -27,6 +27,9 @@ go.work.sum
 # env file
 .env
 
+# local dev config
+etc/local/**
+
 # Editor/IDE
 .idea/**
 .vscode/**

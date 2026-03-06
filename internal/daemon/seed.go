@@ -266,8 +266,7 @@ func seedUsers(db *gorm.DB) {
 			Active:     true,
 			RoleID:     adminRole.ID,
 			AuthSource: models.AuthSourceLocal,
-			FirstName:  "System",
-			LastName:   "Administrator",
+			DisplayName: "System Administrator",
 		}
 
 		if err := db.Create(user).Error; err != nil {

@@ -63,7 +63,7 @@ func (p *LocalProvider) Authenticate(username, password string) (*models.User, e
 
 // CreateUser creates a new local user.
 func (p *LocalProvider) CreateUser(
-	username, email, password, firstName, lastName string,
+	username, email, password, displayName string,
 	roleID uint,
 ) (*models.User, error) {
 	// Check if user already exists
@@ -86,10 +86,9 @@ func (p *LocalProvider) CreateUser(
 		Active:     true,
 		Username:   username,
 		Email:      email,
-		Password:   hashedPassword,
-		FirstName:  firstName,
-		LastName:   lastName,
-		RoleID:     roleID,
+		Password:    hashedPassword,
+		DisplayName: displayName,
+		RoleID:      roleID,
 		AuthSource: models.AuthSourceLocal,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
@@ -103,13 +102,12 @@ func (p *LocalProvider) CreateUser(
 }
 
 // UpdateUser updates an existing local user.
-func (p *LocalProvider) UpdateUser(userID uint64, email, firstName, lastName string, roleID uint) error {
+func (p *LocalProvider) UpdateUser(userID uint64, email, displayName string, roleID uint) error {
 	updates := map[string]interface{}{
-		"email":      email,
-		"first_name": firstName,
-		"last_name":  lastName,
-		"role_id":    roleID,
-		"updated_at": time.Now(),
+		"email":        email,
+		"display_name": displayName,
+		"role_id":      roleID,
+		"updated_at":   time.Now(),
 	}
 
 	return p.db.Model(&models.User{}).

@@ -65,13 +65,9 @@
                                     <input type="email" class="form-control" id="email" name="email" value="{{ .User.Email }}" required maxlength="255">
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label for="firstname" class="form-label">First Name</label>
-                                    <input type="text" class="form-control" id="firstname" name="firstname" value="{{ .User.FirstName }}" maxlength="100">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="lastname" class="form-label">Last Name</label>
-                                    <input type="text" class="form-control" id="lastname" name="lastname" value="{{ .User.LastName }}" maxlength="100">
+                                <div class="col-12">
+                                    <label for="displayname" class="form-label">Display Name</label>
+                                    <input type="text" class="form-control" id="displayname" name="displayname" value="{{ .User.DisplayName }}" maxlength="255">
                                 </div>
 
                                 <div class="col-md-6">

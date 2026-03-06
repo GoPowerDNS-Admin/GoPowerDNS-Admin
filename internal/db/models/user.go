@@ -34,10 +34,8 @@ type User struct {
 	Email string `gorm:"size:255;not null"`
 	// Password is the Argon2id hashed password (only used for local authentication).
 	Password string `gorm:"size:255"`
-	// FirstName is the user's first or given name.
-	FirstName string `gorm:"size:100"`
-	// LastName is the user's last or family name.
-	LastName string `gorm:"size:100"`
+	// DisplayName is the user's display name.
+	DisplayName string `gorm:"size:255"`
 	// RoleID is the ID of the role assigned to this user.
 	RoleID uint `gorm:"column:role_id;not null"`
 	// Role is the associated role (enforced with a foreign key constraint).

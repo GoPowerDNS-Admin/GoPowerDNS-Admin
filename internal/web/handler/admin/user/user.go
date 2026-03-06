@@ -112,8 +112,7 @@ func (s *Service) List(c fiber.Ctx) error {
 	if search != "" {
 		like := "%" + search + "%"
 		tx = tx.Where(
-			"username ILIKE ? OR email ILIKE ? OR external_id ILIKE ? OR first_name ILIKE ? OR last_name ILIKE ?",
-			like,
+			"username ILIKE ? OR email ILIKE ? OR external_id ILIKE ? OR display_name ILIKE ?",
 			like,
 			like,
 			like,
@@ -206,15 +205,14 @@ func (s *Service) New(c fiber.Ctx) error {
 // Create creates a new user.
 func (s *Service) Create(c fiber.Ctx) error {
 	var in struct {
-		Username   string `form:"username"    validate:"required,min=3,max=100"`
-		Email      string `form:"email"       validate:"required,email,max=255"`
-		FirstName  string `form:"firstname"   validate:"max=100"`
-		LastName   string `form:"lastname"    validate:"max=100"`
-		AuthSource string `form:"source"      validate:"required,oneof=local oidc ldap"`
-		ExternalID string `form:"external_id"`
-		Password   string `form:"password"`
-		Active     bool   `form:"active"`
-		RoleID     uint   `form:"role_id"`
+		Username    string `form:"username"    validate:"required,min=3,max=100"`
+		Email       string `form:"email"       validate:"required,email,max=255"`
+		DisplayName string `form:"displayname" validate:"max=255"`
+		AuthSource  string `form:"source"      validate:"required,oneof=local oidc ldap"`
+		ExternalID  string `form:"external_id"`
+		Password    string `form:"password"`
+		Active      bool   `form:"active"`
+		RoleID      uint   `form:"role_id"`
 	}
 
 	if err := c.Bind().Body(&in); err != nil {
@@ -246,11 +244,10 @@ func (s *Service) Create(c fiber.Ctx) error {
 	}
 
 	user := models.User{
-		Username:   in.Username,
-		Email:      in.Email,
-		FirstName:  in.FirstName,
-		LastName:   in.LastName,
-		AuthSource: models.AuthSource(in.AuthSource),
+		Username:    in.Username,
+		Email:       in.Email,
+		DisplayName: in.DisplayName,
+		AuthSource:  models.AuthSource(in.AuthSource),
 		ExternalID: in.ExternalID,
 		Active:     in.Active,
 		RoleID:     in.RoleID,
@@ -331,15 +328,14 @@ func (s *Service) Update(c fiber.Ctx) error {
 	}
 
 	var in struct {
-		Username   string `form:"username"    validate:"required,min=3,max=100"`
-		Email      string `form:"email"       validate:"required,email,max=255"`
-		FirstName  string `form:"firstname"   validate:"max=100"`
-		LastName   string `form:"lastname"    validate:"max=100"`
-		AuthSource string `form:"source"      validate:"required,oneof=local oidc ldap"`
-		ExternalID string `form:"external_id"`
-		Password   string `form:"password"`
-		Active     bool   `form:"active"`
-		RoleID     uint   `form:"role_id"`
+		Username    string `form:"username"    validate:"required,min=3,max=100"`
+		Email       string `form:"email"       validate:"required,email,max=255"`
+		DisplayName string `form:"displayname" validate:"max=255"`
+		AuthSource  string `form:"source"      validate:"required,oneof=local oidc ldap"`
+		ExternalID  string `form:"external_id"`
+		Password    string `form:"password"`
+		Active      bool   `form:"active"`
+		RoleID      uint   `form:"role_id"`
 	}
 	if err := c.Bind().Body(&in); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
@@ -370,8 +366,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 	user.Username = in.Username
 	user.Email = in.Email
-	user.FirstName = in.FirstName
-	user.LastName = in.LastName
+	user.DisplayName = in.DisplayName
 	user.AuthSource = models.AuthSource(in.AuthSource)
 	user.ExternalID = in.ExternalID
 	user.Active = in.Active

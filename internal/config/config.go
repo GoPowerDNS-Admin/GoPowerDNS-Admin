@@ -4,38 +4,86 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"os"
+	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/BurntSushi/toml"
+	"github.com/spf13/viper"
 )
 
-// ReadConfig from config file.
-func ReadConfig(path string) (Config, error) {
-	var (
-		c             Config
-		JSONConfigEnv string
-		err           error
-	)
+// EnvPrefix is the prefix for environment variable overrides.
+// e.g. GPDNS_WEBSERVER_PORT overrides webserver.port.
+const EnvPrefix = "GPDNS"
 
-	// Read main configuration
+// ReadConfig reads configuration from a directory path (e.g. "./etc/") or a
+// specific overlay file (e.g. "etc/local/dev.toml").
+//
+// When a .toml file path is given, main.toml is loaded first from the parent
+// directory and the given file is merged on top, overriding only the keys it
+// defines. Environment variables prefixed with GPDNS_ take the highest priority.
+func ReadConfig(path string) (Config, error) {
 	if path == "" {
 		path = "./etc/"
 	}
 
-	if _, err = toml.DecodeFile(path+"main.toml", &c); err != nil {
+	v := viper.New()
+	v.SetConfigType("toml")
+
+	// Env var support: GPDNS_WEBSERVER_PORT → webserver.port
+	v.SetEnvPrefix(EnvPrefix)
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	var mainConfig, overlayFile string
+
+	if strings.HasSuffix(path, ".toml") {
+		// A specific overlay file was given; derive main.toml from its grandparent dir.
+		// e.g. "etc/local/dev.toml" → main = "etc/main.toml", overlay = "etc/local/dev.toml"
+		overlayFile = path
+		parts := strings.Split(strings.TrimSuffix(path, ".toml"), "/")
+
+		baseDir := strings.Join(parts[:len(parts)-2], "/")
+		if baseDir == "" {
+			baseDir = "."
+		}
+
+		mainConfig = baseDir + "/main.toml"
+	} else {
+		dir := strings.TrimRight(path, "/")
+		mainConfig = dir + "/main.toml"
+	}
+
+	v.SetConfigFile(mainConfig)
+
+	if err := v.ReadInConfig(); err != nil {
 		return Config{}, errors.Wrap(err, "failed to read main config file")
 	}
 
-	// override it from env
-	JSONConfigEnv = os.Getenv("GO_POWERDNS_ADMIN_CONFIG_JSON")
+	if overlayFile != "" {
+		v.SetConfigFile(overlayFile)
 
-	if JSONConfigEnv != "" {
-		c, err = decodeAndMergeConfig(&c, JSONConfigEnv)
-		if err != nil {
-			return c, err
+		if err := v.MergeInConfig(); err != nil {
+			return Config{}, errors.Wrap(err, "failed to merge overlay config file")
 		}
+	}
+
+	var c Config
+	if err := v.Unmarshal(&c); err != nil {
+		return Config{}, errors.Wrap(err, "failed to unmarshal config")
+	}
+
+	// Bridge log.level → Log.LogLevel (logger.Log uses a different field name).
+	if c.Log.LogLevel == "" {
+		c.Log.LogLevel = v.GetString("log.level")
+	}
+
+	// Viper lowercases all keys; DNS record types must be uppercase (A, AAAA, …).
+	if len(c.Record) > 0 {
+		upper := make(Record, len(c.Record))
+		for k, settings := range c.Record {
+			upper[strings.ToUpper(k)] = settings
+		}
+
+		c.Record = upper
 	}
 
 	if errValidate := validate(&c); errValidate != nil {
@@ -45,29 +93,7 @@ func ReadConfig(path string) (Config, error) {
 	return c, nil
 }
 
-func decodeAndMergeConfig(c *Config, configAsJSON string) (Config, error) {
-	err := json.Unmarshal([]byte(configAsJSON), &c)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "failed to read main config file")
-	}
-
-	return *c, nil
-}
-
-// DumpConfig config as TOML String.
-func DumpConfig(c *Config) (string, error) {
-	var buffer bytes.Buffer
-
-	t := toml.NewEncoder(&buffer)
-
-	if err := t.Encode(c); err != nil {
-		return "", err
-	}
-
-	return buffer.String(), nil
-}
-
-// DumpConfigJSON config as JSON String.
+// DumpConfigJSON serializes the config as an indented JSON string.
 func DumpConfigJSON(c *Config) (string, error) {
 	var buffer bytes.Buffer
 
@@ -81,24 +107,20 @@ func DumpConfigJSON(c *Config) (string, error) {
 	return buffer.String(), nil
 }
 
-// validate minimal config settings for marvin.
-// Validates only a very small part of the params needed
-// by marvin.
+// validate checks the minimal required config fields.
 func validate(c *Config) error {
-	// validate webserver listening port
-	invalidErrMessage := "invalid config"
+	const invalidErrMessage = "invalid config"
 
 	if c.Webserver.Port == 0 {
 		return errors.Wrap(ErrWebServerPortCanNotBeZero, invalidErrMessage)
 	}
 
-	// validate access-control-allow-origin
 	if c.Webserver.URL == "" {
 		return errors.Wrap(ErrEmptyURL, invalidErrMessage)
 	}
 
 	if c.Webserver.ShutDownTime == 0 {
-		c.Webserver.ShutDownTime = 5 // set default of 5 seconds
+		c.Webserver.ShutDownTime = 5
 	}
 
 	return nil

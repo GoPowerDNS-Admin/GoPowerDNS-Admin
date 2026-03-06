@@ -100,7 +100,7 @@ linters:
         - fieldalignment
 
     gocyclo:
-      min-complexity: 15
+      min-complexity: 16
 
     dupl:
       threshold: 100

@@ -11,8 +11,8 @@ URL = "http://localhost:8080"
 BrowseStatic = false
 
 
-[webserver.Session]
-ExpireTime = 86400
+[webserver.session]
+ExpiryTime = "24h"
 # RefreshTime = 3600
 # RememberMeExpireTime = 604800
 

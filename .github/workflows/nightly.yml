@@ -60,16 +60,10 @@ jobs:
           retention-days: 7
 
   build-darwin:
-    name: macOS / ${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
+    name: macOS / amd64 + arm64
+    runs-on: macos-latest # Apple Silicon; Xcode toolchain is universal
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - arch: amd64
-            runner: macos-13 # Intel
-          - arch: arm64
-            runner: macos-latest # Apple Silicon
 
     steps:
       - uses: actions/checkout@v4
@@ -78,22 +72,36 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build
+      - name: Build arm64
         env:
           GOOS: darwin
-          GOARCH: ${{ matrix.arch }}
+          GOARCH: arm64
           CGO_ENABLED: "1"
         run: |
           mkdir -p dist
           go build -v \
             -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=$(git describe --tags --always --dirty)" \
-            -o dist/gopowerdns-admin-darwin-${{ matrix.arch }} \
+            -o dist/gopowerdns-admin-darwin-arm64 \
+            .
+
+      - name: Build amd64 (cross-compile via universal Clang)
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_ENABLED: "1"
+          CC: "clang -arch x86_64"
+          CGO_CFLAGS: "-arch x86_64"
+          CGO_LDFLAGS: "-arch x86_64"
+        run: |
+          go build -v \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=$(git describe --tags --always --dirty)" \
+            -o dist/gopowerdns-admin-darwin-amd64 \
             .
 
       - uses: actions/upload-artifact@v4
         with:
-          name: gopowerdns-admin-darwin-${{ matrix.arch }}
-          path: dist/
+          name: gopowerdns-admin-darwin
+          path: dist/gopowerdns-admin-darwin-*
           retention-days: 7
 
   build-freebsd:

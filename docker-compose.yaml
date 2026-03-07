@@ -18,6 +18,36 @@ services:
       - "8081:8081"
     volumes:
       - ./docker/pdns/etc/powerdns/pdns.d/dev.conf:/etc/powerdns/pdns.d/dev.conf:ro
+  openldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: "Example Corp"
+      LDAP_DOMAIN: "example.com"
+      LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PASSWORD:-adminpassword}"
+      LDAP_CONFIG_PASSWORD: "${LDAP_CONFIG_PASSWORD:-configpassword}"
+      LDAP_READONLY_USER: "true"
+      LDAP_READONLY_USER_USERNAME: "readonly"
+      LDAP_READONLY_USER_PASSWORD: "${LDAP_READONLY_PASSWORD:-readonlypassword}"
+    ports:
+      - "389:389"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+      - ./docker/ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/bootstrap.ldif:ro
+    command: --copy-service
+  ldap-ui:
+    image: dnknth/ldap-ui:latest
+    environment:
+      LDAP_URL: "ldap://openldap:389"
+      BASE_DN: "dc=example,dc=com"
+      BIND_DN: "cn=admin,dc=example,dc=com"
+      BIND_PASSWORD: "${LDAP_ADMIN_PASSWORD:-adminpassword}"
+    ports:
+      - "8090:5000"
+    depends_on:
+      - openldap
 
 volumes:
   mysql_db_data:
+  ldap_data:
+  ldap_config:

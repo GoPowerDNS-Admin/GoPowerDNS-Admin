@@ -127,13 +127,13 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	form := new(LoginForm)
 	if err := c.Bind().Body(form); err != nil {
-		return s.renderError(c, ErrInvalidFormData.Error())
+		return s.renderError(c, "", "", ErrInvalidFormData.Error())
 	}
 
 	// Resolve and validate authentication type
 	authType, err := s.pickAuthType(form.AuthType)
 	if err != nil {
-		return s.renderError(c, err.Error())
+		return s.renderError(c, form.Username, form.AuthType, err.Error())
 	}
 
 	// Authenticate a user according to the selected auth type
@@ -150,12 +150,12 @@ func (s *Service) Post(c fiber.Ctx) error {
 			},
 		)
 
-		return s.renderError(c, err.Error())
+		return s.renderError(c, form.Username, form.AuthType, err.Error())
 	}
 
 	// Create a session and set a cookie
 	if err := s.createSessionAndSetCookie(c, authenticatedUser); err != nil {
-		return s.renderError(c, ErrInternalServerError.Error())
+		return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
 	}
 
 	log.Info().Str("username", authenticatedUser.Username).Str("auth_type", authType).
@@ -176,13 +176,15 @@ func (s *Service) Post(c fiber.Ctx) error {
 	return c.Redirect().To(dashboard.Path)
 }
 
-// renderError renders the login page with an error message.
-func (s *Service) renderError(c fiber.Ctx, errorMsg string) error {
+// renderError renders the login page with an error message, preserving the submitted username and auth type.
+func (s *Service) renderError(c fiber.Ctx, username, authType, errorMsg string) error {
 	return c.Render(TemplateName, fiber.Map{
 		"local_db_enabled": s.cfg.Auth.LocalDB.Enabled,
 		"ldap_enabled":     s.cfg.Auth.LDAP.Enabled,
 		"oidc_enabled":     s.cfg.Auth.OIDC.Enabled,
 		"error":            errorMsg,
+		"username":         username,
+		"auth_type":        authType,
 	})
 }
 

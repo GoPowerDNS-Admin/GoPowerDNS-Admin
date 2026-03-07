@@ -340,7 +340,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 		Active      bool   `form:"active"`
 		RoleID      uint   `form:"role_id"`
 	}
-	if err := c.Bind().Body(&in); err != nil {
+	if err = c.Bind().Body(&in); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
 			"Error": "Invalid form data",
 		}, handler.BaseLayout)
@@ -350,14 +350,14 @@ func (s *Service) Update(c fiber.Ctx) error {
 		in.Password = ""
 	}
 
-	if err := s.validator.Struct(in); err != nil {
+	if err = s.validator.Struct(in); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
 			"Error": "Please correct the highlighted errors",
 		}, handler.BaseLayout)
 	}
 
 	var user models.User
-	if err := s.db.First(&user, id).Error; err != nil {
+	if err = s.db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Redirect().To(Path)
 		}
@@ -369,7 +369,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 	// Load roles for error re-renders.
 	var roles []models.Role
-	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
+	if err = s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles for update render")
 	}
 
@@ -389,29 +389,12 @@ func (s *Service) Update(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Protection: prevent removing or deactivating the last active admin user.
-	var adminRole models.Role
-	s.db.Where(models.WhereNameIs, "admin").First(&adminRole)
-
-	if adminRole.ID != 0 && user.RoleID == adminRole.ID {
-		if in.RoleID != adminRole.ID || !in.Active {
-			var otherActiveAdmins int64
-			s.db.Model(&models.User{}).
-				Where("role_id = ? AND active = ? AND id != ?", adminRole.ID, true, user.ID).
-				Count(&otherActiveAdmins)
-
-			if otherActiveAdmins == 0 {
-				return renderUpdateErr("Cannot demote or deactivate the last active admin user")
-			}
-		}
+	if isLastActiveAdmin(s.db, &user, in.RoleID, in.Active) {
+		return renderUpdateErr("Cannot demote or deactivate the last active admin user")
 	}
 
-	// Protection: prevent self-deactivation.
-	if sessionID := c.Cookies("session"); sessionID != "" {
-		current := new(session.Data)
-		if err := current.Read(sessionID); err == nil && current.User.ID == uint64(id) && !in.Active {
-			return renderUpdateErr("You cannot deactivate your own account")
-		}
+	if isSelfDeactivation(c, id, in.Active) {
+		return renderUpdateErr("You cannot deactivate your own account")
 	}
 
 	user.Username = in.Username
@@ -419,13 +402,13 @@ func (s *Service) Update(c fiber.Ctx) error {
 	user.DisplayName = in.DisplayName
 	user.AuthSource = models.AuthSource(in.AuthSource)
 	user.Active = in.Active
-
 	user.RoleID = in.RoleID
+
 	if in.AuthSource == string(models.AuthSourceLocal) && in.Password != "" {
 		user.Password = models.HashPassword(in.Password)
 	}
 
-	if err := s.db.Save(&user).Error; err != nil {
+	if err = s.db.Save(&user).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
 			"Error": "Failed to update user: " + err.Error(),
 		}, handler.BaseLayout)
@@ -434,6 +417,48 @@ func (s *Service) Update(c fiber.Ctx) error {
 	syncUserTags(s.db, user.ID, parseUintIDs(c, "tag_ids"))
 
 	return c.Redirect().To(Path)
+}
+
+// isLastActiveAdmin reports whether the proposed update would remove the last active admin.
+func isLastActiveAdmin(db *gorm.DB, user *models.User, newRoleID uint, newActive bool) bool {
+	var adminRole models.Role
+	if err := db.Where(models.WhereNameIs, "admin").First(&adminRole).Error; err != nil || adminRole.ID == 0 {
+		return false
+	}
+
+	if user.RoleID != adminRole.ID {
+		return false
+	}
+
+	if newRoleID == adminRole.ID && newActive {
+		return false
+	}
+
+	var otherActiveAdmins int64
+	db.Model(&models.User{}).
+		Where("role_id = ? AND active = ? AND id != ?", adminRole.ID, true, user.ID).
+		Count(&otherActiveAdmins)
+
+	return otherActiveAdmins == 0
+}
+
+// isSelfDeactivation reports whether the current session user is deactivating their own account.
+func isSelfDeactivation(c fiber.Ctx, id int, newActive bool) bool {
+	if newActive {
+		return false
+	}
+
+	sessionID := c.Cookies("session")
+	if sessionID == "" {
+		return false
+	}
+
+	current := new(session.Data)
+	if err := current.Read(sessionID); err != nil {
+		return false
+	}
+
+	return current.User.ID == uint64(id)
 }
 
 // Delete removes a user.

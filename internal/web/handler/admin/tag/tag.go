@@ -28,6 +28,19 @@ const (
 
 	templateList = "admin/tag/list"
 	templateForm = "admin/tag/form"
+
+	navSection    = "admin"
+	navSubsection = "tags"
+
+	labelTags    = "Tags"
+	labelNewTag  = "New Tag"
+	labelEditTag = "Edit Tag"
+
+	errTagNotFound    = "Tag not found"
+	errFailedLoadTag  = "Failed to load tag"
+	errNameRequired   = "Name is required"
+	errInvalidFormData = "Invalid form data"
+	errInvalidTagID   = "Invalid tag ID"
 )
 
 // Service is the tag handler service.
@@ -57,13 +70,13 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 
 // List renders the tag list page.
 func (s *Service) List(c fiber.Ctx) error {
-	nav := navigation.NewContext("Tags", "admin", "tags").
+	nav := navigation.NewContext(labelTags, navSection, navSubsection).
 		AddBreadcrumb("Home", "/", false).
 		AddBreadcrumb("Admin", "/admin", false).
-		AddBreadcrumb("Tags", PathList, true)
+		AddBreadcrumb(labelTags, PathList, true)
 
 	var tags []models.Tag
-	if err := s.db.Order("name asc").Find(&tags).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&tags).Error; err != nil {
 		log.Error().Err(err).Msg("failed to list tags")
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tags")
 	}
@@ -74,13 +87,13 @@ func (s *Service) List(c fiber.Ctx) error {
 	}, handler.BaseLayout)
 }
 
-// New renders the create tag form.
+// New renders the 'create tag form'.
 func (s *Service) New(c fiber.Ctx) error {
-	nav := navigation.NewContext("New Tag", "admin", "tags").
+	nav := navigation.NewContext(labelNewTag, navSection, navSubsection).
 		AddBreadcrumb("Home", "/", false).
 		AddBreadcrumb("Admin", "/admin", false).
-		AddBreadcrumb("Tags", PathList, false).
-		AddBreadcrumb("New Tag", PathNew, true)
+		AddBreadcrumb(labelTags, PathList, false).
+		AddBreadcrumb(labelNewTag, PathNew, true)
 
 	return c.Render(templateForm, fiber.Map{
 		"Navigation": nav,
@@ -91,11 +104,11 @@ func (s *Service) New(c fiber.Ctx) error {
 
 // Create handles the create tag form submission.
 func (s *Service) Create(c fiber.Ctx) error {
-	nav := navigation.NewContext("New Tag", "admin", "tags").
+	nav := navigation.NewContext(labelNewTag, navSection, navSubsection).
 		AddBreadcrumb("Home", "/", false).
 		AddBreadcrumb("Admin", "/admin", false).
-		AddBreadcrumb("Tags", PathList, false).
-		AddBreadcrumb("New Tag", PathNew, true)
+		AddBreadcrumb(labelTags, PathList, false).
+		AddBreadcrumb(labelNewTag, PathNew, true)
 
 	var in struct {
 		Name        string `form:"name"`
@@ -103,7 +116,7 @@ func (s *Service) Create(c fiber.Ctx) error {
 	}
 
 	if err := c.Bind().Body(&in); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid form data")
+		return c.Status(fiber.StatusBadRequest).SendString(errInvalidFormData)
 	}
 
 	if in.Name == "" {
@@ -111,7 +124,7 @@ func (s *Service) Create(c fiber.Ctx) error {
 			"Navigation": nav,
 			"IsCreate":   true,
 			"Tag":        models.Tag{Name: in.Name, Description: in.Description},
-			"Error":      "Name is required",
+			"Error":      errNameRequired,
 		}, handler.BaseLayout)
 	}
 
@@ -141,17 +154,17 @@ func (s *Service) Edit(c fiber.Ctx) error {
 	var tag models.Tag
 	if err := s.db.First(&tag, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Status(fiber.StatusNotFound).SendString("Tag not found")
+			return c.Status(fiber.StatusNotFound).SendString(errTagNotFound)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tag")
+		return c.Status(fiber.StatusInternalServerError).SendString(errFailedLoadTag)
 	}
 
-	nav := navigation.NewContext("Edit Tag", "admin", "tags").
+	nav := navigation.NewContext(labelEditTag, navSection, navSubsection).
 		AddBreadcrumb("Home", "/", false).
 		AddBreadcrumb("Admin", "/admin", false).
-		AddBreadcrumb("Tags", PathList, false).
-		AddBreadcrumb("Edit Tag", "", true)
+		AddBreadcrumb(labelTags, PathList, false).
+		AddBreadcrumb(labelEditTag, "", true)
 
 	return c.Render(templateForm, fiber.Map{
 		"Navigation": nav,
@@ -167,17 +180,17 @@ func (s *Service) Update(c fiber.Ctx) error {
 	var tag models.Tag
 	if err := s.db.First(&tag, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Status(fiber.StatusNotFound).SendString("Tag not found")
+			return c.Status(fiber.StatusNotFound).SendString(errTagNotFound)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tag")
+		return c.Status(fiber.StatusInternalServerError).SendString(errFailedLoadTag)
 	}
 
-	nav := navigation.NewContext("Edit Tag", "admin", "tags").
+	nav := navigation.NewContext(labelEditTag, navSection, navSubsection).
 		AddBreadcrumb("Home", "/", false).
 		AddBreadcrumb("Admin", "/admin", false).
-		AddBreadcrumb("Tags", PathList, false).
-		AddBreadcrumb("Edit Tag", "", true)
+		AddBreadcrumb(labelTags, PathList, false).
+		AddBreadcrumb(labelEditTag, "", true)
 
 	var in struct {
 		Name        string `form:"name"`
@@ -185,7 +198,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 	}
 
 	if err := c.Bind().Body(&in); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid form data")
+		return c.Status(fiber.StatusBadRequest).SendString(errInvalidFormData)
 	}
 
 	if in.Name == "" {
@@ -193,7 +206,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 			"Navigation": nav,
 			"IsCreate":   false,
 			"Tag":        tag,
-			"Error":      "Name is required",
+			"Error":      errNameRequired,
 		}, handler.BaseLayout)
 	}
 
@@ -220,16 +233,16 @@ func (s *Service) Delete(c fiber.Ctx) error {
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid tag ID")
+		return c.Status(fiber.StatusBadRequest).SendString(errInvalidTagID)
 	}
 
 	var tag models.Tag
 	if err = s.db.First(&tag, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Status(fiber.StatusNotFound).SendString("Tag not found")
+			return c.Status(fiber.StatusNotFound).SendString(errTagNotFound)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tag")
+		return c.Status(fiber.StatusInternalServerError).SendString(errFailedLoadTag)
 	}
 
 	if err = s.db.Delete(&tag).Error; err != nil {

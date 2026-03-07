@@ -67,6 +67,7 @@ var Handler = Service{}
 func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authService *auth.Service) {
 	if app == nil || cfg == nil || db == nil {
 		log.Fatal().Msg(handler.ErrNilACDFatalLogMsg)
+
 		return
 	}
 

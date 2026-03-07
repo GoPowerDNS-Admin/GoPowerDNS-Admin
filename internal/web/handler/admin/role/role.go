@@ -87,7 +87,7 @@ func (s *Service) List(c fiber.Ctx) error {
 		AddBreadcrumb("Roles", Path, true)
 
 	var roles []models.Role
-	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("query roles failed")
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateList, fiber.Map{

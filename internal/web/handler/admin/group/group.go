@@ -242,7 +242,7 @@ func (s *Service) New(c fiber.Ctx) error {
 		AddBreadcrumb(BreadcrumbNewLbl, RouteNew, true)
 
 	var users []models.User
-	if err := s.db.Order("username ASC").Find(&users).Error; err != nil {
+	if err := s.db.Order(handler.OrderUsernameASC).Find(&users).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load users")
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
@@ -252,7 +252,7 @@ func (s *Service) New(c fiber.Ctx) error {
 	}
 
 	var roles []models.Role
-	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles")
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
@@ -417,14 +417,14 @@ func (s *Service) Edit(c fiber.Ctx) error {
 
 	// Load all users
 	var users []models.User
-	if err := s.db.Order("username ASC").Find(&users).Error; err != nil {
+	if err := s.db.Order(handler.OrderUsernameASC).Find(&users).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load users")
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load users")
 	}
 
 	// Load all roles
 	var roles []models.Role
-	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles")
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load roles")
 	}

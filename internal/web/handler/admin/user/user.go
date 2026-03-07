@@ -55,33 +55,15 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	s.validator = validator.New()
 
 	// Routes
-	app.Get(Path,
-		auth.RequirePermission(authService, auth.PermAdminUsers),
-		s.List,
-	)
-	app.Get(Path+"/new",
-		auth.RequirePermission(authService, auth.PermAdminUsers),
-		s.New,
-	)
-	app.Post(Path,
-		auth.RequirePermission(authService, auth.PermAdminUsers),
-		s.Create,
-	)
-	app.Get(Path+"/:id/edit",
-		auth.RequirePermission(authService, auth.PermAdminUsers),
-		s.Edit,
-	)
-	app.Post(Path+"/:id",
-		auth.RequirePermission(authService, auth.PermAdminUsers),
-		s.Update,
-	)
-	app.Post(Path+"/:id/delete",
-		auth.RequirePermission(authService, auth.PermAdminUsers),
-		s.Delete,
-	)
+	app.Get(Path, auth.RequirePermission(authService, auth.PermAdminUsers), s.List)
+	app.Get(Path+"/new", auth.RequirePermission(authService, auth.PermAdminUsers), s.New)
+	app.Post(Path, auth.RequirePermission(authService, auth.PermAdminUsers), s.Create)
+	app.Get(Path+"/:id/edit", auth.RequirePermission(authService, auth.PermAdminUsers), s.Edit)
+	app.Post(Path+"/:id", auth.RequirePermission(authService, auth.PermAdminUsers), s.Update)
+	app.Post(Path+"/:id/delete", auth.RequirePermission(authService, auth.PermAdminUsers), s.Delete)
 }
 
-// listViewData and formViewData were initially planned as typed data holders but this project uses
+// listViewData and formViewData were initially planned as typed data holders, but this project uses
 // fiber.Map with handler.BaseLayout for rendering, mirroring existing handlers (e.g., Groups).
 
 // List shows users with simple pagination and search.
@@ -150,7 +132,7 @@ func (s *Service) List(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Get current user ID from session
+	// Get current user ID from the session
 	var currentUserID uint64
 
 	if sessionID := c.Cookies("session"); sessionID != "" {
@@ -185,7 +167,7 @@ func (s *Service) New(c fiber.Ctx) error {
 		AddBreadcrumb("New", Path+"/new", true)
 
 	var roles []models.Role
-	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles")
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
@@ -307,7 +289,7 @@ func (s *Service) Edit(c fiber.Ctx) error {
 	}
 
 	var roles []models.Role
-	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles")
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
@@ -387,7 +369,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 	// Load roles for error re-renders.
 	var roles []models.Role
-	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles for update render")
 	}
 

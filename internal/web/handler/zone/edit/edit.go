@@ -671,6 +671,10 @@ func (s *Service) canAccessZone(c fiber.Ctx, zoneName string) bool {
 		return false
 	}
 
+	if s.authService == nil {
+		return true
+	}
+
 	accessible, err := s.authService.GetAccessibleZoneIDs(user.ID)
 	if err != nil || accessible == nil {
 		return true

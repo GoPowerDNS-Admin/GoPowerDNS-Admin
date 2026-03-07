@@ -1,0 +1,130 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Daily at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build-linux:
+    name: Linux / ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            goarch: amd64
+            cc: gcc
+          - arch: arm64
+            goarch: arm64
+            cc: aarch64-linux-gnu-gcc
+          - arch: armv7
+            goarch: arm
+            goarm: "7"
+            cc: arm-linux-gnueabihf-gcc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install cross-compilers
+        run: |
+          sudo apt-get update
+          case "${{ matrix.arch }}" in
+            arm64) sudo apt-get install -y gcc-aarch64-linux-gnu ;;
+            armv7) sudo apt-get install -y gcc-arm-linux-gnueabihf ;;
+          esac
+
+      - name: Build
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CC: ${{ matrix.cc }}
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p dist
+          go build -v \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=$(git describe --tags --always --dirty)" \
+            -o dist/gopowerdns-admin-linux-${{ matrix.arch }} \
+            .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gopowerdns-admin-linux-${{ matrix.arch }}
+          path: dist/
+          retention-days: 7
+
+  build-darwin:
+    name: macOS / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: macos-13 # Intel
+          - arch: arm64
+            runner: macos-latest # Apple Silicon
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          GOOS: darwin
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p dist
+          go build -v \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=$(git describe --tags --always --dirty)" \
+            -o dist/gopowerdns-admin-darwin-${{ matrix.arch }} \
+            .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gopowerdns-admin-darwin-${{ matrix.arch }}
+          path: dist/
+          retention-days: 7
+
+  build-freebsd:
+    name: FreeBSD / ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+          - arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build inside FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          arch: ${{ matrix.arch }}
+          usesh: true
+          prepare: |
+            pkg install -y go sqlite3
+          run: |
+            mkdir -p dist
+            go build -v \
+              -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=$(git describe --tags --always --dirty)" \
+              -o dist/gopowerdns-admin-freebsd-${{ matrix.arch }} \
+              .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gopowerdns-admin-freebsd-${{ matrix.arch }}
+          path: dist/
+          retention-days: 7

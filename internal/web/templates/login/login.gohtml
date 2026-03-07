@@ -67,13 +67,12 @@
 
             <div class="input-group mb-3">
               <input type="text" class="form-control" placeholder="Username" name="username"
-                     required autofocus {{ if .user.Username }} value="{{ .user.Username }}" {{ end }}>
+                     required autofocus value="{{ .username }}">
               <div class="input-group-text"><span class="bi bi-person"></span></div>
             </div>
 
             <div class="input-group mb-3">
-              <input type="password" class="form-control" placeholder="Password" name="password"
-                     required {{ if .user.Password }} value="{{ .user.Password }}" {{ end }}>
+              <input type="password" class="form-control" placeholder="Password" name="password" required>
               <div class="input-group-text"><span class="bi bi-lock-fill"></span></div>
             </div>
 
@@ -87,21 +86,15 @@
 
             {{ if and .ldap_enabled .local_db_enabled }}
             <div class="mb-3">
-              <select class="form-select" name="auth_method">
-                <option value="LOCAL">LOCAL Authentication</option>
-                {{ if .login_ldap_first }}
-                <option value="LDAP" selected="selected">LDAP Authentication</option>
-                {{ else }}
-                <option value="LDAP">LDAP Authentication</option>
-                {{ end }}
+              <select class="form-select" name="auth_type">
+                <option value="local" {{ if ne .auth_type "ldap" }}selected{{ end }}>LOCAL Authentication</option>
+                <option value="ldap" {{ if eq .auth_type "ldap" }}selected{{ end }}>LDAP Authentication</option>
               </select>
             </div>
-            {{ else if and .ldap_enabled not .local_db_enabled }}
-            <input type="hidden" name="auth_method" value="LDAP">
-            {{ else if and (.local_db_enabled) (not .ldap_enabled) }}
-            <input type="hidden" name="auth_method" value="LOCAL">
+            {{ else if .ldap_enabled }}
+            <input type="hidden" name="auth_type" value="ldap">
             {{ else }}
-            <input type="hidden" name="auth_method" value="LOCAL">
+            <input type="hidden" name="auth_type" value="local">
             {{ end }}
 
             <!--begin::Row-->

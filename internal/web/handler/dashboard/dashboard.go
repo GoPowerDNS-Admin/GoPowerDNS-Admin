@@ -119,44 +119,19 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 
 // Get handles the dashboard page rendering.
 func (s *Service) Get(c fiber.Ctx) error {
-	// Create navigation context
 	nav := navigation.NewContext("Dashboard", "dashboard", "dashboard").
 		AddBreadcrumb("Home", Path, false).
 		AddBreadcrumb("Dashboard", Path, true)
 
-	// Get active tab (default: forward)
-	activeTab := c.Query("tab", TabForward)
-	if activeTab != TabForward && activeTab != TabReverseV4 && activeTab != TabReverseV6 {
-		activeTab = TabForward
-	}
+	activeTab := resolveActiveTab(c)
+	params := parseQueryParams(c)
 
-	// Parse query parameters
-	params := QueryParams{
-		Page:        fiber.Query[int](c, "page", 1),
-		PageSize:    fiber.Query[int](c, "pageSize", DefaultPageSize),
-		SearchQuery: c.Query("search", ""),
-		FilterKind:  c.Query("kind", ""),
-		SortField:   c.Query("sort", "name"),
-		SortOrder:   c.Query("order", "asc"),
-	}
-
-	// Validate pagination parameters
-	if params.Page < 1 {
-		params.Page = 1
-	}
-
-	if params.PageSize < 1 || params.PageSize > 100 {
-		params.PageSize = DefaultPageSize
-	}
-
-	// Check if PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 
 		return c.Status(fiber.StatusInternalServerError).SendString(powerdns.ErrMsgClientNotInitializedDetailed)
 	}
 
-	// Fetch all zones from PowerDNS API
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -167,63 +142,19 @@ func (s *Service) Get(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch zones: " + err.Error())
 	}
 
-	// Convert API zones to template zones and categorize
 	forwardZones, reverseV4Zones, reverseV6Zones := categorizeZones(apiZones)
+	forwardZones, reverseV4Zones, reverseV6Zones = s.applyZoneAccessFilter(c, forwardZones, reverseV4Zones, reverseV6Zones)
 
-	// Apply zone-tag access filter for non-admin users.
-	if currentUser, ok := c.Locals("CurrentUser").(models.User); ok && currentUser.ID > 0 {
-		if accessible, err := s.authService.GetAccessibleZoneIDs(currentUser.ID); err == nil && accessible != nil {
-			forwardZones = filterByAccess(forwardZones, accessible)
-			reverseV4Zones = filterByAccess(reverseV4Zones, accessible)
-			reverseV6Zones = filterByAccess(reverseV6Zones, accessible)
-		}
-	}
-
-	// Select zones for active tab
-	var zones []Zone
-
-	switch activeTab {
-	case TabReverseV4:
-		zones = reverseV4Zones
-	case TabReverseV6:
-		zones = reverseV6Zones
-	default:
-		zones = forwardZones
-	}
-
-	// Apply filters and sorting
+	zones := selectTabZones(activeTab, forwardZones, reverseV4Zones, reverseV6Zones)
 	zones = filterZones(zones, params.SearchQuery, params.FilterKind)
 	sortZones(zones, params.SortField, params.SortOrder)
 
-	// Paginate results
-	paginatedZones, totalPages, actualPaginatedPage := paginateZones(zones, params.Page, params.PageSize)
-	totalItems := len(zones)
-
-	// Build TabData for active tab
-	params.Page = actualPaginatedPage // Update page if it was adjusted
+	paginatedZones, totalPages, actualPage := paginateZones(zones, params.Page, params.PageSize)
+	params.Page = actualPage
 	tabData := buildTabData(paginatedZones, totalPages, &params)
-	tabData.TotalItems = totalItems
+	tabData.TotalItems = len(zones)
 
-	// Build Data struct
-	data := Data{
-		ActiveTab: activeTab,
-	}
-
-	// Populate active tab data and set counts for other tabs
-	switch activeTab {
-	case TabReverseV4:
-		data.ReverseV4Tab = tabData
-		data.ForwardTab.TotalItems = len(forwardZones)
-		data.ReverseV6Tab.TotalItems = len(reverseV6Zones)
-	case TabReverseV6:
-		data.ReverseV6Tab = tabData
-		data.ForwardTab.TotalItems = len(forwardZones)
-		data.ReverseV4Tab.TotalItems = len(reverseV4Zones)
-	default:
-		data.ForwardTab = tabData
-		data.ReverseV4Tab.TotalItems = len(reverseV4Zones)
-		data.ReverseV6Tab.TotalItems = len(reverseV6Zones)
-	}
+	data := assembleDashboardData(activeTab, &tabData, forwardZones, reverseV4Zones, reverseV6Zones)
 
 	log.Debug().
 		Int("total_zones", len(apiZones)).
@@ -243,6 +174,89 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"Navigation": nav,
 		"Data":       data,
 	}, handler.BaseLayout)
+}
+
+// resolveActiveTab returns the requested tab or falls back to TabForward if invalid.
+func resolveActiveTab(c fiber.Ctx) string {
+	tab := c.Query("tab", TabForward)
+	if tab != TabForward && tab != TabReverseV4 && tab != TabReverseV6 {
+		return TabForward
+	}
+
+	return tab
+}
+
+// parseQueryParams parses and validates all dashboard query parameters.
+func parseQueryParams(c fiber.Ctx) QueryParams {
+	params := QueryParams{
+		Page:        fiber.Query[int](c, "page", 1),
+		PageSize:    fiber.Query[int](c, "pageSize", DefaultPageSize),
+		SearchQuery: c.Query("search", ""),
+		FilterKind:  c.Query("kind", ""),
+		SortField:   c.Query("sort", "name"),
+		SortOrder:   c.Query("order", "asc"),
+	}
+
+	if params.Page < 1 {
+		params.Page = 1
+	}
+
+	if params.PageSize < 1 || params.PageSize > 100 {
+		params.PageSize = DefaultPageSize
+	}
+
+	return params
+}
+
+// applyZoneAccessFilter restricts zones to those accessible by the current user.
+// Admin users (nil accessible map) see all zones.
+func (s *Service) applyZoneAccessFilter(c fiber.Ctx, fwd, v4, v6 []Zone) ([]Zone, []Zone, []Zone) {
+	currentUser, ok := c.Locals("CurrentUser").(models.User)
+	if !ok || currentUser.ID == 0 {
+		return fwd, v4, v6
+	}
+
+	accessible, err := s.authService.GetAccessibleZoneIDs(currentUser.ID)
+	if err != nil || accessible == nil {
+		return fwd, v4, v6
+	}
+
+	return filterByAccess(fwd, accessible), filterByAccess(v4, accessible), filterByAccess(v6, accessible)
+}
+
+// selectTabZones returns the zone slice for the active tab.
+func selectTabZones(activeTab string, fwd, v4, v6 []Zone) []Zone {
+	switch activeTab {
+	case TabReverseV4:
+		return v4
+	case TabReverseV6:
+		return v6
+	default:
+		return fwd
+	}
+}
+
+// assembleDashboardData populates the Data struct with the active tab's full data
+// and the other tabs' total item counts.
+func assembleDashboardData(activeTab string, tabData *TabData, fwd, v4, v6 []Zone) Data {
+	data := Data{ActiveTab: activeTab}
+
+	switch activeTab {
+	case TabReverseV4:
+		data.ReverseV4Tab = *tabData
+		data.ForwardTab.TotalItems = len(fwd)
+		data.ReverseV6Tab.TotalItems = len(v6)
+	case TabReverseV6:
+		data.ReverseV6Tab = *tabData
+		data.ForwardTab.TotalItems = len(fwd)
+		data.ReverseV4Tab.TotalItems = len(v4)
+	default:
+		data.ForwardTab = *tabData
+		data.ReverseV4Tab.TotalItems = len(v4)
+		data.ReverseV6Tab.TotalItems = len(v6)
+	}
+
+	return data
 }
 
 // categorizeZones converts API zones to template zones and categorizes them by type.

@@ -1,0 +1,41 @@
+# Users OU
+dn: ou=users,dc=example,dc=com
+objectClass: organizationalUnit
+ou: users
+
+# Groups OU
+dn: ou=groups,dc=example,dc=com
+objectClass: organizationalUnit
+ou: groups
+
+# Test user
+dn: uid=testuser,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: testuser
+cn: Test User
+givenName: Test
+sn: User
+mail: testuser@example.com
+userPassword: testpassword
+
+# DNS user
+dn: uid=dnsuser,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: dnsuser
+cn: DNS User
+givenName: DNS User
+sn: User
+mail: dnsuser@example.com
+userPassword: dnsuserpassword
+
+# Admin group
+dn: cn=dns-admins,ou=groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: dns-admins
+member: uid=testuser,ou=users,dc=example,dc=com
+
+# DNS-Users group
+dn: cn=dns-users,ou=groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: dns-users
+member: uid=dnsuser,ou=users,dc=example,dc=com

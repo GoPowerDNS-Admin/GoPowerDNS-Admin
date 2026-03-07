@@ -293,6 +293,12 @@ func (p *LDAPProvider) upsertLDAPUser(username, userDN, email, firstName, lastNa
 	notFound := errors.Is(err, gorm.ErrRecordNotFound)
 
 	if notFound {
+		// Resolve the viewer role to satisfy the non-null FK constraint.
+		var viewerRole models.Role
+		if err = p.db.Where("name = ?", "viewer").First(&viewerRole).Error; err != nil {
+			return nil, fmt.Errorf("failed to find viewer role for new LDAP user: %w", err)
+		}
+
 		user = models.User{
 			Active:      true,
 			Username:    username,
@@ -300,7 +306,7 @@ func (p *LDAPProvider) upsertLDAPUser(username, userDN, email, firstName, lastNa
 			DisplayName: displayName,
 			AuthSource:  models.AuthSourceLDAP,
 			ExternalID:  userDN,
-			RoleID:      0,
+			RoleID:      viewerRole.ID,
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}

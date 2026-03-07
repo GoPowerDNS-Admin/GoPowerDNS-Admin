@@ -445,67 +445,7 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 		})
 	}
 
-	// Build list only with actual changes
-	// Pre-allocate capacity based on incoming changes to reduce reallocations
-	var rrSets = make([]pdnsapi.RRset, 0, len(request.Changes))
-	for _, change := range request.Changes {
-		// Always process a deletion of an existing RRset (existed=true, no records),
-		// even if the frontend forgot to set changed=true (defensive).
-		isDeletion := change.Existed && len(change.Records) == 0
-		if !change.Changed && !isDeletion {
-			continue
-		}
-
-		var records []pdnsapi.Record
-
-		for _, rec := range change.Records {
-			content := ensureQuotedContent(change.Type, rec.Content)
-			disabled := rec.Disabled
-			records = append(records, pdnsapi.Record{
-				Content:  &content,
-				Disabled: &disabled,
-			})
-		}
-
-		// Ensure the name is in canonical format (ends with a dot)
-		name := change.Name
-		if !strings.HasSuffix(name, ".") {
-			name += "."
-		}
-
-		rrType := pdnsapi.RRType(change.Type)
-		ttl := change.TTL
-		// Decide a change type: delete it if RRset existed and now has no records
-		var changeType pdnsapi.ChangeType
-		if change.Existed && len(records) == 0 {
-			changeType = pdnsapi.ChangeTypeDelete
-		} else {
-			changeType = pdnsapi.ChangeTypeReplace
-		}
-
-		// Prepare comments (always include to allow clearing)
-		var comments []pdnsapi.Comment
-
-		commentContent := change.Comment // include it even if empty to allow clearing
-		commentAccount := ""             // PowerDNS requires an empty account field
-		comments = []pdnsapi.Comment{
-			{
-				Content: &commentContent,
-				Account: &commentAccount,
-			},
-		}
-
-		rrSet := pdnsapi.RRset{
-			Name:       &name,
-			Type:       &rrType,
-			TTL:        &ttl,
-			ChangeType: &changeType,
-			Records:    records,
-			Comments:   comments,
-		}
-
-		rrSets = append(rrSets, rrSet)
-	}
+	rrSets := buildRRSetsFromChanges(request.Changes)
 
 	// Update records via PowerDNS API
 	err = powerdns.Engine.Records.Patch(ctx, zoneName, &pdnsapi.RRsets{
@@ -633,6 +573,65 @@ func (s *Service) Delete(c fiber.Ctx) error {
 		"success": true,
 		"message": "Zone deleted successfully",
 	})
+}
+
+// buildRRSetsFromChanges converts RecordChange entries into PowerDNS RRset patch operations,
+// skipping unchanged entries unless they represent a deletion.
+func buildRRSetsFromChanges(changes []RecordChange) []pdnsapi.RRset {
+	rrSets := make([]pdnsapi.RRset, 0, len(changes))
+
+	for _, change := range changes {
+		// Always process a deletion of an existing RRset (existed=true, no records),
+		// even if the frontend forgot to set changed=true (defensive).
+		isDeletion := change.Existed && len(change.Records) == 0
+		if !change.Changed && !isDeletion {
+			continue
+		}
+
+		var records []pdnsapi.Record
+
+		for _, rec := range change.Records {
+			content := ensureQuotedContent(change.Type, rec.Content)
+			disabled := rec.Disabled
+			records = append(records, pdnsapi.Record{
+				Content:  &content,
+				Disabled: &disabled,
+			})
+		}
+
+		name := change.Name
+		if !strings.HasSuffix(name, ".") {
+			name += "."
+		}
+
+		rrType := pdnsapi.RRType(change.Type)
+		ttl := change.TTL
+
+		var changeType pdnsapi.ChangeType
+		if change.Existed && len(records) == 0 {
+			changeType = pdnsapi.ChangeTypeDelete
+		} else {
+			changeType = pdnsapi.ChangeTypeReplace
+		}
+
+		// Always include comment to allow clearing.
+		commentContent := change.Comment
+		commentAccount := ""
+		comments := []pdnsapi.Comment{
+			{Content: &commentContent, Account: &commentAccount},
+		}
+
+		rrSets = append(rrSets, pdnsapi.RRset{
+			Name:       &name,
+			Type:       &rrType,
+			TTL:        &ttl,
+			ChangeType: &changeType,
+			Records:    records,
+			Comments:   comments,
+		})
+	}
+
+	return rrSets
 }
 
 // getZoneOrRender validates PDNS client availability and fetches the zone; renders errors when needed.

@@ -1,0 +1,166 @@
+{{ define "profile/profile" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">Profile</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+                {{ if .Success }}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ .Success }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <div class="row">
+                    <!-- Account Info -->
+                    <div class="col-md-5">
+                        <div class="card card-outline card-primary shadow mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">Account Information</h3>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Username</dt>
+                                    <dd class="col-sm-8">{{ .User.Username }}</dd>
+
+                                    <dt class="col-sm-4">Display Name</dt>
+                                    <dd class="col-sm-8">{{ if .User.DisplayName }}{{ .User.DisplayName }}{{ else }}<span class="text-muted">—</span>{{ end }}</dd>
+
+                                    <dt class="col-sm-4">Email</dt>
+                                    <dd class="col-sm-8">{{ .User.Email }}</dd>
+
+                                    <dt class="col-sm-4">Role</dt>
+                                    <dd class="col-sm-8"><span class="badge text-bg-info">{{ .User.Role.Name }}</span></dd>
+
+                                    <dt class="col-sm-4">Auth Source</dt>
+                                    <dd class="col-sm-8"><span class="badge text-bg-secondary">{{ .User.AuthSource }}</span></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Password / IdP notice -->
+                    <div class="col-md-7">
+                        {{ if eq .User.AuthSource "local" }}
+                        <div class="card card-outline card-primary shadow">
+                            <div class="card-header">
+                                <h3 class="card-title">Change Password</h3>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="/profile/password">
+                                    <div class="mb-3">
+                                        <label for="current_password" class="form-label">Current Password</label>
+                                        <input type="password" class="form-control" id="current_password" name="current_password" required autocomplete="current-password">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new_password" class="form-label">New Password</label>
+                                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password">
+                                        <div class="form-text">Minimum 8 characters.</div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required autocomplete="new-password">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update Password</button>
+                                </form>
+                            </div>
+                        </div>
+                        {{ else }}
+                        <div class="card card-outline card-secondary shadow">
+                            <div class="card-body text-muted">
+                                <i class="bi bi-shield-lock me-2"></i>
+                                Your account is managed by an external identity provider
+                                (<strong>{{ .User.AuthSource }}</strong>).
+                                Password and profile changes must be made through your identity provider.
+                            </div>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+
+                <!-- Group Memberships -->
+                <div class="card card-outline card-primary shadow mt-2">
+                    <div class="card-header">
+                        <h3 class="card-title">Group Memberships</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Group</th>
+                                        <th>Source</th>
+                                        <th>Description</th>
+                                        <th>Role from group</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {{ if .Groups }}
+                                    {{ range .Groups }}
+                                    <tr>
+                                        <td>{{ .Group.Name }}</td>
+                                        <td><span class="badge text-bg-secondary">{{ .Group.Source }}</span></td>
+                                        <td class="text-muted">{{ if .Group.Description }}{{ .Group.Description }}{{ else }}—{{ end }}</td>
+                                        <td>
+                                            {{ if .MappedRole }}
+                                                <span class="badge text-bg-info">{{ .MappedRole.Name }}</span>
+                                            {{ else }}
+                                                <span class="text-muted">No role mapped</span>
+                                            {{ end }}
+                                        </td>
+                                    </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted p-4">Not a member of any group</td>
+                                    </tr>
+                                {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+{{ end }}

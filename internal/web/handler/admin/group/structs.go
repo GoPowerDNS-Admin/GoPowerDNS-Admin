@@ -5,6 +5,6 @@ type formInput struct {
 	ExternalID  string   `validate:"max=255"`
 	Source      string   `validate:"required,oneof=local oidc ldap"`
 	Description string   `validate:"max=255"`
-	RoleID      uint     `validate:"required"`
+	RoleID      uint
 	UserIDs     []string // form values are strings
 }

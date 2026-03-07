@@ -1,0 +1,94 @@
+{{ define "admin/tag/list" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .Navigation }}{{ .Navigation.PageTitle }}{{ else }}Tags{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <div class="d-flex mb-3 justify-content-between align-items-center">
+                    <p class="text-muted mb-0">Tags restrict zone access. Assign tags to zones and to users/groups to control visibility.</p>
+                    <a href="/admin/tag/new" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New Tag
+                    </a>
+                </div>
+
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">ID</th>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th style="width: 160px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {{ if .Tags }}
+                                    {{ range .Tags }}
+                                        <tr>
+                                            <td>{{ .ID }}</td>
+                                            <td><span class="badge text-bg-info">{{ .Name }}</span></td>
+                                            <td class="text-muted">{{ .Description }}</td>
+                                            <td class="text-end">
+                                                <a href="/admin/tag/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                <form action="/admin/tag/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete tag \'{{ .Name }}\'? This will remove all zone/user/group assignments for this tag.');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="4" class="text-center p-4">No tags defined. Create tags to restrict zone access.</td>
+                                    </tr>
+                                {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+{{ end }}

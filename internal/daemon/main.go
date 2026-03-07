@@ -48,6 +48,10 @@ func New(cfg *config.Config) *Daemon {
 		&models.GroupMapping{},
 		&models.UserGroup{},
 		&models.ActivityLog{},
+		&models.Tag{},
+		&models.ZoneTag{},
+		&models.UserTag{},
+		&models.GroupTag{},
 	); err != nil {
 		log.Fatal().Err(err).Msg("failed to migrate database")
 	}

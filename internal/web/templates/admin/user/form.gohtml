@@ -50,7 +50,8 @@
                     </div>
                     <div class="card-body">
                         <p class="text-muted small mb-4">
-                            • Username, Email, and Role are required. • For external sources (OIDC/LDAP), set the External ID.
+                            • Username, Email, and Role are required.
+                            {{ if .IsCreate }}• For OIDC/LDAP users, set the External ID to pre-provision the account. Leave blank for local users.{{ end }}
                             • For local users, you can {{ if .IsCreate }}set an initial password{{ else }}leave Password blank to keep the current one{{ end }}.
                         </p>
 
@@ -92,11 +93,19 @@
                                     </select>
                                 </div>
 
+                                {{ if .IsCreate }}
                                 <div class="col-md-12">
                                     <label for="external_id" class="form-label">External ID</label>
                                     <input type="text" class="form-control" id="external_id" name="external_id" value="{{ .User.ExternalID }}" maxlength="255">
-                                    <div class="form-text">OIDC 'sub' claim or LDAP DN (required when Source is OIDC/LDAP)</div>
+                                    <div class="form-text">OIDC 'sub' claim or LDAP DN. Leave blank for local users — set only when pre-provisioning an OIDC/LDAP account.</div>
                                 </div>
+                                {{ else if ne .User.AuthSource "local" }}
+                                <div class="col-md-12">
+                                    <label for="external_id" class="form-label">External ID</label>
+                                    <input type="text" class="form-control" id="external_id" value="{{ .User.ExternalID }}" disabled>
+                                    <div class="form-text">Set by the identity provider on first login. Cannot be changed.</div>
+                                </div>
+                                {{ end }}
 
                                 <div class="col-md-6">
                                     <label for="password" class="form-label">Password (local only)</label>
@@ -112,6 +121,22 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {{ if .AllTags }}
+                            <div class="mt-4">
+                                <label class="form-label fw-semibold">Zone Access Tags</label>
+                                <div class="form-text mb-2">Assign tags to restrict this user to specific zones. Leave all unchecked for unrestricted access.</div>
+                                {{ range .AllTags }}
+                                <div class="form-check form-check-inline mb-1" style="min-width:160px">
+                                    <input class="form-check-input" type="checkbox" name="tag_ids" id="utag_{{ .ID }}" value="{{ .ID }}"
+                                        {{ if index $.AssignedSet .ID }}checked{{ end }}>
+                                    <label class="form-check-label" for="utag_{{ .ID }}">
+                                        <span class="badge text-bg-info">{{ .Name }}</span>
+                                    </label>
+                                </div>
+                                {{ end }}
+                            </div>
+                            {{ end }}
 
                             <div class="d-flex gap-2 mt-4">
                                 <button type="submit" class="btn btn-primary">{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>

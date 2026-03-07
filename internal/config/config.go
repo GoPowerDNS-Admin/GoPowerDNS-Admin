@@ -17,7 +17,7 @@ const EnvPrefix = "GPDNS"
 // ReadConfig reads configuration from a directory path (e.g. "./etc/") or a
 // specific overlay file (e.g. "etc/local/dev.toml").
 //
-// When a .toml file path is given, main.toml is loaded first from the parent
+// When a .toml file path is given, the main.toml is loaded first from the parent
 // directory and the given file is merged on top, overriding only the keys it
 // defines. Environment variables prefixed with GPDNS_ take the highest priority.
 func ReadConfig(path string) (Config, error) {

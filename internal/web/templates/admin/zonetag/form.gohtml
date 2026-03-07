@@ -1,0 +1,79 @@
+{{ define "admin/zonetag/form" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">Zone Tags</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-header">
+                        <h3 class="card-title font-monospace">{{ .ZoneName }}</h3>
+                        <div class="card-tools">
+                            <a href="/admin/zone-tag" class="btn btn-sm btn-outline-secondary">Back to list</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {{ if not .AllTags }}
+                        <div class="alert alert-warning">
+                            No tags defined. <a href="/admin/tag/new">Create tags</a> first.
+                        </div>
+                        {{ else }}
+                        <p class="text-muted">Select tags to restrict this zone. Users and groups must share at least one tag to access it. Deselecting all tags makes the zone unrestricted.</p>
+                        <form method="post" action="/admin/zone-tag/{{ .ZoneName }}/edit">
+                            <div class="mb-4">
+                                {{ range .AllTags }}
+                                <div class="form-check form-check-inline mb-2" style="min-width:180px">
+                                    <input class="form-check-input" type="checkbox" name="tag_ids" id="tag_{{ .ID }}" value="{{ .ID }}"
+                                        {{ if index $.AssignedSet .ID }}checked{{ end }}>
+                                    <label class="form-check-label" for="tag_{{ .ID }}">
+                                        <span class="badge text-bg-info">{{ .Name }}</span>
+                                        {{ if .Description }}<span class="text-muted small ms-1">{{ .Description }}</span>{{ end }}
+                                    </label>
+                                </div>
+                                {{ end }}
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">Save</button>
+                                <a href="/admin/zone-tag" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </form>
+                        {{ end }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+{{ end }}

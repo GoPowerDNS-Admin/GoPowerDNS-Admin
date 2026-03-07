@@ -14,6 +14,7 @@ import (
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
@@ -90,8 +91,9 @@ type Data struct {
 // Service is the dashboard handler service.
 type Service struct {
 	handler.Service
-	cfg *config.Config
-	db  *gorm.DB
+	cfg         *config.Config
+	db          *gorm.DB
+	authService *auth.Service
 }
 
 // Handler is the dashboard handler.
@@ -106,6 +108,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 
 	s.db = db
 	s.cfg = cfg
+	s.authService = authService
 
 	// register routes with permission checks
 	app.Get(Path,
@@ -166,6 +169,15 @@ func (s *Service) Get(c fiber.Ctx) error {
 
 	// Convert API zones to template zones and categorize
 	forwardZones, reverseV4Zones, reverseV6Zones := categorizeZones(apiZones)
+
+	// Apply zone-tag access filter for non-admin users.
+	if currentUser, ok := c.Locals("CurrentUser").(models.User); ok && currentUser.ID > 0 {
+		if accessible, err := s.authService.GetAccessibleZoneIDs(currentUser.ID); err == nil && accessible != nil {
+			forwardZones = filterByAccess(forwardZones, accessible)
+			reverseV4Zones = filterByAccess(reverseV4Zones, accessible)
+			reverseV6Zones = filterByAccess(reverseV6Zones, accessible)
+		}
+	}
 
 	// Select zones for active tab
 	var zones []Zone
@@ -370,6 +382,18 @@ func paginateZones(zones []Zone, page, pageSize int) (paginatedZones []Zone, tot
 }
 
 // buildTabData creates TabData with pagination information.
+// filterByAccess removes zones whose Name is not in the accessible set.
+func filterByAccess(zones []Zone, accessible map[string]bool) []Zone {
+	out := make([]Zone, 0, len(zones))
+	for _, z := range zones {
+		if accessible[z.Name] {
+			out = append(out, z)
+		}
+	}
+
+	return out
+}
+
 func buildTabData(zones []Zone, totalPages int, params *QueryParams) TabData {
 	return TabData{
 		Zones:       zones,

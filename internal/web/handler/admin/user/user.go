@@ -194,11 +194,16 @@ func (s *Service) New(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
+	var allTags []models.Tag
+	s.db.Order("name asc").Find(&allTags)
+
 	return c.Render(TemplateForm, fiber.Map{
-		"Navigation": nav,
-		"User":       models.User{AuthSource: models.AuthSourceLocal, Active: true},
-		"IsCreate":   true,
-		"Roles":      roles,
+		"Navigation":  nav,
+		"User":        models.User{AuthSource: models.AuthSourceLocal, Active: true},
+		"IsCreate":    true,
+		"Roles":       roles,
+		"AllTags":     allTags,
+		"AssignedSet": map[uint]bool{},
 	}, handler.BaseLayout)
 }
 
@@ -229,6 +234,8 @@ func (s *Service) Create(c fiber.Ctx) error {
 
 	if in.AuthSource != "local" {
 		in.Password = "" // ignore for non-local
+	} else {
+		in.ExternalID = "" // unused for local auth
 	}
 
 	if err := s.validator.Struct(in); err != nil {
@@ -248,9 +255,9 @@ func (s *Service) Create(c fiber.Ctx) error {
 		Email:       in.Email,
 		DisplayName: in.DisplayName,
 		AuthSource:  models.AuthSource(in.AuthSource),
-		ExternalID: in.ExternalID,
-		Active:     in.Active,
-		RoleID:     in.RoleID,
+		ExternalID:  in.ExternalID,
+		Active:      in.Active,
+		RoleID:      in.RoleID,
 	}
 	if user.RoleID == 0 {
 		var userRole models.Role
@@ -275,6 +282,8 @@ func (s *Service) Create(c fiber.Ctx) error {
 			"Error":      "Failed to create user: " + err.Error(),
 		}, handler.BaseLayout)
 	}
+
+	syncUserTags(s.db, user.ID, parseUintIDs(c, "tag_ids"))
 
 	return c.Redirect().To(Path)
 }
@@ -312,11 +321,24 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		AddBreadcrumb("Users", Path, false).
 		AddBreadcrumb("Edit", Path+"/"+strconv.Itoa(id)+"/edit", true)
 
+	var allTags []models.Tag
+	s.db.Order("name asc").Find(&allTags)
+
+	var assignedTags []models.UserTag
+	s.db.Where("user_id = ?", user.ID).Find(&assignedTags)
+
+	assignedSet := make(map[uint]bool, len(assignedTags))
+	for i := range assignedTags {
+		assignedSet[assignedTags[i].TagID] = true
+	}
+
 	return c.Render(TemplateForm, fiber.Map{
-		"Navigation": nav,
-		"User":       user,
-		"IsCreate":   false,
-		"Roles":      roles,
+		"Navigation":  nav,
+		"User":        user,
+		"IsCreate":    false,
+		"Roles":       roles,
+		"AllTags":     allTags,
+		"AssignedSet": assignedSet,
 	}, handler.BaseLayout)
 }
 
@@ -332,7 +354,6 @@ func (s *Service) Update(c fiber.Ctx) error {
 		Email       string `form:"email"       validate:"required,email,max=255"`
 		DisplayName string `form:"displayname" validate:"max=255"`
 		AuthSource  string `form:"source"      validate:"required,oneof=local oidc ldap"`
-		ExternalID  string `form:"external_id"`
 		Password    string `form:"password"`
 		Active      bool   `form:"active"`
 		RoleID      uint   `form:"role_id"`
@@ -364,11 +385,57 @@ func (s *Service) Update(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
+	// Load roles for error re-renders.
+	var roles []models.Role
+	if err := s.db.Order("name ASC").Find(&roles).Error; err != nil {
+		log.Error().Err(err).Msg("failed to load roles for update render")
+	}
+
+	editNav := navigation.NewContext("Edit User", "admin", "user").
+		AddBreadcrumb("Home", dashboard.Path, false).
+		AddBreadcrumb("Admin", "#", false).
+		AddBreadcrumb("Users", Path, false).
+		AddBreadcrumb("Edit", Path+"/"+strconv.Itoa(id)+"/edit", true)
+
+	renderUpdateErr := func(msg string) error {
+		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
+			"Navigation": editNav,
+			"Error":      msg,
+			"User":       user,
+			"IsCreate":   false,
+			"Roles":      roles,
+		}, handler.BaseLayout)
+	}
+
+	// Protection: prevent removing or deactivating the last active admin user.
+	var adminRole models.Role
+	s.db.Where(models.WhereNameIs, "admin").First(&adminRole)
+
+	if adminRole.ID != 0 && user.RoleID == adminRole.ID {
+		if in.RoleID != adminRole.ID || !in.Active {
+			var otherActiveAdmins int64
+			s.db.Model(&models.User{}).
+				Where("role_id = ? AND active = ? AND id != ?", adminRole.ID, true, user.ID).
+				Count(&otherActiveAdmins)
+
+			if otherActiveAdmins == 0 {
+				return renderUpdateErr("Cannot demote or deactivate the last active admin user")
+			}
+		}
+	}
+
+	// Protection: prevent self-deactivation.
+	if sessionID := c.Cookies("session"); sessionID != "" {
+		current := new(session.Data)
+		if err := current.Read(sessionID); err == nil && current.User.ID == uint64(id) && !in.Active {
+			return renderUpdateErr("You cannot deactivate your own account")
+		}
+	}
+
 	user.Username = in.Username
 	user.Email = in.Email
 	user.DisplayName = in.DisplayName
 	user.AuthSource = models.AuthSource(in.AuthSource)
-	user.ExternalID = in.ExternalID
 	user.Active = in.Active
 
 	user.RoleID = in.RoleID
@@ -381,6 +448,8 @@ func (s *Service) Update(c fiber.Ctx) error {
 			"Error": "Failed to update user: " + err.Error(),
 		}, handler.BaseLayout)
 	}
+
+	syncUserTags(s.db, user.ID, parseUintIDs(c, "tag_ids"))
 
 	return c.Redirect().To(Path)
 }
@@ -457,4 +526,37 @@ func (s *Service) Delete(c fiber.Ctx) error {
 	return c.Redirect().To(Path)
 }
 
-// helper methods not needed; using inline rendering consistent with other handlers
+// parseUintIDs reads a multi-value form field and returns a slice of uint values.
+func parseUintIDs(c fiber.Ctx, field string) []uint {
+	vals := c.Request().PostArgs().PeekMulti(field)
+
+	result := make([]uint, 0, len(vals))
+	for _, v := range vals {
+		n := 0
+		ok := true
+
+		for _, b := range v {
+			if b < '0' || b > '9' {
+				ok = false
+				break
+			}
+
+			n = n*10 + int(b-'0')
+		}
+
+		if ok && n > 0 {
+			result = append(result, uint(n))
+		}
+	}
+
+	return result
+}
+
+// syncUserTags replaces the UserTag entries for the given user with the provided tag IDs.
+func syncUserTags(db *gorm.DB, userID uint64, tagIDs []uint) {
+	db.Where("user_id = ?", userID).Delete(&models.UserTag{})
+
+	for _, tagID := range tagIDs {
+		db.Create(&models.UserTag{UserID: userID, TagID: tagID})
+	}
+}

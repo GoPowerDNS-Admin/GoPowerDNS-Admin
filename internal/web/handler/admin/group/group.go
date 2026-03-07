@@ -261,6 +261,9 @@ func (s *Service) New(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
+	var allTags []models.Tag
+	s.db.Order("name asc").Find(&allTags)
+
 	return c.Render(TemplateForm, fiber.Map{
 		"Navigation":  nav,
 		"Group":       models.Group{Source: models.GroupSourceLocal},
@@ -268,6 +271,8 @@ func (s *Service) New(c fiber.Ctx) error {
 		"Users":       users,
 		"Roles":       roles,
 		"SelectedIDs": []uint64{},
+		"AllTags":     allTags,
+		"AssignedSet": map[uint]bool{},
 	}, handler.BaseLayout)
 }
 
@@ -385,6 +390,8 @@ func (s *Service) Create(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save group")
 	}
 
+	syncGroupTags(s.db, g.ID, parseGroupTagIDs(c))
+
 	return c.Redirect().To(Path)
 }
 
@@ -449,6 +456,17 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
 		AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.Itoa(int(g.ID))+"/edit", true)
 
+	var allTags []models.Tag
+	s.db.Order("name asc").Find(&allTags)
+
+	var assignedGroupTags []models.GroupTag
+	s.db.Where("group_id = ?", g.ID).Find(&assignedGroupTags)
+
+	tagAssignedSet := make(map[uint]bool, len(assignedGroupTags))
+	for i := range assignedGroupTags {
+		tagAssignedSet[assignedGroupTags[i].TagID] = true
+	}
+
 	return c.Render(TemplateForm, fiber.Map{
 		"Navigation":   nav,
 		"Group":        g,
@@ -457,6 +475,8 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		"Roles":        roles,
 		"MappedRoleID": mappedRoleID,
 		"SelectedIDs":  selectedIDs,
+		"AllTags":      allTags,
+		"AssignedSet":  tagAssignedSet,
 	}, handler.BaseLayout)
 }
 
@@ -554,16 +574,25 @@ func (s *Service) Update(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Update or create group mapping
+	// Update or create group mapping; RoleID == 0 means remove any existing mapping.
 	if input.RoleID > 0 {
 		if errUoCGM := s.updateOrCreateGroupMapping(c, tx, g.ID, input.RoleID); errUoCGM != nil {
 			return errUoCGM
+		}
+	} else {
+		if err := tx.Where("group_id = ?", g.ID).Delete(&models.GroupMapping{}).Error; err != nil {
+			tx.Rollback()
+			log.Error().Err(err).Msg("failed to remove group mapping")
+
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to remove group role")
 		}
 	}
 
 	if errGMS := s.updateOrCreateGroupMembership(c, tx, g.ID, &input); errGMS != nil {
 		return errGMS
 	}
+
+	syncGroupTags(s.db, g.ID, parseGroupTagIDs(c))
 
 	return c.Redirect().To(Path)
 }

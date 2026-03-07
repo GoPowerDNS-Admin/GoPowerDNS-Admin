@@ -1,0 +1,100 @@
+{{ define "admin/role/form" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .IsCreate }}New Role{{ else }}Edit Role{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                {{ if .Error }}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ .Error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{ end }}
+
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ if .IsCreate }}Create a new role{{ else }}Update role{{ end }}</h3>
+                        <div class="card-tools">
+                            <a href="/admin/role" class="btn btn-sm btn-outline-secondary">Back to list</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ if .IsCreate }}/admin/role{{ else }}/admin/role/{{ .Role.ID }}{{ end }}">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <label for="name" class="form-label">Name</label>
+                                    {{ if and (eq .IsCreate false) .Role.IsSystem }}
+                                        <input type="text" class="form-control" id="name" name="name" value="{{ .Role.Name }}" disabled>
+                                        <input type="hidden" name="name" value="{{ .Role.Name }}">
+                                        <div class="form-text">System role names cannot be changed.</div>
+                                    {{ else }}
+                                        <input type="text" class="form-control" id="name" name="name" value="{{ .Role.Name }}" required maxlength="100">
+                                    {{ end }}
+                                </div>
+                                <div class="col-md-8">
+                                    <label for="description" class="form-label">Description</label>
+                                    <input type="text" class="form-control" id="description" name="description" value="{{ .Role.Description }}" maxlength="255">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Permissions</label>
+                                {{ if .Permissions }}
+                                    {{ range .Permissions }}
+                                    <div class="form-check form-check-inline mb-1" style="min-width:220px">
+                                        <input class="form-check-input" type="checkbox" name="perm_ids" id="perm_{{ .ID }}" value="{{ .ID }}"
+                                            {{ if index $.SelectedPermIDs .ID }}checked{{ end }}>
+                                        <label class="form-check-label" for="perm_{{ .ID }}" title="{{ .Description }}">
+                                            <span class="text-muted small">{{ .Resource }}/</span>{{ .Action }}
+                                        </label>
+                                    </div>
+                                    {{ end }}
+                                {{ else }}
+                                    <p class="text-muted">No permissions defined.</p>
+                                {{ end }}
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>
+                                <a href="/admin/role" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+{{ end }}

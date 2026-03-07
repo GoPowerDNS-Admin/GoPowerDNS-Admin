@@ -23,7 +23,11 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/role"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/tag"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/user"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/zonetag"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/profile"
 	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
@@ -188,8 +192,12 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	zoneedit.Handler.Init(app, cfg, db, authService)
 	configuration.Handler.Init(app, cfg, db, authService)
 	group.Handler.Init(app, cfg, db, authService)
+	role.Handler.Init(app, cfg, db, authService)
 	user.Handler.Init(app, cfg, db, authService)
 	activity.Handler.Init(app, cfg, db, authService)
+	profile.Handler.Init(app, cfg, db, authService)
+	tag.Handler.Init(app, cfg, db, authService)
+	zonetag.Handler.Init(app, cfg, db, authService)
 
 	// redirect root to dashboard
 	app.Get("/", func(c fiber.Ctx) error {

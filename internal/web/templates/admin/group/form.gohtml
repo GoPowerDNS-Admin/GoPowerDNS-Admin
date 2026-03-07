@@ -50,7 +50,7 @@
                     </div>
                     <div class="card-body">
                         <p class="text-muted small mb-4">
-                            • Name and Role are required. • For external sources (OIDC/LDAP), set the External ID. • Select users to add them to this group. • Users in this group will inherit the selected role's permissions.
+                            • Name is required. • For external sources (OIDC/LDAP), set the External ID. • Select users to add them to this group. • Optionally map a role so members inherit its permissions.
                         </p>
 
                         <form method="post" action="{{ if .IsCreate }}/admin/group{{ else }}/admin/group/{{ .Group.ID }}{{ end }}">
@@ -62,16 +62,13 @@
 
                                 <div class="col-md-6">
                                     <label for="role_id" class="form-label">Role</label>
-                                    <select id="role_id" name="role_id" class="form-select" required>
-                                        {{ if .Roles }}
-                                            {{ range .Roles }}
-                                                <option value="{{ .ID }}" {{ if eq $.MappedRoleID .ID }}selected{{ end }}>{{ .Name }}{{ if .Description }} - {{ .Description }}{{ end }}</option>
-                                            {{ end }}
-                                        {{ else }}
-                                            <option value="">No roles available</option>
+                                    <select id="role_id" name="role_id" class="form-select">
+                                        <option value="0" {{ if eq $.MappedRoleID 0 }}selected{{ end }}>— No role —</option>
+                                        {{ range .Roles }}
+                                            <option value="{{ .ID }}" {{ if eq $.MappedRoleID .ID }}selected{{ end }}>{{ .Name }}{{ if .Description }} - {{ .Description }}{{ end }}</option>
                                         {{ end }}
                                     </select>
-                                    <div class="form-text">Members of this group will inherit this role's permissions</div>
+                                    <div class="form-text">Members of this group will inherit this role's permissions. Leave unset if no role mapping is needed.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -121,6 +118,22 @@
                                     <div class="form-text">Select users who should be members of this group</div>
                                 </div>
                             </div>
+
+                            {{ if .AllTags }}
+                            <div class="mt-4">
+                                <label class="form-label fw-semibold">Zone Access Tags</label>
+                                <div class="form-text mb-2">Assign tags to restrict this group to specific zones. Leave all unchecked for unrestricted access.</div>
+                                {{ range .AllTags }}
+                                <div class="form-check form-check-inline mb-1" style="min-width:160px">
+                                    <input class="form-check-input" type="checkbox" name="tag_ids" id="gtag_{{ .ID }}" value="{{ .ID }}"
+                                        {{ if index $.AssignedSet .ID }}checked{{ end }}>
+                                    <label class="form-check-label" for="gtag_{{ .ID }}">
+                                        <span class="badge text-bg-info">{{ .Name }}</span>
+                                    </label>
+                                </div>
+                                {{ end }}
+                            </div>
+                            {{ end }}
 
                             <div class="d-flex gap-2 mt-4">
                                 <button type="submit" class="btn btn-primary">{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>

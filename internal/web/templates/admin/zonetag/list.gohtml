@@ -1,0 +1,83 @@
+{{ define "admin/zonetag/list" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .Navigation }}{{ .Navigation.PageTitle }}{{ else }}Zone Tags{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                <p class="text-muted mb-3">Assign tags to zones to control which users and groups can access them. Zones without tags are accessible to all.</p>
+
+                <div class="card card-outline card-primary shadow">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Zone</th>
+                                        <th>Tags</th>
+                                        <th style="width: 100px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {{ if .Zones }}
+                                    {{ range .Zones }}
+                                        <tr>
+                                            <td class="font-monospace">{{ .Name }}</td>
+                                            <td>
+                                                {{ if eq .TagCount 0 }}
+                                                    <span class="text-muted small">unrestricted</span>
+                                                {{ else }}
+                                                    <span class="badge text-bg-secondary">{{ .TagCount }} tag{{ if gt .TagCount 1 }}s{{ end }}</span>
+                                                {{ end }}
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="/admin/zone-tag/{{ .Name }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            </td>
+                                        </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="3" class="text-center p-4">No zones found.</td>
+                                    </tr>
+                                {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+{{ end }}

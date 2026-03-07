@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 )
 
@@ -28,6 +29,11 @@ func TestGet_ReturnsEarlyWhenPDNSClientNil(t *testing.T) {
 	app := fiber.New(fiber.Config{Views: &noopViews{}})
 
 	svc := &Service{}
+
+	app.Use(func(c fiber.Ctx) error {
+		c.Locals("CurrentUser", models.User{ID: 1})
+		return c.Next()
+	})
 	app.Get("/zones/:name/edit", svc.Get)
 
 	req := httptest.NewRequest(fiber.MethodGet, "/zones/example.com/edit", http.NoBody)

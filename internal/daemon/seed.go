@@ -162,6 +162,18 @@ func seedPermissions(db *gorm.DB) {
 			Action:      "activity.log.undo",
 			Description: "Undo record changes from the activity log",
 		},
+		{
+			Name:        "admin.tags",
+			Resource:    "admin",
+			Action:      "tags",
+			Description: "Manage zone-access tags",
+		},
+		{
+			Name:        "admin.zone.tags",
+			Resource:    "admin",
+			Action:      "zone.tags",
+			Description: "Assign tags to zones",
+		},
 	}
 
 	for _, perm := range permissions {

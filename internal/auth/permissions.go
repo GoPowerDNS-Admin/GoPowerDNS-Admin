@@ -38,4 +38,8 @@ const (
 	PermAdminActivityLog = "admin.activity.log"
 	// PermAdminActivityLogUndo allows undoing record changes from the activity log.
 	PermAdminActivityLogUndo = "admin.activity.log.undo"
+	// PermAdminTags allows managing zone-access tags (CRUD).
+	PermAdminTags = "admin.tags"
+	// PermAdminZoneTags allows managing which tags are assigned to zones.
+	PermAdminZoneTags = "admin.zone.tags"
 )

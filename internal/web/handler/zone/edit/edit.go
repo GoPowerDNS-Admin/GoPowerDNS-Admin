@@ -18,6 +18,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/activitylog"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
@@ -120,9 +121,10 @@ type RecordTypeOption struct {
 // Service is the edit zone handler service.
 type Service struct {
 	handler.Service
-	cfg       *config.Config
-	db        *gorm.DB
-	validator *validator.Validate
+	cfg         *config.Config
+	db          *gorm.DB
+	validator   *validator.Validate
+	authService *auth.Service
 }
 
 // Handler is the edit zone handler.
@@ -138,6 +140,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	s.db = db
 	s.cfg = cfg
 	s.validator = validator.New()
+	s.authService = authService
 
 	// register routes with permission checks
 	app.Get(Path,
@@ -166,6 +169,10 @@ func (s *Service) Get(c fiber.Ctx) error {
 	}
 
 	zoneName = normalizeZoneName(zoneName)
+
+	if !s.canAccessZone(c, zoneName) {
+		return c.Status(fiber.StatusForbidden).SendString("Access to this zone is not permitted")
+	}
 
 	// Create navigation context
 	nav := navigation.NewContext(PageTitle, "zones", "edit").
@@ -230,6 +237,10 @@ func (s *Service) Post(c fiber.Ctx) error {
 	// Ensure the zone name ends with a dot
 	if !strings.HasSuffix(zoneName, ".") {
 		zoneName += "."
+	}
+
+	if !s.canAccessZone(c, zoneName) {
+		return c.Status(fiber.StatusForbidden).SendString("Access to this zone is not permitted")
 	}
 
 	// Create navigation context
@@ -382,6 +393,13 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 	// Ensure the zone name ends with a dot
 	if !strings.HasSuffix(zoneName, ".") {
 		zoneName += "."
+	}
+
+	if !s.canAccessZone(c, zoneName) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"success": false,
+			"message": "Access to this zone is not permitted",
+		})
 	}
 
 	// Parse JSON request
@@ -546,6 +564,13 @@ func (s *Service) Delete(c fiber.Ctx) error {
 		zoneName += "."
 	}
 
+	if !s.canAccessZone(c, zoneName) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"success": false,
+			"message": "Access to this zone is not permitted",
+		})
+	}
+
 	// Check if PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
@@ -635,6 +660,27 @@ func (s *Service) getZoneOrRender(c fiber.Ctx, nav *navigation.Context, zoneName
 	}
 
 	return zone, nil
+}
+
+// canAccessZone returns false when zone-tag restrictions are in effect and the
+// given zone is not in the user's accessible set. Returns true for admin users
+// and for any user with no tag assignments (unrestricted).
+func (s *Service) canAccessZone(c fiber.Ctx, zoneName string) bool {
+	user, ok := c.Locals("CurrentUser").(models.User)
+	if !ok || user.ID == 0 {
+		return false
+	}
+
+	if s.authService == nil {
+		return true
+	}
+
+	accessible, err := s.authService.GetAccessibleZoneIDs(user.ID)
+	if err != nil || accessible == nil {
+		return true
+	}
+
+	return accessible[zoneName]
 }
 
 // currentUserFromSession extracts the current user's ID and username from the

@@ -187,21 +187,23 @@ func GetUserPermissionsFromContext(c fiber.Ctx, authService *Service) ([]string,
 // AddPermissionsToLocals is a Fiber middleware that adds user permissions to fiber.Locals.
 // This allows templates to access permissions for conditional rendering.
 func AddPermissionsToLocals(authService *Service) fiber.Handler {
+	noPermission := func(_ string) bool { return false }
+
 	return func(c fiber.Ctx) error {
+		// Always provide a safe default so templates can call hasPermission unconditionally.
+		c.Locals("hasPermission", noPermission)
+
 		sessionID := c.Cookies("session")
 		if sessionID == "" {
-			// Not authenticated, continue without permissions
 			return c.Next()
 		}
 
 		sessionData := new(session.Data)
 		if err := sessionData.Read(sessionID); err != nil {
-			// Invalid session, continue without permissions
 			return c.Next()
 		}
 
 		if sessionData.User.ID == 0 {
-			// Invalid session data, continue without permissions
 			return c.Next()
 		}
 

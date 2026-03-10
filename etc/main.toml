@@ -16,6 +16,7 @@ ExpiryTime = "24h"
 # RefreshTime = 3600
 # RememberMeExpireTime = 604800
 
+# --- MySQL (default) ---
 [DB]
 GormEngine = "mysql"
 Host = "127.0.0.1"
@@ -24,6 +25,20 @@ Name = "go-pdns"
 User = "go-pdns"
 Password = "go-pdns"
 Extras = "charset=utf8mb4&parseTime=True&loc=Local"
+
+# --- PostgreSQL example ---
+# To use PostgreSQL, set GormEngine = "postgres" and update the fields below.
+# Extras sets the sslmode (e.g. "disable", "require", "verify-full").
+# Leave Extras empty to default to sslmode=disable.
+#
+# [DB]
+# GormEngine = "postgres"
+# Host       = "127.0.0.1"
+# Port       = 5432
+# Name       = "go-pdns"
+# User       = "go-pdns"
+# Password   = "go-pdns"
+# Extras     = "disable"   # sslmode value
 
 
 [log]

@@ -9,7 +9,8 @@ type Setting struct {
 	ID uint64 `gorm:"primaryKey"`
 	// Name is the unique key for the setting (e.g., "smtp.host", "app.title").
 	Name string `gorm:"unique"`
-	// Value is the setting value stored as a binary blob to support any data type.
+	// Value is the setting value stored as binary data to support any data type.
 	// Values should be serialized (e.g., JSON) before storage and deserialized after retrieval.
-	Value []byte `gorm:"type:blob"`
+	// No explicit type tag: GORM maps []byte to blob (MySQL) or bytea (PostgreSQL) automatically.
+	Value []byte
 }

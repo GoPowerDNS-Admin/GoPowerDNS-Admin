@@ -459,11 +459,12 @@ var defaultRecordSettings = config.Record{
 	},
 }
 
-// seedZoneRecordSettings seeds zone record type settings into the database on
-// the first startup. It starts from the built-in defaults, applies any overrides or
-// additions from cfg.Record (main.toml [record] section), and saves the merged
-// result. The setting is never overwritten once it exists, so admin-UI changes
-// are preserved across restarts.
+// seedZoneRecordSettings ensures the zone record type settings in the database
+// are up to date on every startup:
+//
+//   - First run (no DB entry or empty): seed built-in defaults merged with TOML.
+//   - Subsequent runs: add any TOML entries not yet in the DB without touching
+//     existing records (preserving admin-UI changes).
 func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 	existing, err := setting.Get(db, zonesettings.SettingKeyZoneRecords)
 	if err != nil && !errors.Is(err, setting.ErrSettingNotFound) {
@@ -472,10 +473,31 @@ func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 	}
 
 	if err == nil {
-		// Setting exists — check whether it contains any records.
+		// Setting exists — load and check record count.
 		var rs zonesettings.RecordSettings
 		if loadErr := rs.Load(db); loadErr == nil && len(rs.Records) > 0 {
-			return // already populated, leave it alone
+			// Extend with any TOML entries that are not yet in the DB.
+			added := 0
+
+			for k, v := range cfg.Record {
+				if _, exists := rs.Records[k]; !exists {
+					rs.Records[k] = v
+					added++
+				}
+			}
+
+			if added == 0 {
+				return // nothing new to persist
+			}
+
+			if saveErr := rs.Save(db); saveErr != nil {
+				log.Error().Err(saveErr).Msg("failed to extend zone record settings with new TOML entries")
+				return
+			}
+
+			log.Info().Int("added", added).Msg("extended zone record settings with new TOML entries")
+
+			return
 		}
 
 		// Exists but empty — delete so Save can recreate it cleanly.
@@ -485,7 +507,7 @@ func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 		}
 	}
 
-	// Start from built-in defaults, then apply TOML overrides/extensions.
+	// First run: start from built-in defaults, then apply TOML overrides/extensions.
 	merged := make(config.Record, len(defaultRecordSettings))
 	for k, v := range defaultRecordSettings {
 		merged[k] = v

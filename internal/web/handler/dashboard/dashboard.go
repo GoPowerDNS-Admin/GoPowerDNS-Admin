@@ -126,12 +126,6 @@ func (s *Service) Get(c fiber.Ctx) error {
 	activeTab := resolveActiveTab(c)
 	params := parseQueryParams(c)
 
-	if powerdns.Engine.Client == nil {
-		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
-
-		return c.Status(fiber.StatusInternalServerError).SendString(powerdns.ErrMsgClientNotInitializedDetailed)
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

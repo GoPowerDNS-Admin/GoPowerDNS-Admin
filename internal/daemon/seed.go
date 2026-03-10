@@ -7,10 +7,12 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
+	zonesettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
 )
 
-func seed(_ *config.Config, db *gorm.DB) {
+func seed(cfg *config.Config, db *gorm.DB) {
 	// Seed roles
 	seedRoles(db)
 
@@ -22,6 +24,9 @@ func seed(_ *config.Config, db *gorm.DB) {
 
 	// Seed default admin user
 	seedUsers(db)
+
+	// Seed zone record settings from config (only if not already set)
+	seedZoneRecordSettings(cfg, db)
 }
 
 // seedRoles creates default roles.
@@ -260,6 +265,281 @@ func assignPermissionsToRole(db *gorm.DB, roleID uint, permissionNames []string)
 	}
 }
 
+// defaultRecordSettings defines the built-in DNS record type defaults.
+// These can be overridden or extended via the [record] section in main.toml.
+//
+
+var defaultRecordSettings = config.Record{
+	"A": {
+		Forward: true, Reverse: false,
+		Description: "IPv4 Address",
+		Help:        "Enter an IPv4 address (e.g., 203.0.113.5).",
+	},
+	"AAAA": {
+		Forward: true, Reverse: false,
+		Description: "IPv6 Address",
+		Help:        "Enter an IPv6 address (e.g., 2001:db8::1).",
+	},
+	"AFSDB": {
+		Forward: false, Reverse: false,
+		Description: "AFS Database Location",
+		Help:        "AFS database location; advanced record.",
+	},
+	"ALIAS": {
+		Forward: false, Reverse: false,
+		Description: "Auto-resolved Alias",
+		Help:        "Alias to another hostname (provider-specific).",
+	},
+	"CAA": {
+		Forward: true, Reverse: false,
+		Description: "Certification Authority Authorization",
+		Help:        `Format: flags tag "value" (e.g., 0 issue "letsencrypt.org").`,
+	},
+	"CERT": {
+		Forward: false, Reverse: false,
+		Description: "Certificate Record",
+		Help:        "Certificate record; provide type, key tag, algorithm, and certificate data.",
+	},
+	"CDNSKEY": {
+		Forward: false, Reverse: false,
+		Description: "Child DNSKEY",
+		Help:        "Child zone DNSKEY (DNSSEC).",
+	},
+	"CDS": {
+		Forward: false, Reverse: false,
+		Description: "Child Delegation Signer",
+		Help:        "Child DS record (DNSSEC).",
+	},
+	"CNAME": {
+		Forward: true, Reverse: false,
+		Description: "Canonical Name (Alias)",
+		Help:        "Enter the target hostname (FQDN). A trailing dot will be added automatically.",
+	},
+	"DNSKEY": {
+		Forward: false, Reverse: false,
+		Description: "DNS Public Key",
+		Help:        "DNSKEY record (DNSSEC).",
+	},
+	"DNAME": {
+		Forward: false, Reverse: false,
+		Description: "Delegation Name",
+		Help:        "DNAME redirection of a subtree to another domain.",
+	},
+	"DS": {
+		Forward: false, Reverse: false,
+		Description: "Delegation Signer",
+		Help:        "DS record (DNSSEC).",
+	},
+	"DLV": {
+		Forward: false, Reverse: false,
+		Description: "DNSSEC Lookaside Validation",
+		Help:        "DLV (deprecated).",
+	},
+	"HINFO": {
+		Forward: false, Reverse: false,
+		Description: "Host Information",
+		Help:        `Host hardware and OS (e.g., "Intel-386" "Unix").`,
+	},
+	"KEY": {
+		Forward: false, Reverse: false,
+		Description: "Key Record",
+		Help:        "KEY record (obsolete; use DNSKEY).",
+	},
+	"LOC": {
+		Forward: true, Reverse: true,
+		Description: "Location Information",
+		Help:        "Geographical location (e.g., 52 22 23.000 N 4 53 32.000 E 0.00m).",
+	},
+	"LUA": {
+		Forward: false, Reverse: false,
+		Description: "LUA Record",
+		Help:        "Lua record (PowerDNS-specific).",
+	},
+	"MX": {
+		Forward: true, Reverse: false,
+		Description: "Mail Exchange",
+		Help:        "Format: priority hostname (e.g., 10 mail.example.com). Hostname will be canonicalized.",
+	},
+	"NAPTR": {
+		Forward: false, Reverse: false,
+		Description: "Naming Authority Pointer",
+		Help:        "Complex structured record: order preference flags service regexp replacement.",
+	},
+	"NS": {
+		Forward: true, Reverse: true,
+		Description: "Name Server",
+		Help:        "Enter the nameserver hostname (FQDN). A trailing dot will be added automatically.",
+	},
+	"NSEC": {
+		Forward: false, Reverse: false,
+		Description: "Next Secure (DNSSEC)",
+		Help:        "NSEC (DNSSEC).",
+	},
+	"NSEC3": {
+		Forward: false, Reverse: false,
+		Description: "NSEC version 3 (DNSSEC)",
+		Help:        "NSEC3 (DNSSEC).",
+	},
+	"NSEC3PARAM": {
+		Forward: false, Reverse: false,
+		Description: "NSEC3 Parameters",
+		Help:        "NSEC3 parameters (DNSSEC).",
+	},
+	"OPENPGPKEY": {
+		Forward: false, Reverse: false,
+		Description: "OpenPGP Public Key",
+		Help:        "OpenPGP public key record.",
+	},
+	"PTR": {
+		Forward: true, Reverse: true,
+		Description: "Pointer (Reverse DNS)",
+		Help: "Enter the target hostname (FQDN) for reverse DNS." +
+			" A trailing dot will be added automatically.",
+	},
+	"RP": {
+		Forward: false, Reverse: false,
+		Description: "Responsible Person",
+		Help:        "Mailbox and TXT pointer (e.g., hostmaster.example.com. txt-host.example.com.).",
+	},
+	"RRSIG": {
+		Forward: false, Reverse: false,
+		Description: "Resource Record Signature",
+		Help:        "RRSIG (DNSSEC signature).",
+	},
+	"SOA": {
+		Forward: false, Reverse: false,
+		Description: "Start of Authority",
+		Help:        "Use the SOA editor by editing an existing SOA record.",
+	},
+	"SPF": {
+		Forward: true, Reverse: false,
+		Description: "Sender Policy Framework",
+		Help:        "SPF policy text. Quotes will be added automatically if missing.",
+	},
+	"SSHFP": {
+		Forward: false, Reverse: false,
+		Description: "SSH Fingerprint",
+		Help:        "Format: algorithm fingerprint-type fingerprint (hex).",
+	},
+	"SRV": {
+		Forward: true, Reverse: false,
+		Description: "Service Locator",
+		Help:        "Format: priority weight port target. Target will be canonicalized.",
+	},
+	"TKEY": {
+		Forward: false, Reverse: false,
+		Description: "Transaction Key",
+		Help:        "TKEY (transaction key).",
+	},
+	"TSIG": {
+		Forward: false, Reverse: false,
+		Description: "Transaction Signature",
+		Help:        "TSIG shared-secret signature.",
+	},
+	"TLSA": {
+		Forward: false, Reverse: false,
+		Description: "TLS Authentication",
+		Help:        "Format: usage selector matching-type certificate-association-data.",
+	},
+	"SMIMEA": {
+		Forward: false, Reverse: false,
+		Description: "S/MIME Certificate Association",
+		Help:        "Format: usage selector matching-type certificate-association-data.",
+	},
+	"TXT": {
+		Forward: true, Reverse: true,
+		Description: "Text Record",
+		Help:        "Text value. Quotes are not required; they will be added automatically if missing.",
+	},
+	"URI": {
+		Forward: false, Reverse: false,
+		Description: "Uniform Resource Identifier",
+		Help: `Format: priority weight "https://...".` +
+			" If only a URL is provided, 0 0 will be defaulted and URL quoted.",
+	},
+}
+
+// seedZoneRecordSettings ensures the zone record type settings in the database
+// are up to date on every startup:
+//
+//   - First run (no DB entry or empty): seed built-in defaults merged with TOML.
+//   - Subsequent runs: add any TOML entries not yet in the DB without touching
+//     existing records (preserving admin-UI changes).
+func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
+	existing, err := setting.Get(db, zonesettings.SettingKeyZoneRecords)
+	if err != nil && !errors.Is(err, setting.ErrSettingNotFound) {
+		log.Error().Err(err).Msg("failed to check zone record settings")
+		return
+	}
+
+	if err == nil {
+		// Setting exists — load and check record count.
+		var rs zonesettings.RecordSettings
+		if loadErr := rs.Load(db); loadErr == nil && len(rs.Records) > 0 {
+			added, removed := 0, 0
+
+			// Add TOML entries not yet in the DB.
+			for k, v := range cfg.Record {
+				if _, exists := rs.Records[k]; !exists {
+					rs.Records[k] = v
+					added++
+				}
+			}
+
+			// Remove entries that are not a built-in default and are no longer
+			// present in the TOML config (i.e. custom entries that were deleted).
+			for k := range rs.Records {
+				_, isBuiltin := defaultRecordSettings[k]
+				_, isToml := cfg.Record[k]
+
+				if !isBuiltin && !isToml {
+					delete(rs.Records, k)
+
+					removed++
+				}
+			}
+
+			if added == 0 && removed == 0 {
+				return // nothing changed
+			}
+
+			if saveErr := rs.Save(db); saveErr != nil {
+				log.Error().Err(saveErr).Msg("failed to sync zone record settings with TOML")
+				return
+			}
+
+			log.Info().Int("added", added).Int("removed", removed).
+				Msg("synced zone record settings with TOML config")
+
+			return
+		}
+
+		// Exists but empty — delete so Save can recreate it cleanly.
+		if delErr := setting.Delete(db, existing.ID); delErr != nil {
+			log.Error().Err(delErr).Msg("failed to clear empty zone record settings")
+			return
+		}
+	}
+
+	// First run: start from built-in defaults, then apply TOML overrides/extensions.
+	merged := make(config.Record, len(defaultRecordSettings))
+	for k, v := range defaultRecordSettings {
+		merged[k] = v
+	}
+
+	for k, v := range cfg.Record {
+		merged[k] = v
+	}
+
+	rs := &zonesettings.RecordSettings{Records: merged}
+	if err = rs.Save(db); err != nil {
+		log.Error().Err(err).Msg("failed to seed zone record settings")
+		return
+	}
+
+	log.Info().Int("record_types", len(merged)).Msg("seeded zone record settings")
+}
+
 // seedUsers creates the default admin user.
 func seedUsers(db *gorm.DB) {
 	var count int64
@@ -272,12 +552,12 @@ func seedUsers(db *gorm.DB) {
 
 		// Create default admin user
 		user := &models.User{
-			Username:   "admin",
-			Email:      "admin@localhost",
-			Password:   models.HashPassword("changeme"),
-			Active:     true,
-			RoleID:     adminRole.ID,
-			AuthSource: models.AuthSourceLocal,
+			Username:    "admin",
+			Email:       "admin@localhost",
+			Password:    models.HashPassword("changeme"),
+			Active:      true,
+			RoleID:      adminRole.ID,
+			AuthSource:  models.AuthSourceLocal,
 			DisplayName: "System Administrator",
 		}
 

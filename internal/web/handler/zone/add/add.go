@@ -167,17 +167,6 @@ func (s *Service) Post(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Check if PowerDNS client is initialized
-	if powerdns.Engine.Client == nil {
-		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
-
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
-			"Navigation": nav,
-			"Form":       form,
-			"Error":      powerdns.ErrMsgClientNotInitializedDetailed,
-		}, handler.BaseLayout)
-	}
-
 	// Create zone via PowerDNS API
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()

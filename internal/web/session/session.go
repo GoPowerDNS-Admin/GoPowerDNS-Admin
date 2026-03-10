@@ -9,15 +9,15 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 )
 
-// storageBackend is the minimal interface for session storage.
-type storageBackend interface {
+// StorageBackend is the minimal interface for session storage.
+type StorageBackend interface {
 	Get(key string) ([]byte, error)
 	Set(key string, val []byte, exp time.Duration) error
 	Delete(key string) error
 }
 
 // store is the global session storage backend.
-var store storageBackend
+var store StorageBackend
 
 // Data represents the session data structure.
 type Data struct {
@@ -50,7 +50,7 @@ func DeleteSession(sessionID string) error {
 }
 
 // Init initializes the session store with the provided storage backend.
-func Init(s storageBackend) {
+func Init(s StorageBackend) {
 	if s == nil {
 		panic("storage is nil")
 	}

@@ -35,6 +35,7 @@ import (
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
 	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
+	pdnsmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/pdns"
 )
 
 // Service represents the web service.
@@ -172,6 +173,12 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 
 	// Add permissions to fiber.Locals middleware (after auth)
 	app.Use(auth.AddPermissionsToLocals(authService))
+
+	// Redirect to PowerDNS settings when the client is not yet configured.
+	// Must be registered before route handlers so it intercepts their paths.
+	app.Use("/dashboard", pdnsmiddleware.RequireClient)
+	app.Use("/zone", pdnsmiddleware.RequireClient)
+	app.Use("/admin/server", pdnsmiddleware.RequireClient)
 
 	// init web service
 	service := &Service{

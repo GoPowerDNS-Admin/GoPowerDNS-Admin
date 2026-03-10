@@ -74,11 +74,8 @@ func (s *Service) Get(c fiber.Ctx) error {
 	// Load zone record settings
 	settings := &RecordSettings{}
 	if err := settings.Load(s.db); err != nil {
-		// If settings don't exist yet, use default config values
 		if errors.Is(err, setting.ErrSettingNotFound) {
-			log.Debug().Msg("zone record settings not found, using config defaults")
-
-			settings.Records = s.cfg.Record
+			log.Warn().Msg("zone record settings not found in database")
 
 			return c.Render(TemplateName, fiber.Map{
 				"Settings":   settings,
@@ -91,29 +88,6 @@ func (s *Service) Get(c fiber.Ctx) error {
 
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load settings")
 	}
-
-	// Normalize settings.Records based on config: ensure presence, merge fields, and drop unknowns
-	normalized := make(config.Record, len(s.cfg.Record))
-	for k, v := range s.cfg.Record {
-		merged := v
-		if existing, ok := settings.Records[k]; ok {
-			// Preserve boolean flags from existing settings
-			merged.Forward = existing.Forward
-			merged.Reverse = existing.Reverse
-			// Prefer existing text when provided; otherwise keep defaults
-			if existing.Description != "" {
-				merged.Description = existing.Description
-			}
-
-			if existing.Help != "" {
-				merged.Help = existing.Help
-			}
-		}
-
-		normalized[k] = merged
-	}
-
-	settings.Records = normalized
 
 	// Render form with loaded settings
 	return c.Render(TemplateName, fiber.Map{
@@ -132,15 +106,6 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	// Parse form data into settings struct
 	settings := &RecordSettings{Records: make(config.Record)}
-
-	// initialize settings with keys from config to ensure all keys are present
-	// and preserve descriptions/help from config
-	for k, v := range s.cfg.Record {
-		settings.Records[k] = config.RecordTypeSettings{
-			Description: v.Description, // Preserve description from config
-			Help:        v.Help,        // Preserve help from config
-		}
-	}
 
 	// Manually parse checkbox inputs for dynamic record types
 	// Expected form keys: record[<TYPE>].forward and record[<TYPE>].reverse

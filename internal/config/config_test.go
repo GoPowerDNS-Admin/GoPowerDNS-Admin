@@ -46,72 +46,8 @@ func TestReadConfig(t *testing.T) {
 		t.Error("DB.Host should not be empty")
 	}
 
-	// Test Record map is populated
-	if cfg.Record == nil {
-		t.Fatal("Record map should not be nil")
-	}
-
-	if len(cfg.Record) == 0 {
-		t.Error("Record map should not be empty")
-	}
 }
 
-func TestRecordTypeSettings(t *testing.T) {
-	var (
-		err         error
-		projectRoot string
-	)
-
-	projectRoot, err = filepath.Abs("../../")
-	if err != nil {
-		t.Fatalf("failed to get project root: %v", err)
-	}
-
-	configPath := filepath.Join(projectRoot, "etc") + string(filepath.Separator)
-
-	var cfg Config
-
-	cfg, err = ReadConfig(configPath)
-	if err != nil {
-		t.Fatalf("ReadConfig() error = %v", err)
-	}
-
-	tests := []struct {
-		name            string
-		recordType      string
-		expectedForward bool
-		expectedReverse bool
-	}{
-		{"A record", "A", true, false},
-		{"AAAA record", "AAAA", true, false},
-		{"CNAME record", "CNAME", true, false},
-		{"MX record", "MX", true, false},
-		{"TXT record", "TXT", true, true},
-		{"PTR record", "PTR", true, true},
-		{"NS record", "NS", true, true},
-		{"LOC record", "LOC", true, true},
-		{"SOA record", "SOA", false, false},
-		{"DNSKEY record", "DNSKEY", false, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			settings, exists := cfg.Record[tt.recordType]
-			if !exists {
-				t.Errorf("Record type %s not found in config", tt.recordType)
-				return
-			}
-
-			if settings.Forward != tt.expectedForward {
-				t.Errorf("Record %s Forward = %v, want %v", tt.recordType, settings.Forward, tt.expectedForward)
-			}
-
-			if settings.Reverse != tt.expectedReverse {
-				t.Errorf("Record %s Reverse = %v, want %v", tt.recordType, settings.Reverse, tt.expectedReverse)
-			}
-		})
-	}
-}
 
 func TestConfigValidation(t *testing.T) {
 	tests := []struct {

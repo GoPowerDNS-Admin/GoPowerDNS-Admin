@@ -84,14 +84,14 @@ group_name_attr = "cn"
 timeout = 10
 
 # DNS record type definitions are built into the application (internal/daemon/seed.go)
-# and seeded into the database on first startup.
+# and seeded into the database on the first startup.
 #
 # Use this section to override built-in defaults or add custom record types.
 # Only entries defined here are merged on top of the built-in set.
 # Example: enable ALIAS records for forward zones:
 #
 # [record.ALIAS]
-# forward     = true
-# reverse     = false
+# forward = true
+# reverse = false
 # description = "Auto-resolved Alias"
-# help        = "Alias to another hostname (provider-specific)."
+# help = "Alias to another hostname (provider-specific)."

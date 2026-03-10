@@ -3,9 +3,11 @@ package daemon
 import (
 	sessionmysql "github.com/gofiber/storage/mysql/v2"
 	sessionpostgres "github.com/gofiber/storage/postgres/v3"
+	sessionsqlite "github.com/gofiber/storage/sqlite3"
 	"github.com/rs/zerolog/log"
 	gormmysql "gorm.io/driver/mysql"
 	gormpostgres "gorm.io/driver/postgres"
+	gormsqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
@@ -89,6 +91,19 @@ func openDB(cfg *config.Config) (*gorm.DB, session.StorageBackend) {
 	)
 
 	switch driver {
+	case "sqlite":
+		log.Info().Msg("using SQLite database driver")
+
+		db, err = gorm.Open(gormsqlite.Open(dsn.CreateSQLite(cfg)), &gorm.Config{})
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to connect database")
+		}
+
+		sessionStorage = sessionsqlite.New(sessionsqlite.Config{
+			Database: dsn.CreateSQLite(cfg) + "-sessions.db",
+			Table:    "sessions",
+		})
+
 	case "postgres":
 		log.Info().Msg("using PostgreSQL database driver")
 

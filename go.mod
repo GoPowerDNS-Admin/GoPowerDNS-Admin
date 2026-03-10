@@ -11,6 +11,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.1.0
 	github.com/gofiber/storage/mysql/v2 v2.2.0
 	github.com/gofiber/storage/postgres/v3 v3.3.2
+	github.com/gofiber/storage/sqlite3 v1.3.8
 	github.com/gofiber/template/html/v3 v3.0.2
 	github.com/joeig/go-powerdns/v3 v3.21.0
 	github.com/pkg/errors v0.9.1

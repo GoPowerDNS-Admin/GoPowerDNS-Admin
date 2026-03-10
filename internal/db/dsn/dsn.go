@@ -41,6 +41,12 @@ func CreatePostgres(dbCfg *config.Config) string {
 	return dsn
 }
 
+// CreateSQLite returns the SQLite database file path from the configuration.
+// Only cfg.DB.Name is used; host, port, user, and password are ignored.
+func CreateSQLite(dbCfg *config.Config) string {
+	return dbCfg.DB.Name
+}
+
 // CreatePostgresURL builds a PostgreSQL connection URL from the configuration.
 // This format is used by gofiber session storage.
 func CreatePostgresURL(dbCfg *config.Config) string {

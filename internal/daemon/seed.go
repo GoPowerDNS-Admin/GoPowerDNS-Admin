@@ -460,20 +460,29 @@ var defaultRecordSettings = config.Record{
 }
 
 // seedZoneRecordSettings seeds zone record type settings into the database on
-// first startup. It starts from the built-in defaults, applies any overrides or
+// the first startup. It starts from the built-in defaults, applies any overrides or
 // additions from cfg.Record (main.toml [record] section), and saves the merged
 // result. The setting is never overwritten once it exists, so admin-UI changes
 // are preserved across restarts.
 func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
-	_, err := setting.Get(db, zonesettings.SettingKeyZoneRecords)
-	if err == nil {
-		// Already exists – leave it alone.
+	existing, err := setting.Get(db, zonesettings.SettingKeyZoneRecords)
+	if err != nil && !errors.Is(err, setting.ErrSettingNotFound) {
+		log.Error().Err(err).Msg("failed to check zone record settings")
 		return
 	}
 
-	if !errors.Is(err, setting.ErrSettingNotFound) {
-		log.Error().Err(err).Msg("failed to check zone record settings")
-		return
+	if err == nil {
+		// Setting exists — check whether it contains any records.
+		var rs zonesettings.RecordSettings
+		if loadErr := rs.Load(db); loadErr == nil && len(rs.Records) > 0 {
+			return // already populated, leave it alone
+		}
+
+		// Exists but empty — delete so Save can recreate it cleanly.
+		if delErr := setting.Delete(db, existing.ID); delErr != nil {
+			log.Error().Err(delErr).Msg("failed to clear empty zone record settings")
+			return
+		}
 	}
 
 	// Start from built-in defaults, then apply TOML overrides/extensions.

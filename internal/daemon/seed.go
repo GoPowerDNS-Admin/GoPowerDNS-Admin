@@ -476,9 +476,9 @@ func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 		// Setting exists — load and check record count.
 		var rs zonesettings.RecordSettings
 		if loadErr := rs.Load(db); loadErr == nil && len(rs.Records) > 0 {
-			// Extend with any TOML entries that are not yet in the DB.
-			added := 0
+			added, removed := 0, 0
 
+			// Add TOML entries not yet in the DB.
 			for k, v := range cfg.Record {
 				if _, exists := rs.Records[k]; !exists {
 					rs.Records[k] = v
@@ -486,16 +486,30 @@ func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 				}
 			}
 
-			if added == 0 {
-				return // nothing new to persist
+			// Remove entries that are not a built-in default and are no longer
+			// present in the TOML config (i.e. custom entries that were deleted).
+			for k := range rs.Records {
+				_, isBuiltin := defaultRecordSettings[k]
+				_, isToml := cfg.Record[k]
+
+				if !isBuiltin && !isToml {
+					delete(rs.Records, k)
+
+					removed++
+				}
+			}
+
+			if added == 0 && removed == 0 {
+				return // nothing changed
 			}
 
 			if saveErr := rs.Save(db); saveErr != nil {
-				log.Error().Err(saveErr).Msg("failed to extend zone record settings with new TOML entries")
+				log.Error().Err(saveErr).Msg("failed to sync zone record settings with TOML")
 				return
 			}
 
-			log.Info().Int("added", added).Msg("extended zone record settings with new TOML entries")
+			log.Info().Int("added", added).Int("removed", removed).
+				Msg("synced zone record settings with TOML config")
 
 			return
 		}

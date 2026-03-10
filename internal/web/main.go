@@ -35,6 +35,7 @@ import (
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
 	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
+	pdnsmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/pdns"
 )
 
 // Service represents the web service.
@@ -198,6 +199,11 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	profile.Handler.Init(app, cfg, db, authService)
 	tag.Handler.Init(app, cfg, db, authService)
 	zonetag.Handler.Init(app, cfg, db, authService)
+
+	// Routes that require an initialized PowerDNS client.
+	app.Use("/dashboard", pdnsmiddleware.RequireClient)
+	app.Use("/zone", pdnsmiddleware.RequireClient)
+	app.Use("/admin/server", pdnsmiddleware.RequireClient)
 
 	// redirect root to dashboard
 	app.Get("/", func(c fiber.Ctx) error {

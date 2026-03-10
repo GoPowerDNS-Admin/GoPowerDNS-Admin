@@ -7,10 +7,12 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
+	zonesettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
 )
 
-func seed(_ *config.Config, db *gorm.DB) {
+func seed(cfg *config.Config, db *gorm.DB) {
 	// Seed roles
 	seedRoles(db)
 
@@ -22,6 +24,9 @@ func seed(_ *config.Config, db *gorm.DB) {
 
 	// Seed default admin user
 	seedUsers(db)
+
+	// Seed zone record settings from config (only if not already set)
+	seedZoneRecordSettings(cfg, db)
 }
 
 // seedRoles creates default roles.
@@ -258,6 +263,34 @@ func assignPermissionsToRole(db *gorm.DB, roleID uint, permissionNames []string)
 			}
 		}
 	}
+}
+
+// seedZoneRecordSettings seeds zone record type settings from the config into the
+// database. It only writes the setting when it does not exist yet, so manual
+// changes made through the admin UI are never overwritten on restart.
+func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
+	if len(cfg.Record) == 0 {
+		return
+	}
+
+	_, err := setting.Get(db, zonesettings.SettingKeyZoneRecords)
+	if err == nil {
+		// Already exists – leave it alone.
+		return
+	}
+
+	if !errors.Is(err, setting.ErrSettingNotFound) {
+		log.Error().Err(err).Msg("failed to check zone record settings")
+		return
+	}
+
+	rs := &zonesettings.RecordSettings{Records: cfg.Record}
+	if err = rs.Save(db); err != nil {
+		log.Error().Err(err).Msg("failed to seed zone record settings")
+		return
+	}
+
+	log.Info().Int("record_types", len(cfg.Record)).Msg("seeded zone record settings from config")
 }
 
 // seedUsers creates the default admin user.

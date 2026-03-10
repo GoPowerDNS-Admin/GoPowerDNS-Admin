@@ -2,8 +2,10 @@ package daemon
 
 import (
 	sessionmysql "github.com/gofiber/storage/mysql/v2"
+	sessionpostgres "github.com/gofiber/storage/postgres/v3"
 	"github.com/rs/zerolog/log"
 	gormmysql "gorm.io/driver/mysql"
+	gormpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
@@ -31,14 +33,9 @@ func New(cfg *config.Config) *Daemon {
 		return nil
 	}
 
-	dbDriver := gormmysql.Open(dsn.Create(cfg)) // open db with gorm mysql driver
+	db, sessionStorage := openDB(cfg)
 
-	db, err := gorm.Open(dbDriver, &gorm.Config{})
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect database")
-	}
-
-	if err = db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&models.User{},
 		&models.Setting{},
 		&models.Role{},
@@ -58,22 +55,15 @@ func New(cfg *config.Config) *Daemon {
 
 	seed(cfg, db)
 
-	// Initialize fiber session store
-	sessionStorage := sessionmysql.New(sessionmysql.Config{
-		ConnectionURI: dsn.Create(cfg),
-		Table:         "sessions",
-	})
-
 	session.Init(sessionStorage)
 
 	// Initialize PowerDNS client
-	if err = powerdns.Open(db); err != nil {
+	if err := powerdns.Open(db); err != nil {
 		log.Warn().Err(err).Msg("failed to initialize PowerDNS client - server configuration features will be unavailable")
 		log.Info().Msg("PowerDNS client will be available after configuring server settings")
 	} else {
 		log.Info().Msg("PowerDNS client initialized successfully")
 
-		// Test the connection
 		if err = powerdns.Engine.Test(); err != nil {
 			log.Warn().Err(err).Msg("PowerDNS API connection test failed - please verify server settings")
 		}
@@ -82,4 +72,53 @@ func New(cfg *config.Config) *Daemon {
 	return &Daemon{
 		webService: *web.New(cfg, db),
 	}
+}
+
+// openDB opens the GORM database and session storage based on cfg.DB.GormEngine.
+// Supported values: "mysql" (default), "postgres".
+func openDB(cfg *config.Config) (*gorm.DB, session.StorageBackend) {
+	driver := cfg.DB.GormEngine
+	if driver == "" {
+		driver = "mysql"
+	}
+
+	var (
+		db             *gorm.DB
+		err            error
+		sessionStorage session.StorageBackend
+	)
+
+	switch driver {
+	case "postgres":
+		log.Info().Msg("using PostgreSQL database driver")
+
+		db, err = gorm.Open(gormpostgres.Open(dsn.CreatePostgres(cfg)), &gorm.Config{})
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to connect database")
+		}
+
+		sessionStorage = sessionpostgres.New(sessionpostgres.Config{
+			ConnectionURI: dsn.CreatePostgresURL(cfg),
+			Table:         "sessions",
+		})
+
+	default:
+		if driver != "mysql" {
+			log.Warn().Str("driver", driver).Msg("unknown database driver, falling back to mysql")
+		} else {
+			log.Info().Msg("using MySQL database driver")
+		}
+
+		db, err = gorm.Open(gormmysql.Open(dsn.Create(cfg)), &gorm.Config{})
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to connect database")
+		}
+
+		sessionStorage = sessionmysql.New(sessionmysql.Config{
+			ConnectionURI: dsn.Create(cfg),
+			Table:         "sessions",
+		})
+	}
+
+	return db, sessionStorage
 }

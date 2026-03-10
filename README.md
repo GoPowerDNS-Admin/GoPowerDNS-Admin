@@ -8,16 +8,19 @@ This project is under active, heavy development. Interfaces and configuration ma
 
 ## Key Features
 
-- Zone and record management (create, edit, and manage DNS records) (mostly implemented)
-- PowerDNS server settings stored in the application database (mostly implemented)
+- Zone and record management (create, edit, and manage DNS records)
+- PowerDNS server settings stored in the application database
 - Multiple authentication methods:
-  - Local database (mostly implemented, mysql/mariadb supported, sqlite, postgres planned)
-  - OpenID Connect (OIDC) (partially implemented)
-  - LDAP (partially implemented)
-- RBAC (Role-Based Access Control) (partially implemented)
-- Audit logging of user actions (planned)
+  - Local database
+  - OpenID Connect (OIDC)
+  - LDAP
+- RBAC (Role-Based Access Control) with role and permission CRUD
+- Zone tag-based access control
+- Activity/audit log with diff tracking and undo support (record changes and zone deletes)
+- Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite
 - Responsive web UI using Bootstrap 5
 - Go backend with server-rendered templates and a small amount of client-side JS
+- Nightly builds for Linux, macOS, and FreeBSD
 
 ## Getting Started (Development)
 
@@ -37,7 +40,15 @@ Prerequisites:
 2. Configure the app:
 
    Review the sample configuration in `etc/main.toml` (or the copy under `internal/db/controller/setting/etc/main.toml`).
-   Adjust webserver, authentication, and record settings as needed.
+   For local testing, copy and adjust the sample into `etc/local/main.toml` — this directory is gitignored and any TOML files placed there override the settings in `etc/main.toml`:
+
+   ```bash
+   mkdir -p etc/local
+   cp etc/main.toml etc/local/main.toml
+   # edit etc/local/main.toml to match your local setup
+   ```
+
+   Adjust webserver, database, authentication, and record settings as needed.
 
 3. Run the application:
 
@@ -58,9 +69,39 @@ Prerequisites:
 - `internal/web` — HTTP handlers, templates, static assets
 - `internal/db` — models and controllers (GORM)
 - `internal/powerdns` — PowerDNS API integration
+- `internal/activitylog` — activity log recording and diff helpers
 - `internal/config` — configuration structs
 - `etc/` — example configuration
-- `docker/` — Docker/Compose helpers (including a PDNS setup)
+- `docker/` — Docker/Compose helpers (including PDNS and LDAP setups)
+
+## Database Support
+
+GoPowerDNS-Admin supports three database backends:
+
+| Backend       | Status    |
+| ------------- | --------- |
+| MySQL/MariaDB | Supported |
+| PostgreSQL    | Supported |
+| SQLite        | Supported |
+
+Configure the backend in `etc/main.toml` under the `[database]` section.
+
+## Authentication
+
+Three authentication methods are supported and can be enabled independently:
+
+- **Local DB** — username/password stored in the application database
+- **OIDC** — OpenID Connect (e.g. Keycloak, Authentik, Okta)
+- **LDAP** — bind-based LDAP authentication
+
+See `internal/config/structs.go` for available configuration fields.
+
+## Activity Log & Undo
+
+All significant user actions (login, logout, zone create/update/delete, record changes) are recorded in the activity log, accessible at `/admin/activity`. Each entry stores a before/after diff. Admins can undo:
+
+- **Record changes** — restores a zone's RRsets to their previous state
+- **Zone deletes** — recreates the zone including all RRsets from a full snapshot taken at delete time
 
 ## Background & Inspiration
 

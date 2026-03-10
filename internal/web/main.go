@@ -174,6 +174,12 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	// Add permissions to fiber.Locals middleware (after auth)
 	app.Use(auth.AddPermissionsToLocals(authService))
 
+	// Redirect to PowerDNS settings when the client is not yet configured.
+	// Must be registered before route handlers so it intercepts their paths.
+	app.Use("/dashboard", pdnsmiddleware.RequireClient)
+	app.Use("/zone", pdnsmiddleware.RequireClient)
+	app.Use("/admin/server", pdnsmiddleware.RequireClient)
+
 	// init web service
 	service := &Service{
 		cfg:         cfg,
@@ -199,11 +205,6 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	profile.Handler.Init(app, cfg, db, authService)
 	tag.Handler.Init(app, cfg, db, authService)
 	zonetag.Handler.Init(app, cfg, db, authService)
-
-	// Routes that require an initialized PowerDNS client.
-	app.Use("/dashboard", pdnsmiddleware.RequireClient)
-	app.Use("/zone", pdnsmiddleware.RequireClient)
-	app.Use("/admin/server", pdnsmiddleware.RequireClient)
 
 	// redirect root to dashboard
 	app.Get("/", func(c fiber.Ctx) error {

@@ -33,7 +33,7 @@ func CreatePostgres(dbCfg *config.Config) string {
 	)
 
 	if dbCfg.DB.Extras != "" {
-		dsn += " " + dbCfg.DB.Extras
+		dsn += " sslmode=" + dbCfg.DB.Extras
 	} else {
 		dsn += " sslmode=disable"
 	}

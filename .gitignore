@@ -37,6 +37,11 @@ etc/local/**
 /bin/*
 /build/*
 
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
 # python cache
 __pycache__/
 *.pyc

@@ -40,6 +40,13 @@ Extras = "charset=utf8mb4&parseTime=True&loc=Local"
 # Password   = "go-pdns"
 # Extras     = "disable"   # sslmode value
 
+# --- SQLite example ---
+# Only Name is used (file path). Host, Port, User, Password are ignored.
+# Sessions are stored in a separate file named <Name>-sessions.db.
+#
+# [DB]
+# GormEngine = "sqlite"
+# Name       = "./go-pdns.db"
 
 [log]
 Level = "info"

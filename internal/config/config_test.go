@@ -45,9 +45,7 @@ func TestReadConfig(t *testing.T) {
 	if cfg.DB.Host == "" {
 		t.Error("DB.Host should not be empty")
 	}
-
 }
-
 
 func TestConfigValidation(t *testing.T) {
 	tests := []struct {

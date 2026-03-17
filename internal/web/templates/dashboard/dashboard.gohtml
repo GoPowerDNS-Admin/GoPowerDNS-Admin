@@ -196,7 +196,7 @@
                                                         {{end}}
                                                     </a>
                                                 </th>
-                                                <th style="width: 15%;">Record Count</th>
+                                                <th style="width: 10%;">DNSSEC</th>
                                                 <th style="width: 25%;">Primary</th>
                                             </tr>
                                         </thead>
@@ -225,7 +225,11 @@
                                                     {{end}}
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-info">{{.RecordCount}}</span>
+                                                    {{if .DNSSec}}
+                                                    <span class="badge bg-success"><i class="bi bi-shield-lock"></i> Yes</span>
+                                                    {{else}}
+                                                    <span class="badge bg-secondary">No</span>
+                                                    {{end}}
                                                 </td>
                                                 <td>
                                                     {{if and (eq .Kind "Slave") .Masters}}

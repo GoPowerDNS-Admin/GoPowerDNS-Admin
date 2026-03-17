@@ -370,21 +370,6 @@ var defaultRecordSettings = config.Record{
 		Description: "Name Server",
 		Help:        "Enter the nameserver hostname (FQDN). A trailing dot will be added automatically.",
 	},
-	"NSEC": {
-		Forward: false, Reverse: false,
-		Description: "Next Secure (DNSSEC)",
-		Help:        "NSEC (DNSSEC).",
-	},
-	"NSEC3": {
-		Forward: false, Reverse: false,
-		Description: "NSEC version 3 (DNSSEC)",
-		Help:        "NSEC3 (DNSSEC).",
-	},
-	"NSEC3PARAM": {
-		Forward: false, Reverse: false,
-		Description: "NSEC3 Parameters",
-		Help:        "NSEC3 parameters (DNSSEC).",
-	},
 	"OPENPGPKEY": {
 		Forward: false, Reverse: false,
 		Description: "OpenPGP Public Key",
@@ -400,11 +385,6 @@ var defaultRecordSettings = config.Record{
 		Forward: false, Reverse: false,
 		Description: "Responsible Person",
 		Help:        "Mailbox and TXT pointer (e.g., hostmaster.example.com. txt-host.example.com.).",
-	},
-	"RRSIG": {
-		Forward: false, Reverse: false,
-		Description: "Resource Record Signature",
-		Help:        "RRSIG (DNSSEC signature).",
 	},
 	"SOA": {
 		Forward: false, Reverse: false,
@@ -473,56 +453,85 @@ func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 	}
 
 	if err == nil {
-		// Setting exists — load and check record count.
-		var rs zonesettings.RecordSettings
-		if loadErr := rs.Load(db); loadErr == nil && len(rs.Records) > 0 {
-			added, removed := 0, 0
-
-			// Add TOML entries not yet in the DB.
-			for k, v := range cfg.Record {
-				if _, exists := rs.Records[k]; !exists {
-					rs.Records[k] = v
-					added++
-				}
-			}
-
-			// Remove entries that are not a built-in default and are no longer
-			// present in the TOML config (i.e. custom entries that were deleted).
-			for k := range rs.Records {
-				_, isBuiltin := defaultRecordSettings[k]
-				_, isToml := cfg.Record[k]
-
-				if !isBuiltin && !isToml {
-					delete(rs.Records, k)
-
-					removed++
-				}
-			}
-
-			if added == 0 && removed == 0 {
-				return // nothing changed
-			}
-
-			if saveErr := rs.Save(db); saveErr != nil {
-				log.Error().Err(saveErr).Msg("failed to sync zone record settings with TOML")
-				return
-			}
-
-			log.Info().Int("added", added).Int("removed", removed).
-				Msg("synced zone record settings with TOML config")
-
-			return
-		}
-
-		// Exists but empty — delete so Save can recreate it cleanly.
-		if delErr := setting.Delete(db, existing.ID); delErr != nil {
-			log.Error().Err(delErr).Msg("failed to clear empty zone record settings")
+		if syncExistingZoneRecordSettings(cfg, db, existing) {
 			return
 		}
 	}
 
-	// First run: start from built-in defaults, then apply TOML overrides/extensions.
+	seedDefaultZoneRecordSettings(cfg, db)
+}
+
+// syncExistingZoneRecordSettings updates an existing zone record settings entry
+// with any new TOML entries and removes stale custom entries. Returns true when
+// processing is complete (no further action needed), false when the caller
+// should fall through to a fresh seed (entry was empty and has been deleted).
+func syncExistingZoneRecordSettings(cfg *config.Config, db *gorm.DB, existing *models.Setting) bool {
+	var rs zonesettings.RecordSettings
+	if loadErr := rs.Load(db); loadErr != nil || len(rs.Records) == 0 {
+		// Exists but empty — delete so seedDefaultZoneRecordSettings can recreate it.
+		if delErr := setting.Delete(db, existing.ID); delErr != nil {
+			log.Error().Err(delErr).Msg("failed to clear empty zone record settings")
+		}
+
+		return false
+	}
+
+	added := syncNewTOMLEntries(cfg, &rs)
+	removed := removeStaleEntries(cfg, &rs)
+
+	if added == 0 && removed == 0 {
+		return true // nothing changed
+	}
+
+	if saveErr := rs.Save(db); saveErr != nil {
+		log.Error().Err(saveErr).Msg("failed to sync zone record settings with TOML")
+		return true
+	}
+
+	log.Info().Int("added", added).Int("removed", removed).
+		Msg("synced zone record settings with TOML config")
+
+	return true
+}
+
+// syncNewTOMLEntries adds TOML-defined record types not yet present in the DB settings.
+func syncNewTOMLEntries(cfg *config.Config, rs *zonesettings.RecordSettings) int {
+	added := 0
+
+	for k, v := range cfg.Record {
+		if _, exists := rs.Records[k]; !exists {
+			rs.Records[k] = v
+			added++
+		}
+	}
+
+	return added
+}
+
+// removeStaleEntries removes entries that are neither a built-in default nor
+// present in the current TOML config (i.e. custom entries that were deleted).
+func removeStaleEntries(cfg *config.Config, rs *zonesettings.RecordSettings) int {
+	removed := 0
+
+	for k := range rs.Records {
+		_, isBuiltin := defaultRecordSettings[k]
+		_, isToml := cfg.Record[k]
+
+		if !isBuiltin && !isToml {
+			delete(rs.Records, k)
+
+			removed++
+		}
+	}
+
+	return removed
+}
+
+// seedDefaultZoneRecordSettings creates zone record settings from built-in
+// defaults merged with any TOML overrides.
+func seedDefaultZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 	merged := make(config.Record, len(defaultRecordSettings))
+
 	for k, v := range defaultRecordSettings {
 		merged[k] = v
 	}
@@ -532,7 +541,7 @@ func seedZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 	}
 
 	rs := &zonesettings.RecordSettings{Records: merged}
-	if err = rs.Save(db); err != nil {
+	if err := rs.Save(db); err != nil {
 		log.Error().Err(err).Msg("failed to seed zone record settings")
 		return
 	}

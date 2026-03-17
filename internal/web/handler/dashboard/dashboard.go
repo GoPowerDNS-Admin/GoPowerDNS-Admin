@@ -46,11 +46,11 @@ const (
 
 // Zone represents a DNS zone for template rendering.
 type Zone struct {
-	Name        string
-	Kind        string
-	Serial      uint32
-	RecordCount int
-	Masters     []string
+	Name    string
+	Kind    string
+	Serial  uint32
+	DNSSec  bool
+	Masters []string
 }
 
 // QueryParams holds the query and pagination parameters.
@@ -268,9 +268,9 @@ func categorizeZones(apiZones []pdnsapi.Zone) (forward, reverseV4, reverseV6 []Z
 		}
 
 		zone := Zone{
-			Name:        *apiZone.Name,
-			RecordCount: len(apiZone.RRsets),
-			Masters:     apiZone.Masters,
+			Name:    *apiZone.Name,
+			DNSSec:  apiZone.DNSsec != nil && *apiZone.DNSsec,
+			Masters: apiZone.Masters,
 		}
 
 		if apiZone.Kind != nil {

@@ -109,7 +109,12 @@
 
                                 <div class="col-md-6">
                                     <label for="password" class="form-label">Password (local only)</label>
-                                    <input type="password" class="form-control" id="password" name="password" placeholder="{{ if .IsCreate }}Set initial password{{ else }}Leave blank to keep current{{ end }}">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="password" name="password" placeholder="{{ if .IsCreate }}Set initial password{{ else }}Leave blank to keep current{{ end }}">
+                                        <button type="button" class="btn btn-outline-secondary" id="toggle-password" tabindex="-1" title="Show / hide password">
+                                            <i class="bi bi-eye" id="toggle-password-icon"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="col-md-6 d-flex align-items-end">
@@ -120,6 +125,22 @@
                                         </label>
                                     </div>
                                 </div>
+
+                                {{ if or .IsCreate (eq .User.AuthSource "local") }}
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="true" id="totp_required" name="totp_required" {{ if .User.TOTPRequired }}checked{{ end }}>
+                                            <label class="form-check-label" for="totp_required">
+                                                Require TOTP
+                                            </label>
+                                        </div>
+                                        {{ if .User.TOTPEnabled }}
+                                        <div class="mt-1"><span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>TOTP active</span></div>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                {{ end }}
                             </div>
 
                             {{ if .AllTags }}
@@ -153,4 +174,13 @@
     <!--end::App Main-->
 </div>
 <!--end::App Wrapper-->
+<script>
+document.getElementById('toggle-password').addEventListener('click', function() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('toggle-password-icon');
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+});
+</script>
 {{ end }}

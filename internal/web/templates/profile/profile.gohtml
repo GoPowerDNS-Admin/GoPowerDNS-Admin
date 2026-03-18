@@ -156,6 +156,40 @@
                     </div>
                 </div>
 
+                <!-- Two-Factor Authentication (local accounts only) -->
+                {{ if eq .User.AuthSource "local" }}
+                <div class="card card-outline card-primary shadow mt-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h3 class="card-title mb-0">Two-Factor Authentication (TOTP)</h3>
+                        <span class="ms-3">
+                            {{ if .User.TOTPEnabled }}
+                            <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>Enabled</span>
+                            {{ else }}
+                            <span class="badge bg-secondary"><i class="bi bi-shield me-1"></i>Disabled</span>
+                            {{ end }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        {{ if .User.TOTPEnabled }}
+                        <p class="text-muted small mb-3">TOTP is active. You will be asked for a code on each login.</p>
+                        {{ if .User.TOTPRequired }}
+                        <div class="callout callout-warning mb-3">TOTP is required by your administrator and cannot be disabled.</div>
+                        {{ else }}
+                        <form method="POST" action="/profile/totp/disable" onsubmit="return confirm('Disable two-factor authentication?')">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-shield-x me-1"></i>Disable TOTP</button>
+                        </form>
+                        {{ end }}
+                        {{ else }}
+                        <p class="text-muted small mb-3">Protect your account with an authenticator app.</p>
+                        {{ if .User.TOTPRequired }}
+                        <div class="callout callout-warning mb-3">TOTP is required by your administrator.</div>
+                        {{ end }}
+                        <a href="/profile/totp/setup" class="btn btn-primary btn-sm"><i class="bi bi-shield-plus me-1"></i>Set Up TOTP</a>
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+
             </div>
         </div>
         <!--end::App Content-->

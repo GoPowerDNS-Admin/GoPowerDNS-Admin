@@ -21,7 +21,9 @@ var store StorageBackend
 
 // Data represents the session data structure.
 type Data struct {
-	User models.User
+	User           models.User
+	TOTPPending    bool   // password verified, TOTP code still required
+	TOTPTempSecret string // temporary secret during setup, not yet confirmed
 }
 
 // Write writes the session data for the given session ID with an expiration duration.

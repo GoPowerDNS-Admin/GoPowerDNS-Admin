@@ -58,6 +58,23 @@ func Middleware(c fiber.Ctx) error {
 		return c.Redirect().To("/dashboard")
 	}
 
+	// If TOTP is pending, restrict to TOTP-related pages only
+	if sessData.TOTPPending {
+		url := strings.ToLower(c.OriginalURL())
+
+		allowed := strings.HasPrefix(url, "/auth/totp") ||
+			strings.HasPrefix(url, "/profile/totp/setup") ||
+			strings.HasPrefix(url, "/logout") ||
+			strings.HasPrefix(url, "/static")
+		if !allowed {
+			if sessData.User.TOTPEnabled {
+				return c.Redirect().To("/auth/totp/verify")
+			}
+
+			return c.Redirect().To("/profile/totp/setup")
+		}
+	}
+
 	return c.Next()
 }
 

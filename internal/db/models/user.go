@@ -44,6 +44,12 @@ type User struct {
 	AuthSource AuthSource `gorm:"type:varchar(20);not null;default:'local'"`
 	// ExternalID is the external identifier for OIDC (sub claim) or LDAP (DN) users.
 	ExternalID string `gorm:"size:255"`
+	// TOTPSecret is the base32-encoded TOTP secret (local auth only).
+	TOTPSecret string `gorm:"size:64"`
+	// TOTPEnabled indicates TOTP has been set up and is active.
+	TOTPEnabled bool
+	// TOTPRequired indicates an admin has mandated TOTP for this user.
+	TOTPRequired bool
 	// CreatedAt is the timestamp when the user was created (managed by GORM).
 	CreatedAt time.Time
 	// UpdatedAt is the timestamp when the user was last updated (managed by GORM).

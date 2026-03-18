@@ -1,0 +1,117 @@
+{{ define "profile/totp/setup" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">Two-Factor Authentication Setup</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            <li class="breadcrumb-item"><a href="/profile">Profile</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Set Up TOTP</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+
+                        {{ if .TOTPPending }}
+                        <div class="callout callout-warning mb-3">
+                            <strong>Required:</strong> Your administrator requires two-factor authentication. Please set it up to continue.
+                        </div>
+                        {{ end }}
+
+                        <div class="card card-outline card-primary shadow">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="bi bi-shield-check me-2"></i>Authenticator App Setup</h3>
+                            </div>
+                            <div class="card-body">
+                                {{ if .Error }}
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    {{ .Error }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                {{ end }}
+
+                                <ol class="small text-muted mb-4">
+                                    <li class="mb-1">Scan the QR code below with your authenticator app (e.g. Google Authenticator, Aegis, Bitwarden).</li>
+                                    <li class="mb-1">If you can't scan the QR code, enter the secret key manually.</li>
+                                    <li>Enter the 6-digit code shown in your app to confirm.</li>
+                                </ol>
+
+                                <div class="text-center mb-4">
+                                    {{ if .QRDataURL }}
+                                    <img src="{{ .QRDataURL }}" alt="TOTP QR Code" class="border rounded p-1" style="width:200px;height:200px;">
+                                    {{ else }}
+                                    <div class="text-muted small">QR code unavailable — use the manual key below.</div>
+                                    {{ end }}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label small text-muted">Manual entry key</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control font-monospace" id="totp-secret" value="{{ .TempSecret }}" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" id="copy-secret" title="Copy">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <form method="POST" action="/profile/totp/setup">
+                                    <div class="mb-3">
+                                        <label for="code" class="form-label">Verification Code</label>
+                                        <input type="text" class="form-control text-center"
+                                               id="code" name="code"
+                                               inputmode="numeric" pattern="[0-9]{6}"
+                                               maxlength="6" minlength="6"
+                                               autocomplete="one-time-code"
+                                               placeholder="000000"
+                                               autofocus required>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Activate TOTP</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer text-center">
+                                {{ if .TOTPPending }}
+                                <a href="/logout" class="small text-muted">Cancel and log out</a>
+                                {{ else }}
+                                <a href="/profile" class="small text-muted">Cancel</a>
+                                {{ end }}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+<script>
+document.getElementById('copy-secret')?.addEventListener('click', function() {
+    const input = document.getElementById('totp-secret');
+    navigator.clipboard.writeText(input.value).then(() => {
+        this.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+        setTimeout(() => { this.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+    });
+});
+</script>
+{{ end }}

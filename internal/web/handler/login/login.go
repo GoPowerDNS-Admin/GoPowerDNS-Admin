@@ -153,11 +153,6 @@ func (s *Service) Post(c fiber.Ctx) error {
 		return s.renderError(c, form.Username, form.AuthType, err.Error())
 	}
 
-	// Create a session and set a cookie
-	if err := s.createSessionAndSetCookie(c, authenticatedUser); err != nil {
-		return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
-	}
-
 	log.Info().Str("username", authenticatedUser.Username).Str("auth_type", authType).
 		Msg("User logged in successfully")
 
@@ -172,6 +167,28 @@ func (s *Service) Post(c fiber.Ctx) error {
 			IPAddress:    c.IP(),
 		},
 	)
+
+	// TOTP only applies to local accounts
+	if authenticatedUser.AuthSource == models.AuthSourceLocal && authenticatedUser.TOTPEnabled {
+		if err := s.createPendingSessionAndSetCookie(c, authenticatedUser); err != nil {
+			return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
+		}
+
+		return c.Redirect().To("/auth/totp/verify")
+	}
+
+	if authenticatedUser.AuthSource == models.AuthSourceLocal && authenticatedUser.TOTPRequired {
+		if err := s.createPendingSessionAndSetCookie(c, authenticatedUser); err != nil {
+			return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
+		}
+
+		return c.Redirect().To("/profile/totp/setup")
+	}
+
+	// Standard login — no TOTP needed
+	if err := s.createSessionAndSetCookie(c, authenticatedUser); err != nil {
+		return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
+	}
 
 	return c.Redirect().To(dashboard.Path)
 }
@@ -263,6 +280,37 @@ func (s *Service) createSessionAndSetCookie(c fiber.Ctx, user *models.User) erro
 	userSession := &session.Data{User: *user}
 	if err := userSession.Write(sessionID, s.cfg.Webserver.Session.ExpiryTime); err != nil {
 		log.Error().Err(err).Msg("failed to write session")
+		return err
+	}
+
+	cookieSettings := &fiber.Cookie{
+		Name:     "session",
+		Value:    sessionID,
+		MaxAge:   int(s.cfg.Webserver.Session.ExpiryTime.Seconds()),
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	}
+	if s.cfg.DevMode {
+		cookieSettings.Secure = false
+	}
+
+	c.Cookie(cookieSettings)
+
+	return nil
+}
+
+// createPendingSessionAndSetCookie creates a TOTP-pending session.
+func (s *Service) createPendingSessionAndSetCookie(c fiber.Ctx, user *models.User) error {
+	sessionID, err := session.GenerateSessionID()
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate session ID")
+		return err
+	}
+
+	userSession := &session.Data{User: *user, TOTPPending: true}
+	if err := userSession.Write(sessionID, s.cfg.Webserver.Session.ExpiryTime); err != nil {
+		log.Error().Err(err).Msg("failed to write pending session")
 		return err
 	}
 

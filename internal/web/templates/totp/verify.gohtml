@@ -1,0 +1,62 @@
+{{ define "totp/verify" }}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    <title>Two-Factor Authentication | PowerDNS-Admin</title>
+    <link rel="icon" href="/static/img/favicon.png">
+    <link rel="stylesheet" href="/static/vendor/source-sans-3-5.2.9/index.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="/static/vendor/bootstrap-icons-1.13.1/font/bootstrap-icons.min.css"/>
+    <link rel="stylesheet" href="/static/vendor/adminlte-v4/css/adminlte.min.css" />
+  </head>
+  <body class="login-page bg-body-secondary">
+    <div class="login-box">
+      <div class="login-logo">
+        <a href="#"><b>PowerDNS</b>-Admin</a>
+      </div>
+      <div class="card">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg"><i class="bi bi-shield-lock me-1"></i> Two-Factor Authentication</p>
+          <p class="text-muted text-center small mb-3">Enter the 6-digit code from your authenticator app.</p>
+
+          {{ if .Error }}
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ .Error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {{ end }}
+
+          <form method="POST" action="/auth/totp/verify">
+            <div class="input-group mb-3">
+              <input type="text" class="form-control text-center"
+                     id="code" name="code"
+                     inputmode="numeric" pattern="[0-9]{6}"
+                     maxlength="6" minlength="6"
+                     autocomplete="one-time-code"
+                     placeholder="000000"
+                     autofocus required>
+              <div class="input-group-text"><i class="bi bi-phone"></i></div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary">Verify</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="text-center mt-2">
+        <a href="/logout" class="small text-muted">Cancel and log out</a>
+      </div>
+    </div>
+    <script src="/static/vendor/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="/static/vendor/adminlte-v4/js/adminlte.min.js"></script>
+  </body>
+</html>
+{{ end }}

@@ -192,14 +192,15 @@ func (s *Service) New(c fiber.Ctx) error {
 // Create creates a new user.
 func (s *Service) Create(c fiber.Ctx) error {
 	var in struct {
-		Username    string `form:"username"    validate:"required,min=3,max=100"`
-		Email       string `form:"email"       validate:"required,email,max=255"`
-		DisplayName string `form:"displayname" validate:"max=255"`
-		AuthSource  string `form:"source"      validate:"required,oneof=local oidc ldap"`
-		ExternalID  string `form:"external_id"`
-		Password    string `form:"password"`
-		Active      bool   `form:"active"`
-		RoleID      uint   `form:"role_id"`
+		Username     string `form:"username"      validate:"required,min=3,max=100"`
+		Email        string `form:"email"         validate:"required,email,max=255"`
+		DisplayName  string `form:"displayname"   validate:"max=255"`
+		AuthSource   string `form:"source"        validate:"required,oneof=local oidc ldap"`
+		ExternalID   string `form:"external_id"`
+		Password     string `form:"password"`
+		Active       bool   `form:"active"`
+		RoleID       uint   `form:"role_id"`
+		TOTPRequired bool   `form:"totp_required"`
 	}
 
 	if err := c.Bind().Body(&in); err != nil {
@@ -233,13 +234,14 @@ func (s *Service) Create(c fiber.Ctx) error {
 	}
 
 	user := models.User{
-		Username:    in.Username,
-		Email:       in.Email,
-		DisplayName: in.DisplayName,
-		AuthSource:  models.AuthSource(in.AuthSource),
-		ExternalID:  in.ExternalID,
-		Active:      in.Active,
-		RoleID:      in.RoleID,
+		Username:     in.Username,
+		Email:        in.Email,
+		DisplayName:  in.DisplayName,
+		AuthSource:   models.AuthSource(in.AuthSource),
+		ExternalID:   in.ExternalID,
+		Active:       in.Active,
+		RoleID:       in.RoleID,
+		TOTPRequired: in.TOTPRequired,
 	}
 	if user.RoleID == 0 {
 		var userRole models.Role
@@ -332,13 +334,14 @@ func (s *Service) Update(c fiber.Ctx) error {
 	}
 
 	var in struct {
-		Username    string `form:"username"    validate:"required,min=3,max=100"`
-		Email       string `form:"email"       validate:"required,email,max=255"`
-		DisplayName string `form:"displayname" validate:"max=255"`
-		AuthSource  string `form:"source"      validate:"required,oneof=local oidc ldap"`
-		Password    string `form:"password"`
-		Active      bool   `form:"active"`
-		RoleID      uint   `form:"role_id"`
+		Username     string `form:"username"      validate:"required,min=3,max=100"`
+		Email        string `form:"email"         validate:"required,email,max=255"`
+		DisplayName  string `form:"displayname"   validate:"max=255"`
+		AuthSource   string `form:"source"        validate:"required,oneof=local oidc ldap"`
+		Password     string `form:"password"`
+		Active       bool   `form:"active"`
+		RoleID       uint   `form:"role_id"`
+		TOTPRequired bool   `form:"totp_required"`
 	}
 	if err = c.Bind().Body(&in); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
@@ -403,6 +406,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 	user.AuthSource = models.AuthSource(in.AuthSource)
 	user.Active = in.Active
 	user.RoleID = in.RoleID
+	user.TOTPRequired = in.TOTPRequired
 
 	if in.AuthSource == string(models.AuthSourceLocal) && in.Password != "" {
 		user.Password = models.HashPassword(in.Password)

@@ -28,6 +28,8 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/user"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/zonetag"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/profile"
+	profiletotp "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/profile/totp"
+	totphandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/totp"
 	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
@@ -203,6 +205,8 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	user.Handler.Init(app, cfg, db, authService)
 	activity.Handler.Init(app, cfg, db, authService)
 	profile.Handler.Init(app, cfg, db, authService)
+	totphandler.Handler.Init(app, cfg, db)
+	profiletotp.Handler.Init(app, cfg, db, authService)
 	tag.Handler.Init(app, cfg, db, authService)
 	zonetag.Handler.Init(app, cfg, db, authService)
 

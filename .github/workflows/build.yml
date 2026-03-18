@@ -16,10 +16,17 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
-        with:
+      - uses: amannn/action-semantic-pull-request@800da4c97f618e44f972ff9bc21ab5daecc97773 # v6.1.1
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          configuration_path: ".github/pr-title-checker-config.json"
+        with:
+          types: |
+            feat
+            fix
+            docs
+            test
+            ci
+            chore
 
   build:
     name: Build

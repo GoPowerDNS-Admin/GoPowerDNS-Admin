@@ -11,16 +11,18 @@ This project is under active, heavy development. Interfaces and configuration ma
 - Zone and record management (create, edit, and manage DNS records)
 - PowerDNS server settings stored in the application database
 - Multiple authentication methods:
-  - Local database
+  - Local database (with optional TOTP two-factor authentication)
   - OpenID Connect (OIDC)
   - LDAP
+- TOTP two-factor authentication for local accounts (per-user opt-in or admin-enforced)
 - RBAC (Role-Based Access Control) with role and permission CRUD
 - Zone tag-based access control
 - Activity/audit log with diff tracking and undo support (record changes and zone deletes)
+- DNSSEC-managed records automatically hidden from the zone editor and dashboard
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite
-- Responsive web UI using Bootstrap 5
+- Responsive web UI built on AdminLTE 4 / Bootstrap 5
 - Go backend with server-rendered templates and a small amount of client-side JS
-- Nightly builds for Linux, macOS, and FreeBSD
+- Nightly builds for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
 
 ## Getting Started (Development)
 
@@ -90,11 +92,22 @@ Configure the backend in `etc/main.toml` under the `[database]` section.
 
 Three authentication methods are supported and can be enabled independently:
 
-- **Local DB** — username/password stored in the application database
+- **Local DB** — username/password stored in the application database; supports optional TOTP (per-user or admin-enforced)
 - **OIDC** — OpenID Connect (e.g. Keycloak, Authentik, Okta)
 - **LDAP** — bind-based LDAP authentication
 
+TOTP is only available for local accounts. OIDC and LDAP users rely on their identity provider for MFA.
+
 See `internal/config/structs.go` for available configuration fields.
+
+## Zone Editor
+
+The zone editor provides a full-featured DNS record management interface:
+
+- Live search and per-type filter pills to quickly find records
+- Inline zone metadata (kind, serial, DNSSEC status) in the record list header
+- Collapsible zone settings card (SOA-EDIT-API, kind, masters)
+- DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
 
 ## Activity Log & Undo
 

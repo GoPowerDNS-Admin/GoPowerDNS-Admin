@@ -430,6 +430,7 @@ $(document).ready(function() {
         } else {
             $(SELECTORS.CHANGES_INDICATOR).hide();
         }
+        document.dispatchEvent(new CustomEvent('zoneRecordsChanged'));
     }
 
     // Ensure DNS name is in canonical format (ends with a dot)
@@ -471,12 +472,12 @@ $(document).ready(function() {
         // Row data for DataTable
         const rowData = [
             displayName,
-            record.type,
+            `<span class="badge bg-light text-dark border">${record.type}</span>`,
             record.ttl,
             `<span class="badge ${record.disabled ? 'bg-danger' : 'bg-success'}">${record.disabled ? 'Disabled' : 'Active'}</span>`,
             `<span class="text-truncate" style="max-width: 200px; display: inline-block;" title="${record.content}">${record.content}</span>`,
             `<span class="text-truncate" style="max-width: 150px; display: inline-block;" title="${comment}">${comment}</span>`,
-            `<button type="button" class="btn btn-sm btn-primary edit-record-btn" title="Edit"><i class="bi bi-pencil"></i></button> <button type="button" class="btn btn-sm btn-danger delete-record-btn" title="Delete"><i class="bi bi-trash"></i></button>`
+            `<div class="dropdown"><button type="button" class="btn btn-sm btn-light" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><button class="dropdown-item edit-record-btn" type="button"><i class="bi bi-pencil me-2 text-primary"></i>Edit</button></li><li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger delete-record-btn" type="button"><i class="bi bi-trash me-2"></i>Delete</button></li></ul></div>`
         ];
 
         if (dataTable) {
@@ -497,6 +498,7 @@ $(document).ready(function() {
                 $node.attr('data-full-name', record.name);
                 $node.attr('data-comment', comment);
                 $node.attr('data-record-id', id);
+                $node.attr('data-type', record.type);
                 if (isNew === false) {
                     $node.addClass('table-warning');
                 }
@@ -507,6 +509,7 @@ $(document).ready(function() {
                 $node.attr('data-record-id', id);
                 $node.attr('data-full-name', record.name);
                 $node.attr('data-comment', comment);
+                $node.attr('data-type', record.type);
                 if (isNew) {
                     $node.addClass('table-success');
                 }
@@ -522,8 +525,9 @@ $(document).ready(function() {
                 $row.attr('data-record-id', id);
                 $row.attr('data-full-name', record.name);
                 $row.attr('data-comment', comment);
+                $row.attr('data-type', record.type);
                 $row.append($('<td>').addClass('record-name').text(displayName));
-                $row.append($('<td>').addClass('record-type').text(record.type));
+                $row.append($('<td>').addClass('record-type').html(`<span class="badge bg-light text-dark border">${record.type}</span>`));
                 $row.append($('<td>').addClass('record-ttl').text(record.ttl));
                 $row.append($('<td>').addClass('record-status').html(rowData[3]));
                 $row.append($('<td>').addClass('record-content').html(rowData[4]));

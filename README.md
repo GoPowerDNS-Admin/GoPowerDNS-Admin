@@ -1,5 +1,7 @@
 # GoPowerDNS-Admin
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/chrisamti)
+
 GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
 
 ## Status: Heavy Development

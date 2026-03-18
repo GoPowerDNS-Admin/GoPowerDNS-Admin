@@ -31,7 +31,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install dependencies
         run: apt-get update && apt-get install -y gcc libsqlite3-dev git nodejs python3-pip && pip3 install pre-commit --break-system-packages

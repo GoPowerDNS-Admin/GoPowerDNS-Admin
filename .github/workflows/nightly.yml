@@ -112,13 +112,13 @@ jobs:
       matrix:
         include:
           - arch: amd64
-          - arch: arm64
+          - arch: aarch64
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Build inside FreeBSD VM
-        uses: vmactions/freebsd-vm@v1
+        uses: vmactions/freebsd-vm@v1.4.3
         with:
           arch: ${{ matrix.arch }}
           usesh: true

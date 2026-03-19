@@ -270,7 +270,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 	}
 
 	if err != nil {
-		var pdnsErr pdnsapi.Error
+		var pdnsErr *pdnsapi.Error
 		if errors.As(err, &pdnsErr) && pdnsErr.StatusCode == fiber.StatusConflict {
 			return c.Status(fiber.StatusConflict).Render(TemplateName, fiber.Map{
 				"Navigation":   nav,

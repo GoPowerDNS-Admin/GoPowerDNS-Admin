@@ -11,6 +11,8 @@ This project is under active, heavy development. Interfaces and configuration ma
 ## Key Features
 
 - Zone and record management (create, edit, and manage DNS records)
+- Forward and reverse zone creation with automatic CIDR-to-zone-name conversion for IPv4 and IPv6
+- Duplicate zone detection with a direct link to the existing zone
 - PowerDNS server settings stored in the application database
 - Multiple authentication methods:
   - Local database (with optional TOTP two-factor authentication)

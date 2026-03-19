@@ -53,10 +53,9 @@
                             </div>
                         </div>
                         <!--end::Header-->
-                        <!--begin::Form-->
-                        <form method="POST" action="/zone/edit/{{.Form.Name}}">
-                            <!--begin::Body-->
-                            <div class="card-body" style="display: none;">
+                        <!--begin::Body-->
+                        <div class="card-body" style="display: none;">
+                            <form method="POST" action="/zone/edit/{{.Form.Name}}">
                                 {{if .Error}}
                                 <!--begin::Alert-->
                                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -116,10 +115,8 @@
                                     <div class="form-text">Controls how the SOA serial number is updated when records change.</div>
                                 </div>
                                 <!--end::SOA-EDIT-API-->
-                            </div>
-                            <!--end::Body-->
                             <!--begin::Footer-->
-                            <div class="card-footer" style="display: none;">
+                            <div class="mt-3 pt-3 border-top">
                                 <button type="button" class="btn btn-outline-danger btn-sm float-end" id="delete-zone-btn">
                                     <i class="bi bi-trash me-1"></i> Delete Zone
                                 </button>
@@ -131,8 +128,9 @@
                                 </a>
                             </div>
                             <!--end::Footer-->
-                        </form>
-                        <!--end::Form-->
+                            </form>
+                        </div>
+                        <!--end::Body-->
                     </div>
                     <!--end::Zone Settings Card-->
 

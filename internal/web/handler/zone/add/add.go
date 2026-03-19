@@ -67,12 +67,28 @@ const (
 	SOAEditAPIOff SOAEditAPI = "OFF"
 )
 
+// ZoneType distinguishes forward from reverse zone creation modes.
+type ZoneType string
+
+const (
+	// ZoneTypeForward is a standard forward DNS zone.
+	ZoneTypeForward ZoneType = "forward"
+
+	// ZoneTypeReverseIPv4 is a reverse DNS zone for IPv4.
+	ZoneTypeReverseIPv4 ZoneType = "reverse-ipv4"
+
+	// ZoneTypeReverseIPv6 is a reverse DNS zone for IPv6.
+	ZoneTypeReverseIPv6 ZoneType = "reverse-ipv6"
+)
+
 // ZoneForm represents the form data for creating a new zone.
 type ZoneForm struct {
-	Name       string     `form:"name"         validate:"required,fqdn"`
-	Kind       ZoneKind   `form:"kind"         validate:"required,oneof=Native Master Slave"`
-	SOAEditAPI SOAEditAPI `form:"soa_edit_api" validate:"required,oneof=DEFAULT INCREASE EPOCH OFF"`
-	Masters    string     `form:"masters"` // Comma-separated list for Slave zones
+	ZoneType       ZoneType   `form:"zone_type"`
+	Name           string     `form:"name"`
+	ReverseNetwork string     `form:"reverse_network"` // CIDR for reverse zone conversion
+	Kind           ZoneKind   `form:"kind"            validate:"required,oneof=Native Master Slave"`
+	SOAEditAPI     SOAEditAPI `form:"soa_edit_api"    validate:"required,oneof=DEFAULT INCREASE EPOCH OFF"`
+	Masters        string     `form:"masters"` // Comma-separated list for Slave zones
 }
 
 // Service is the add zone handler service.
@@ -143,9 +159,42 @@ func (s *Service) Post(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Ensure zone name ends with a dot
-	if !strings.HasSuffix(form.Name, ".") {
-		form.Name += "."
+	// Default zone type to forward if not set
+	if form.ZoneType == "" {
+		form.ZoneType = ZoneTypeForward
+	}
+
+	// Compute zone name for reverse zones, or normalise forward zone name
+	switch form.ZoneType {
+	case ZoneTypeReverseIPv4:
+		name, err := ReverseIPv4Zone(form.ReverseNetwork)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
+				"Navigation": nav,
+				"Form":       form,
+				"Error":      "Invalid IPv4 network: " + err.Error(),
+			}, handler.BaseLayout)
+		}
+
+		form.Name = name
+
+	case ZoneTypeReverseIPv6:
+		name, err := ReverseIPv6Zone(form.ReverseNetwork)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
+				"Navigation": nav,
+				"Form":       form,
+				"Error":      "Invalid IPv6 network: " + err.Error(),
+			}, handler.BaseLayout)
+		}
+
+		form.Name = name
+
+	case ZoneTypeForward:
+		// Ensure forward zone name ends with a dot
+		if !strings.HasSuffix(form.Name, ".") {
+			form.Name += "."
+		}
 	}
 
 	// Validate form
@@ -208,7 +257,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 		var masters []string
 
 		if form.Masters != "" {
-			for _, master := range strings.Split(form.Masters, ",") {
+			for master := range strings.SplitSeq(form.Masters, ",") {
 				masters = append(masters, strings.TrimSpace(master))
 			}
 		}

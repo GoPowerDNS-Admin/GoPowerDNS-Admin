@@ -59,20 +59,47 @@
                             </div>
                             <!--begin::Form-->
                             <form method="POST" action="/zone/add">
+                                <input type="hidden" id="zone-type-input" name="zone_type" value="{{if .Form.ZoneType}}{{.Form.ZoneType}}{{else}}forward{{end}}">
                                 <div class="card-body">
-                                    <!-- Zone Name -->
+                                    <!-- Zone Category Tabs -->
                                     <div class="mb-3">
+                                        <label class="form-label">Zone Category <span class="text-danger">*</span></label>
+                                        <div class="btn-group w-100" role="group" aria-label="Zone category">
+                                            <input type="radio" class="btn-check" name="zone-category-radio" id="cat-forward" autocomplete="off" {{if or (not .Form.ZoneType) (eq .Form.ZoneType "forward")}}checked{{end}}>
+                                            <label class="btn btn-outline-primary" for="cat-forward"><i class="bi bi-globe me-1"></i>Forward</label>
+
+                                            <input type="radio" class="btn-check" name="zone-category-radio" id="cat-reverse-ipv4" autocomplete="off" {{if eq .Form.ZoneType "reverse-ipv4"}}checked{{end}}>
+                                            <label class="btn btn-outline-primary" for="cat-reverse-ipv4"><i class="bi bi-arrow-left-right me-1"></i>Reverse IPv4</label>
+
+                                            <input type="radio" class="btn-check" name="zone-category-radio" id="cat-reverse-ipv6" autocomplete="off" {{if eq .Form.ZoneType "reverse-ipv6"}}checked{{end}}>
+                                            <label class="btn btn-outline-primary" for="cat-reverse-ipv6"><i class="bi bi-arrow-left-right me-1"></i>Reverse IPv6</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Forward: Zone Name -->
+                                    <div class="mb-3" id="forward-name-group">
                                         <label for="zone-name" class="form-label">Zone Name <span class="text-danger">*</span></label>
                                         <input type="text"
                                                class="form-control"
                                                id="zone-name"
                                                name="name"
-                                               aria-describedby="zone-name-help"
                                                placeholder="example.com"
-                                               value="{{.Form.Name}}"
-                                               required>
-                                        <div id="zone-name-help" class="form-text">
-                                            Enter the fully qualified domain name (FQDN) for the zone. A trailing dot will be added automatically if not provided.
+                                               value="{{.Form.Name}}">
+                                        <div class="form-text">FQDN for the zone. A trailing dot will be added automatically.</div>
+                                    </div>
+
+                                    <!-- Reverse: Network Prefix -->
+                                    <div class="mb-3" id="reverse-network-group" style="display:none">
+                                        <label for="reverse-network" class="form-label">Network Prefix <span class="text-danger">*</span></label>
+                                        <input type="text"
+                                               class="form-control"
+                                               id="reverse-network"
+                                               name="reverse_network"
+                                               placeholder=""
+                                               value="{{.Form.ReverseNetwork}}">
+                                        <div class="form-text" id="reverse-network-help"></div>
+                                        <div class="mt-2" id="computed-zone-preview" style="display:none">
+                                            Zone name: <code id="computed-zone-name"></code>
                                         </div>
                                     </div>
 
@@ -144,27 +171,115 @@
 </div>
 <!--end::App Wrapper-->
 
-<!-- JavaScript to show/hide masters field based on zone type -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const zoneKindSelect = document.getElementById('zone-kind');
-    const mastersGroup = document.getElementById('masters-group');
-    const mastersInput = document.getElementById('zone-masters');
+document.addEventListener('DOMContentLoaded', function () {
+    const zoneTypeInput    = document.getElementById('zone-type-input');
+    const forwardGroup     = document.getElementById('forward-name-group');
+    const reverseGroup     = document.getElementById('reverse-network-group');
+    const reverseInput     = document.getElementById('reverse-network');
+    const reverseHelp      = document.getElementById('reverse-network-help');
+    const computedPreview  = document.getElementById('computed-zone-preview');
+    const computedName     = document.getElementById('computed-zone-name');
+    const zoneNameInput    = document.getElementById('zone-name');
+    const zoneKindSelect   = document.getElementById('zone-kind');
+    const mastersGroup     = document.getElementById('masters-group');
+    const mastersInput     = document.getElementById('zone-masters');
 
-    function toggleMasters() {
-        if (zoneKindSelect.value === 'Slave') {
-            mastersGroup.style.display = 'block';
-            mastersInput.required = true;
+    // --- Zone category switching ---
+    function setCategory(cat) {
+        zoneTypeInput.value = cat;
+
+        if (cat === 'forward') {
+            forwardGroup.style.display = 'block';
+            reverseGroup.style.display = 'none';
+            zoneNameInput.required = true;
+            reverseInput.required = false;
         } else {
-            mastersGroup.style.display = 'none';
-            mastersInput.required = false;
+            forwardGroup.style.display = 'none';
+            reverseGroup.style.display = 'block';
+            zoneNameInput.required = false;
+            reverseInput.required = true;
+            reverseHelp.textContent = cat === 'reverse-ipv4'
+                ? 'Enter an IPv4 network in CIDR notation, e.g. 192.168.1.0/24 or 10.0.0.0/8'
+                : 'Enter an IPv6 network in CIDR notation, e.g. 2001:db8::/32 or 2a02:d58:2::/48';
+            reverseInput.placeholder = cat === 'reverse-ipv4' ? '192.168.1.0/24' : '2001:db8::/32';
+            updatePreview(cat);
         }
     }
 
-    // Initial check
-    toggleMasters();
+    document.getElementById('cat-forward').addEventListener('change', () => setCategory('forward'));
+    document.getElementById('cat-reverse-ipv4').addEventListener('change', () => setCategory('reverse-ipv4'));
+    document.getElementById('cat-reverse-ipv6').addEventListener('change', () => setCategory('reverse-ipv6'));
 
-    // Listen for changes
+    // --- Live reverse zone name preview ---
+    reverseInput.addEventListener('input', () => updatePreview(zoneTypeInput.value));
+
+    function updatePreview(cat) {
+        const val = reverseInput.value.trim();
+        if (!val) { computedPreview.style.display = 'none'; return; }
+        const name = cat === 'reverse-ipv4' ? computeReverseIPv4(val) : computeReverseIPv6(val);
+        if (name) {
+            computedName.textContent = name;
+            computedPreview.style.display = 'block';
+        } else {
+            computedPreview.style.display = 'none';
+        }
+    }
+
+    function computeReverseIPv4(input) {
+        let prefix = 32, ipStr = input;
+        if (input.includes('/')) {
+            const p = input.split('/');
+            ipStr = p[0];
+            prefix = parseInt(p[1], 10);
+            if (isNaN(prefix) || prefix < 0 || prefix > 32) return null;
+        }
+        const octs = ipStr.split('.');
+        if (octs.length !== 4 || octs.some(o => isNaN(+o) || +o < 0 || +o > 255)) return null;
+        const n = Math.max(1, Math.ceil(prefix / 8));
+        return octs.slice(0, n).reverse().join('.') + '.in-addr.arpa.';
+    }
+
+    function computeReverseIPv6(input) {
+        let prefix = 128, ipStr = input;
+        if (input.includes('/')) {
+            const p = input.split('/');
+            ipStr = p[0];
+            prefix = parseInt(p[1], 10);
+            if (isNaN(prefix) || prefix < 0 || prefix > 128) return null;
+        }
+        const expanded = expandIPv6(ipStr);
+        if (!expanded) return null;
+        const n = Math.max(1, Math.ceil(prefix / 4));
+        return expanded.slice(0, n).split('').reverse().join('.') + '.ip6.arpa.';
+    }
+
+    function expandIPv6(addr) {
+        if (addr.includes('::')) {
+            const halves = addr.split('::');
+            const left   = halves[0] ? halves[0].split(':') : [];
+            const right  = halves[1] ? halves[1].split(':') : [];
+            const fill   = 8 - left.length - right.length;
+            if (fill < 0) return null;
+            const groups = [...left, ...Array(fill).fill('0'), ...right];
+            return groups.map(g => g.padStart(4, '0')).join('');
+        }
+        const groups = addr.split(':');
+        if (groups.length !== 8) return null;
+        return groups.map(g => g.padStart(4, '0')).join('');
+    }
+
+    // --- Masters field toggle ---
+    function toggleMasters() {
+        const isSlave = zoneKindSelect.value === 'Slave';
+        mastersGroup.style.display = isSlave ? 'block' : 'none';
+        mastersInput.required = isSlave;
+    }
+
     zoneKindSelect.addEventListener('change', toggleMasters);
+
+    // --- Init ---
+    setCategory(zoneTypeInput.value || 'forward');
+    toggleMasters();
 });
 </script>

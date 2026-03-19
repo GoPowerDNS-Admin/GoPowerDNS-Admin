@@ -271,7 +271,11 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	if err != nil {
 		var pdnsErr *pdnsapi.Error
-		if errors.As(err, &pdnsErr) && pdnsErr.StatusCode == fiber.StatusConflict {
+
+		isConflict := (errors.As(err, &pdnsErr) && pdnsErr.StatusCode == fiber.StatusConflict) ||
+			err.Error() == "Conflict"
+
+		if isConflict {
 			return c.Status(fiber.StatusConflict).Render(TemplateName, fiber.Map{
 				"Navigation":   nav,
 				"Form":         form,

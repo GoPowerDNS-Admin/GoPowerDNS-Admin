@@ -274,9 +274,9 @@ func (s *Service) Post(c fiber.Ctx) error {
 		if errors.As(err, &pdnsErr) && pdnsErr.StatusCode == fiber.StatusUnprocessableEntity &&
 			strings.Contains(pdnsErr.Message, "already exists") {
 			return c.Status(fiber.StatusConflict).Render(TemplateName, fiber.Map{
-				"Navigation": nav,
-				"Form":       form,
-				"Error":      "Zone '" + form.Name + "' already exists.",
+				"Navigation":   nav,
+				"Form":         form,
+				"ConflictZone": form.Name,
 			}, handler.BaseLayout)
 		}
 

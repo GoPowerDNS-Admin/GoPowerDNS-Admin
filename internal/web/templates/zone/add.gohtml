@@ -38,6 +38,14 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {{end}}
+                {{if .ConflictZone}}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>Zone already exists.</strong>
+                    <code>{{.ConflictZone}}</code> is already configured in PowerDNS.
+                    <a href="/zone/edit/{{.ConflictZone}}" class="alert-link ms-1">Edit the existing zone &rarr;</a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
                 {{if .Error}}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{if eq (printf "%T" .Error) "[]string"}}

@@ -270,6 +270,16 @@ func (s *Service) Post(c fiber.Ctx) error {
 	}
 
 	if err != nil {
+		var pdnsErr pdnsapi.Error
+		if errors.As(err, &pdnsErr) && pdnsErr.StatusCode == fiber.StatusUnprocessableEntity &&
+			strings.Contains(pdnsErr.Message, "already exists") {
+			return c.Status(fiber.StatusConflict).Render(TemplateName, fiber.Map{
+				"Navigation": nav,
+				"Form":       form,
+				"Error":      "Zone '" + form.Name + "' already exists.",
+			}, handler.BaseLayout)
+		}
+
 		log.Error().
 			Err(err).
 			Str("zone_name", form.Name).

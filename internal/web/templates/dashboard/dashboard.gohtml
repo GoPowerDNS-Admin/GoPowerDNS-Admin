@@ -41,36 +41,26 @@
                             <div class="card-header">
                                 <h3 class="card-title">Zones</h3>
                                 <div class="card-tools">
-                                    <div class="nav-tabs-custom">
-                                        <ul class="nav nav-tabs card-header-tabs" id="custom-content-below-tab"
-                                            role="tablist">
-                                            <li class="nav-item" role="presentation">
+                                    <div class="zone-tab-nav">
+                                        <ul class="nav nav-tabs card-header-tabs" id="zone-tabs" aria-label="Zone type filter">
+                                            <li class="nav-item">
                                                 <a class="nav-link {{if or (not .Data) (eq .Data.ActiveTab "forward")}}active{{end}}"
                                                    href="?tab=forward"
-                                                   id="zones-tab"
-                                                   role="tab"
-                                                   aria-controls="zones-tab-pane"
-                                                   aria-selected="{{if or (not .Data) (eq .Data.ActiveTab "forward")}}true{{else}}false{{end}}">
+                                                   id="forward-zones-tab">
                                                     Forward Zones{{if .Data}} ({{.Data.ForwardTab.TotalItems}}){{end}}
                                                 </a>
                                             </li>
-                                            <li class="nav-item" role="presentation">
+                                            <li class="nav-item">
                                                 <a class="nav-link {{if eq .Data.ActiveTab "reverse-ipv4"}}active{{end}}"
                                                    href="?tab=reverse-ipv4"
-                                                   id="reverse-ipv4-tab"
-                                                   role="tab"
-                                                   aria-controls="reverse-ipv4-tab-pane"
-                                                   aria-selected="{{if eq .Data.ActiveTab "reverse-ipv4"}}true{{else}}false{{end}}">
+                                                   id="reverse-ipv4-zones-tab">
                                                     Reverse IPv4{{if .Data}} ({{.Data.ReverseV4Tab.TotalItems}}){{end}}
                                                 </a>
                                             </li>
-                                            <li class="nav-item" role="presentation">
+                                            <li class="nav-item">
                                                 <a class="nav-link {{if eq .Data.ActiveTab "reverse-ipv6"}}active{{end}}"
                                                    href="?tab=reverse-ipv6"
-                                                   id="reverse-ipv6-tab"
-                                                   role="tab"
-                                                   aria-controls="reverse-ipv6-tab-pane"
-                                                   aria-selected="{{if eq .Data.ActiveTab "reverse-ipv6"}}true{{else}}false{{end}}">
+                                                   id="reverse-ipv6-zones-tab">
                                                     Reverse IPv6{{if .Data}} ({{.Data.ReverseV6Tab.TotalItems}}){{end}}
                                                 </a>
                                             </li>

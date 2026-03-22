@@ -21,9 +21,8 @@ FROM alpine:3
 
 # ca-certificates: needed for ACME/Let's Encrypt and OIDC provider connections.
 # tzdata: allows the container timezone to be set via TZ env var.
-RUN apk add --no-cache ca-certificates tzdata
-
-RUN addgroup -S gopdns && adduser -S -G gopdns gopdns
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S gopdns && adduser -S -G gopdns gopdns
 
 WORKDIR /app
 

@@ -42,8 +42,8 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	// Test DB config
-	if cfg.DB.Host == "" {
-		t.Error("DB.Host should not be empty")
+	if cfg.DB.GormEngine == "" {
+		t.Error("DB.GormEngine should not be empty")
 	}
 }
 

@@ -1,0 +1,131 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6"><h3 class="mb-0">{{.Navigation.PageTitle}}</h3></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{range .Navigation.Breadcrumbs}}
+                            {{if .Active}}
+                            <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                            {{else}}
+                            <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                            {{end}}
+                            {{end}}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+
+                {{if .Success}}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{.Success}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
+                {{if .Error}}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{.Error}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {{end}}
+
+                <div class="row">
+                    <div class="col-12 col-lg-7">
+
+                        <!--begin::Current Presets Card-->
+                        <div class="card card-primary card-outline mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">TTL Presets</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <p class="text-muted px-3 pt-3 mb-2">
+                                    These values appear in the TTL dropdown when adding or editing DNS records.
+                                    Users can always override with a custom value.
+                                </p>
+                                <table class="table table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Label</th>
+                                            <th>Seconds</th>
+                                            <th width="80"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{range .Presets}}
+                                        <tr>
+                                            <td>{{.Label}}</td>
+                                            <td>{{.Seconds}}</td>
+                                            <td class="text-end">
+                                                <form method="POST" action="/admin/settings/ttl-presets" class="d-inline">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="seconds" value="{{.Seconds}}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            onclick="return confirm('Remove this TTL preset?')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {{else}}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-3">No presets configured.</td>
+                                        </tr>
+                                        {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!--end::Current Presets Card-->
+
+                        <!--begin::Add Preset Card-->
+                        <div class="card card-success card-outline mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">Add Preset</h3>
+                            </div>
+                            <form method="POST" action="/admin/settings/ttl-presets">
+                                <input type="hidden" name="action" value="add">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-5">
+                                            <label for="ttl-label" class="form-label">Label <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="ttl-label" name="label"
+                                                   placeholder="e.g. 6 hours" required maxlength="64">
+                                        </div>
+                                        <div class="col-4">
+                                            <label for="ttl-seconds" class="form-label">Seconds <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" id="ttl-seconds" name="seconds"
+                                                   placeholder="e.g. 21600" required min="1">
+                                        </div>
+                                        <div class="col-3 d-flex align-items-end">
+                                            <button type="submit" class="btn btn-success w-100">
+                                                <i class="bi bi-plus-circle me-1"></i> Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!--end::Add Preset Card-->
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->

@@ -9,6 +9,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
+	ttlsettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/ttl"
 	zonesettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
 )
 
@@ -27,6 +28,9 @@ func seed(cfg *config.Config, db *gorm.DB) {
 
 	// Seed zone record settings from config (only if not already set)
 	seedZoneRecordSettings(cfg, db)
+
+	// Seed TTL presets (only if not already set)
+	seedTTLPresets(db)
 }
 
 // seedRoles creates default roles.
@@ -178,6 +182,12 @@ func seedPermissions(db *gorm.DB) {
 			Resource:    "admin",
 			Action:      "zone.tags",
 			Description: "Assign tags to zones",
+		},
+		{
+			Name:        "admin.ttl.presets",
+			Resource:    "admin",
+			Action:      "ttl.presets",
+			Description: "Manage global TTL preset values",
 		},
 	}
 
@@ -547,6 +557,22 @@ func seedDefaultZoneRecordSettings(cfg *config.Config, db *gorm.DB) {
 	}
 
 	log.Info().Int("record_types", len(merged)).Msg("seeded zone record settings")
+}
+
+// seedTTLPresets seeds default TTL presets if none are stored yet.
+func seedTTLPresets(db *gorm.DB) {
+	var s ttlsettings.Settings
+	if err := s.Load(db); err == nil {
+		return // already seeded
+	}
+
+	s.Presets = ttlsettings.DefaultPresets()
+	if err := s.Save(db); err != nil {
+		log.Error().Err(err).Msg("failed to seed TTL presets")
+		return
+	}
+
+	log.Info().Int("presets", len(s.Presets)).Msg("seeded TTL presets")
 }
 
 // seedUsers creates the default admin user.

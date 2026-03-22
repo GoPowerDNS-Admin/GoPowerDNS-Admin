@@ -18,6 +18,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
 
 const (
@@ -124,7 +125,51 @@ func (s *Service) Get(c fiber.Ctx) error {
 		AddBreadcrumb("Dashboard", Path, true)
 
 	activeTab := resolveActiveTab(c)
-	params := parseQueryParams(c)
+
+	currentUser, hasUser := c.Locals("CurrentUser").(models.User)
+
+	// Load the user's stored page size preference fresh from the DB (session is a snapshot from login).
+	storedPageSize := DefaultPageSize
+
+	if hasUser && currentUser.ID != 0 {
+		var u models.User
+		if s.db.Select("dashboard_page_size").First(&u, currentUser.ID).Error == nil && u.DashboardPageSize > 0 {
+			storedPageSize = u.DashboardPageSize
+		}
+	}
+
+	// Load filter state from the session and save it back if explicitly provided in the URL.
+	sessionID := c.Cookies("session")
+
+	sessData := new(session.Data)
+	if err := sessData.Read(sessionID); err != nil {
+		log.Debug().Err(err).Msg("dashboard: could not read session data for filters")
+	}
+
+	queryArgs := c.Request().URI().QueryArgs()
+	hasSearch := queryArgs.Has("search")
+	hasKind := queryArgs.Has("kind")
+
+	if hasSearch {
+		sessData.DashboardFilters.Search = c.Query("search")
+	}
+
+	if hasKind {
+		sessData.DashboardFilters.Kind = c.Query("kind")
+	}
+
+	if hasSearch || hasKind {
+		if err := sessData.Write(sessionID, s.cfg.Webserver.Session.ExpiryTime); err != nil {
+			log.Debug().Err(err).Msg("dashboard: could not write session data for filters")
+		}
+	}
+
+	params := parseQueryParams(c, storedPageSize, sessData.DashboardFilters.Search, sessData.DashboardFilters.Kind)
+
+	// Persist a newly chosen page size to the user's profile.
+	if hasUser && currentUser.ID != 0 && c.Query("pageSize") != "" {
+		s.db.Model(&models.User{}).Where("id = ?", currentUser.ID).Update("dashboard_page_size", params.PageSize)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -181,12 +226,13 @@ func resolveActiveTab(c fiber.Ctx) string {
 }
 
 // parseQueryParams parses and validates all dashboard query parameters.
-func parseQueryParams(c fiber.Ctx) QueryParams {
+// defaultSearch and defaultKind are used as fallbacks when the respective keys are absent from the URL.
+func parseQueryParams(c fiber.Ctx, defaultPageSize int, defaultSearch, defaultKind string) QueryParams {
 	params := QueryParams{
 		Page:        fiber.Query[int](c, "page", 1),
-		PageSize:    fiber.Query[int](c, "pageSize", DefaultPageSize),
-		SearchQuery: c.Query("search", ""),
-		FilterKind:  c.Query("kind", ""),
+		PageSize:    fiber.Query[int](c, "pageSize", defaultPageSize),
+		SearchQuery: c.Query("search", defaultSearch),
+		FilterKind:  c.Query("kind", defaultKind),
 		SortField:   c.Query("sort", "name"),
 		SortOrder:   c.Query("order", "asc"),
 	}

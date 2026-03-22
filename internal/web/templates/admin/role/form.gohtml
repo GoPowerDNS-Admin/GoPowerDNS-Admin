@@ -14,13 +14,11 @@
                     </div>
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-end">
-                            {{ if .Navigation }}
-                                {{ range .Navigation.Breadcrumbs }}
-                                    {{ if .Active }}
-                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
-                                    {{ else }}
-                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
-                                    {{ end }}
+                            {{ range .Navigation.Breadcrumbs }}
+                                {{ if .Active }}
+                                    <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                {{ else }}
+                                    <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
                                 {{ end }}
                             {{ end }}
                         </ol>
@@ -35,66 +33,180 @@
             <div class="container-fluid">
                 {{ if .Error }}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ .Error }}
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ .Error }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {{ end }}
 
-                <div class="card card-outline card-primary shadow">
-                    <div class="card-header">
-                        <h3 class="card-title">{{ if .IsCreate }}Create a new role{{ else }}Update role{{ end }}</h3>
-                        <div class="card-tools">
-                            <a href="/admin/role" class="btn btn-sm btn-outline-secondary">Back to list</a>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <form method="post" action="{{ if .IsCreate }}/admin/role{{ else }}/admin/role/{{ .Role.ID }}{{ end }}">
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <label for="name" class="form-label">Name</label>
-                                    {{ if and (eq .IsCreate false) .Role.IsSystem }}
-                                        <input type="text" class="form-control" id="name" name="name" value="{{ .Role.Name }}" disabled>
-                                        <input type="hidden" name="name" value="{{ .Role.Name }}">
-                                        <div class="form-text">System role names cannot be changed.</div>
-                                    {{ else }}
-                                        <input type="text" class="form-control" id="name" name="name" value="{{ .Role.Name }}" required maxlength="100">
-                                    {{ end }}
-                                </div>
-                                <div class="col-md-8">
-                                    <label for="description" class="form-label">Description</label>
-                                    <input type="text" class="form-control" id="description" name="description" value="{{ .Role.Description }}" maxlength="255">
-                                </div>
-                            </div>
+                <form method="post" action="{{ if .IsCreate }}/admin/role{{ else }}/admin/role/{{ .Role.ID }}{{ end }}" id="role-form">
 
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Permissions</label>
-                                {{ if .Permissions }}
-                                    {{ range .Permissions }}
-                                    <div class="form-check form-check-inline mb-1" style="min-width:220px">
-                                        <input class="form-check-input" type="checkbox" name="perm_ids" id="perm_{{ .ID }}" value="{{ .ID }}"
-                                            {{ if index $.SelectedPermIDs .ID }}checked{{ end }}>
-                                        <label class="form-check-label" for="perm_{{ .ID }}" title="{{ .Description }}">
-                                            <span class="text-muted small">{{ .Resource }}/</span>{{ .Action }}
-                                        </label>
+                    <!--begin::Row-->
+                    <div class="row g-3">
+
+                        <!--begin::Left column — role details-->
+                        <div class="col-12 col-lg-4">
+                            <div class="card card-primary card-outline h-100">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="bi bi-person-badge me-2"></i>Role Details</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                                        {{ if and (eq .IsCreate false) .Role.IsSystem }}
+                                            <input type="text" class="form-control" id="name" value="{{ .Role.Name }}" disabled>
+                                            <input type="hidden" name="name" value="{{ .Role.Name }}">
+                                            <div class="form-text text-warning">
+                                                <i class="bi bi-lock me-1"></i>System role names cannot be changed.
+                                            </div>
+                                        {{ else }}
+                                            <input type="text" class="form-control" id="name" name="name"
+                                                   value="{{ .Role.Name }}" required maxlength="100"
+                                                   placeholder="e.g. editor">
+                                        {{ end }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label fw-semibold">Description</label>
+                                        <textarea class="form-control" id="description" name="description"
+                                                  rows="3" maxlength="255"
+                                                  placeholder="What is this role for?">{{ .Role.Description }}</textarea>
+                                    </div>
+
+                                    {{ if not .IsCreate }}
+                                    <div class="callout callout-info py-2 px-3 small mb-0">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Changes to permissions take effect immediately for all users with this role.
                                     </div>
                                     {{ end }}
-                                {{ else }}
-                                    <p class="text-muted">No permissions defined.</p>
-                                {{ end }}
+                                </div>
+                                <div class="card-footer d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi {{ if .IsCreate }}bi-plus-circle{{ else }}bi-save{{ end }} me-1"></i>
+                                        {{ if .IsCreate }}Create Role{{ else }}Save Changes{{ end }}
+                                    </button>
+                                    <a href="/admin/role" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Left column-->
+
+                        <!--begin::Right column — permissions-->
+                        <div class="col-12 col-lg-8">
+                            {{ if .PermissionGroups }}
+
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="fw-semibold text-muted small text-uppercase">Permissions</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="select-all-btn">
+                                        <i class="bi bi-check2-all me-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-btn">
+                                        <i class="bi bi-x-lg me-1"></i>Deselect All
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>
-                                <a href="/admin/role" class="btn btn-secondary">Cancel</a>
+                            {{ range .PermissionGroups }}
+                            <!--begin::Permission group: {{ .Resource }}-->
+                            <div class="card card-outline card-secondary mb-3">
+                                <div class="card-header py-2 d-flex align-items-center gap-2">
+                                    <i class="bi {{ .Icon }} text-primary"></i>
+                                    <span class="fw-semibold text-capitalize">{{ .Resource }}</span>
+                                    <span class="badge bg-secondary ms-1 group-badge">
+                                        {{ len .Permissions }}
+                                    </span>
+                                    <div class="ms-auto form-check mb-0">
+                                        <input type="checkbox" class="form-check-input group-toggle" id="toggle-{{ .Resource }}"
+                                               title="Select / deselect all {{ .Resource }} permissions">
+                                        <label class="form-check-label small text-muted" for="toggle-{{ .Resource }}">All</label>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row g-2">
+                                        {{ range .Permissions }}
+                                        <div class="col-12 col-sm-6 col-xl-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input perm-check" type="checkbox"
+                                                       name="perm_ids" id="perm_{{ .ID }}" value="{{ .ID }}"
+                                                       data-group="{{ .Resource }}"
+                                                       {{ if index $.SelectedPermIDs .ID }}checked{{ end }}>
+                                                <label class="form-check-label" for="perm_{{ .ID }}">
+                                                    <span class="fw-medium">{{ .Action }}</span>
+                                                    {{ if .Description }}
+                                                    <br><span class="text-muted small">{{ .Description }}</span>
+                                                    {{ end }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {{ end }}
+                                    </div>
+                                </div>
                             </div>
-                        </form>
+                            <!--end::Permission group-->
+                            {{ end }}
+
+                            {{ else }}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>No permissions defined yet.
+                            </div>
+                            {{ end }}
+                        </div>
+                        <!--end::Right column-->
+
                     </div>
-                </div>
+                    <!--end::Row-->
+
+                </form>
+
             </div>
         </div>
         <!--end::App Content-->
     </main>
-    <!--end::App Main-->
 </div>
 <!--end::App Wrapper-->
+
+<script>
+(function () {
+    const checks   = () => document.querySelectorAll('.perm-check');
+    const toggles  = () => document.querySelectorAll('.group-toggle');
+
+    // Update a group-toggle tri-state based on its children.
+    function syncGroupToggle(group) {
+        const kids  = document.querySelectorAll(`.perm-check[data-group="${group}"]`);
+        const total = kids.length;
+        const checked = Array.from(kids).filter(c => c.checked).length;
+        const toggle = document.getElementById('toggle-' + group);
+        if (!toggle) return;
+        toggle.checked       = checked === total;
+        toggle.indeterminate = checked > 0 && checked < total;
+    }
+
+    // Sync all group toggles on load.
+    const groups = new Set(Array.from(checks()).map(c => c.dataset.group));
+    groups.forEach(syncGroupToggle);
+
+    // Group-toggle click → check/uncheck all in group.
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('group-toggle')) {
+            const group = e.target.id.replace('toggle-', '');
+            document.querySelectorAll(`.perm-check[data-group="${group}"]`)
+                .forEach(c => { c.checked = e.target.checked; });
+        }
+        if (e.target.classList.contains('perm-check')) {
+            syncGroupToggle(e.target.dataset.group);
+        }
+    });
+
+    // Select-all / Deselect-all buttons.
+    document.getElementById('select-all-btn')?.addEventListener('click', function () {
+        checks().forEach(c => { c.checked = true; });
+        toggles().forEach(t => { t.checked = true; t.indeterminate = false; });
+    });
+    document.getElementById('deselect-all-btn')?.addEventListener('click', function () {
+        checks().forEach(c => { c.checked = false; });
+        toggles().forEach(t => { t.checked = false; t.indeterminate = false; });
+    });
+}());
+</script>
 {{ end }}

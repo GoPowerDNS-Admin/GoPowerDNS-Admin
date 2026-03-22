@@ -42,4 +42,6 @@ const (
 	PermAdminTags = "admin.tags"
 	// PermAdminZoneTags allows managing which tags are assigned to zones.
 	PermAdminZoneTags = "admin.zone.tags"
+	// PermAdminTTLPresets allows managing global TTL preset values.
+	PermAdminTTLPresets = "admin.ttl.presets"
 )

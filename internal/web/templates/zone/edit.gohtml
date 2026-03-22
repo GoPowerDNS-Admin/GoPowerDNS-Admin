@@ -55,7 +55,8 @@
                         <!--end::Header-->
                         <!--begin::Body-->
                         <div class="card-body" style="display: none;">
-                            <form method="POST" action="/zone/edit/{{.Form.Name}}">
+                            <!--begin::Form-->
+                            <form id="zone-settings-form" method="POST" action="/zone/edit/{{.Form.Name}}">
                                 {{if .Error}}
                                 <!--begin::Alert-->
                                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -115,139 +116,397 @@
                                     <div class="form-text">Controls how the SOA serial number is updated when records change.</div>
                                 </div>
                                 <!--end::SOA-EDIT-API-->
-                            <!--begin::Footer-->
-                            <div class="mt-3 pt-3 border-top">
-                                <button type="button" class="btn btn-outline-danger btn-sm float-end" id="delete-zone-btn">
-                                    <i class="bi bi-trash me-1"></i> Delete Zone
-                                </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save"></i> Update Zone
-                                </button>
-                                <a href="/dashboard" class="btn btn-secondary ms-2">
-                                    <i class="bi bi-x-circle"></i> Cancel
-                                </a>
-                            </div>
-                            <!--end::Footer-->
                             </form>
+                            <!--end::Form-->
                         </div>
                         <!--end::Body-->
+                        <!--begin::Footer-->
+                        <div class="card-footer" style="display: none;">
+                            <button type="button" class="btn btn-outline-danger btn-sm float-end" id="delete-zone-btn">
+                                <i class="bi bi-trash me-1"></i> Delete Zone
+                            </button>
+                            <button type="submit" form="zone-settings-form" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Update Zone
+                            </button>
+                            <a href="/dashboard" class="btn btn-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                        <!--end::Footer-->
                     </div>
                     <!--end::Zone Settings Card-->
 
                     {{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
-                    <!--begin::DNS Records Card-->
-                    <div class="card card-success card-outline mb-4">
-                        <!--begin::Header-->
-                        <div class="card-header d-flex align-items-center flex-wrap gap-2">
-                            <div class="card-title mb-0 me-2">
-                                <i class="bi bi-list-ul me-1"></i> DNS Records
-                            </div>
-                            <span class="badge bg-secondary" id="records-count-badge">{{len .Records}}</span>
-                            {{if .Zone}}
-                            <span class="text-muted small ms-2">
-                                {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}{{if .DNSSECEnabled}} · <span class="text-success"><i class="bi bi-shield-check"></i> DNSSEC</span>{{end}}
-                            </span>
-                            {{end}}
-                            <div class="card-tools ms-auto d-flex align-items-center gap-2">
-                                <div class="input-group input-group-sm" style="width: 200px;">
-                                    <input type="text" id="record-search" class="form-control" placeholder="Search name or data…">
-                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <!--begin::Alpine zone editor — wraps DNS records card + modals-->
+                    <script>const _zoneData = {{.InitDataJSON}};</script>
+                    <div x-data="zoneEditor(_zoneData)" id="zone-editor">
+
+                        <!-- Toast container -->
+                        <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
+
+                        <!--begin::DNS Records Card-->
+                        <div class="card card-success card-outline mb-4">
+                            <!--begin::Header-->
+                            <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                                <div class="card-title mb-0 me-2">
+                                    <i class="bi bi-list-ul me-1"></i> DNS Records
                                 </div>
-                                <button type="button" class="btn btn-sm btn-success" id="add-record-btn">
-                                    <i class="bi bi-plus-circle"></i> Add Record
+                                <span class="badge bg-secondary" x-text="filteredRecords.length"></span>
+                                {{if .Zone}}
+                                <span class="text-muted small ms-2">
+                                    {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}{{if .DNSSECEnabled}} · <span class="text-success"><i class="bi bi-shield-check"></i> DNSSEC</span>{{end}}
+                                </span>
+                                {{end}}
+                                <div class="card-tools ms-auto d-flex align-items-center gap-2">
+                                    <div class="input-group input-group-sm" style="width: 200px;">
+                                        <input type="text" x-model="searchQuery" class="form-control" placeholder="Search name or data…">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-success" @click="openAddRecord()">
+                                        <i class="bi bi-plus-circle"></i> Add Record
+                                    </button>
+                                </div>
+                            </div>
+                            <!--end::Header-->
+
+                            <!--begin::Type Filter-->
+                            <div class="card-body pb-1 pt-2 border-bottom">
+                                <ul class="nav nav-pills nav-sm flex-wrap gap-1">
+                                    <li class="nav-item">
+                                        <a class="nav-link py-1 px-2" :class="{ active: activeTypeFilter === 'all' }"
+                                           href="#" @click.prevent="setTypeFilter('all')">All</a>
+                                    </li>
+                                    <template x-for="t in availableTypes" :key="t">
+                                        <li class="nav-item">
+                                            <a class="nav-link py-1 px-2" :class="{ active: activeTypeFilter === t }"
+                                               href="#" @click.prevent="setTypeFilter(t)">
+                                                <span x-text="t"></span>
+                                                <span x-show="isNewType(t)" class="badge bg-warning text-dark ms-1">new</span>
+                                            </a>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <!--end::Type Filter-->
+
+                            <!--begin::Body-->
+                            <div class="card-body p-0">
+                                    <table class="table table-striped table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="cursor:pointer" @click="toggleSort('name')">
+                                                    Name
+                                                    <i class="bi ms-1" :class="sortField==='name' ? (sortAsc ? 'bi-caret-up-fill' : 'bi-caret-down-fill') : 'bi-caret-up text-muted'"></i>
+                                                </th>
+                                                <th style="cursor:pointer" @click="toggleSort('type')">
+                                                    Type
+                                                    <i class="bi ms-1" :class="sortField==='type' ? (sortAsc ? 'bi-caret-up-fill' : 'bi-caret-down-fill') : 'bi-caret-up text-muted'"></i>
+                                                </th>
+                                                <th style="cursor:pointer" @click="toggleSort('ttl')">
+                                                    TTL
+                                                    <i class="bi ms-1" :class="sortField==='ttl' ? (sortAsc ? 'bi-caret-up-fill' : 'bi-caret-down-fill') : 'bi-caret-up text-muted'"></i>
+                                                </th>
+                                                <th>Status</th>
+                                                <th>Data</th>
+                                                <th>Comment</th>
+                                                <th width="48"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="record in paginatedRecords" :key="recordId(record)">
+                                                <tr :class="recordRowClass(record)">
+                                                    <td class="record-name" x-text="record.display_name"></td>
+                                                    <td class="record-type">
+                                                        <span class="badge bg-light text-dark border" x-text="record.type"></span>
+                                                    </td>
+                                                    <td class="record-ttl text-nowrap" x-text="record.ttl"></td>
+                                                    <td class="record-status">
+                                                        <span :class="record.disabled ? 'badge bg-danger' : 'badge bg-success'"
+                                                              x-text="record.disabled ? 'Disabled' : 'Active'"></span>
+                                                    </td>
+                                                    <td class="record-content text-truncate" style="max-width:200px;"
+                                                        :title="record.content" x-text="record.content"></td>
+                                                    <td class="record-comment text-truncate text-muted" style="max-width:150px;"
+                                                        :title="record.comment" x-text="record.comment"></td>
+                                                    <td class="text-end">
+                                                        <div class="dropdown">
+                                                            <button type="button" class="btn btn-sm btn-light"
+                                                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                                                    data-bs-boundary="viewport">
+                                                                <i class="bi bi-three-dots-vertical"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                                <li>
+                                                                    <button class="dropdown-item" type="button"
+                                                                            @click="openEditRecord(record)">
+                                                                        <i class="bi bi-pencil me-2 text-primary"></i>Edit
+                                                                    </button>
+                                                                </li>
+                                                                <li><hr class="dropdown-divider"></li>
+                                                                <li>
+                                                                    <button class="dropdown-item text-danger" type="button"
+                                                                            @click="deleteRecord(record)">
+                                                                        <i class="bi bi-trash me-2"></i>Delete
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+
+                                <!--begin::Empty State-->
+                                <div class="text-center text-muted py-5" x-show="filteredRecords.length === 0">
+                                    <i class="bi bi-inbox fs-2"></i>
+                                    <p class="mt-2 mb-0" x-show="searchQuery || activeTypeFilter !== 'all'">No records match your filter.</p>
+                                    <p class="mt-2 mb-0" x-show="!searchQuery && activeTypeFilter === 'all'">No records yet.</p>
+                                </div>
+                                <!--end::Empty State-->
+                            </div>
+                            <!--end::Body-->
+
+                            <!--begin::Footer-->
+                            <div class="card-footer d-flex align-items-center flex-wrap gap-2">
+                                <button type="button" class="btn btn-success" @click="saveChanges()" :disabled="isSaving">
+                                    <span x-show="isSaving"  class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                    <i x-show="!isSaving" class="bi bi-save me-1"></i>
+                                    <span x-text="isSaving ? 'Saving…' : 'Save Changes'"></span>
                                 </button>
+                                <button type="button" class="btn btn-secondary" @click="discardChanges()" :disabled="isSaving">
+                                    <i class="bi bi-x-circle me-1"></i> Discard
+                                </button>
+                                <span class="text-warning fw-semibold" x-show="pendingCount > 0">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    <span x-text="pendingCount"></span> unsaved change(s)
+                                </span>
+
+                                <!-- Page size + pagination (right-aligned) -->
+                                <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+                                    <label class="small text-muted mb-0">Rows:</label>
+                                    <select class="form-select form-select-sm" style="width:auto"
+                                            @change="changePageSize($event.target.value)" :value="pageSize">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+
+                                    <template x-if="totalPages > 1">
+                                        <nav aria-label="Records pagination">
+                                            <ul class="pagination pagination-sm mb-0">
+                                                <li class="page-item" :class="{ disabled: currentPage <= 1 }">
+                                                    <button type="button" class="page-link" @click="if(currentPage>1) currentPage--">«</button>
+                                                </li>
+                                                <li class="page-item disabled">
+                                                    <span class="page-link" x-text="`${currentPage} / ${totalPages}`"></span>
+                                                </li>
+                                                <li class="page-item" :class="{ disabled: currentPage >= totalPages }">
+                                                    <button type="button" class="page-link" @click="if(currentPage<totalPages) currentPage++">»</button>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </template>
+                                </div>
                             </div>
+                            <!--end::Footer-->
                         </div>
-                        <!--end::Header-->
+                        <!--end::DNS Records Card-->
 
-                        <!--begin::Type Filter-->
-                        <div class="card-body pb-0 pt-2 border-bottom">
-                            <ul class="nav nav-pills nav-sm flex-wrap gap-1" id="record-type-filter">
-                                <li class="nav-item">
-                                    <a class="nav-link py-1 px-2 active" href="#" data-filter="all">All</a>
-                                </li>
-                                <!-- type pills are inserted here dynamically by JS -->
-                            </ul>
-                        </div>
-                        <!--end::Type Filter-->
-
-                        <!--begin::Body-->
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover mb-0" id="records-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Type</th>
-                                            <th>TTL</th>
-                                            <th>Status</th>
-                                            <th>Data</th>
-                                            <th>Comment</th>
-                                            <th width="48"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="records-tbody">
-                                        {{range .Records}}
-                                        <tr data-record-id="{{.Name}}-{{.Type}}-{{.Content}}"
-                                            data-full-name="{{.Name}}"
-                                            data-comment="{{.Comment}}"
-                                            data-type="{{.Type}}">
-                                            <td class="record-name">{{.DisplayName}}</td>
-                                            <td class="record-type">
-                                                <span class="badge bg-light text-dark border">{{.Type}}</span>
-                                            </td>
-                                            <td class="record-ttl text-nowrap">{{.TTL}}</td>
-                                            <td class="record-status">
-                                                {{if .Disabled}}
-                                                    <span class="badge bg-danger">Disabled</span>
-                                                {{else}}
-                                                    <span class="badge bg-success">Active</span>
-                                                {{end}}
-                                            </td>
-                                            <td class="record-content text-truncate" style="max-width: 200px;" title="{{.Content}}">{{.Content}}</td>
-                                            <td class="record-comment text-truncate text-muted" style="max-width: 150px;" title="{{.Comment}}">{{.Comment}}</td>
-                                            <td class="text-end">
-                                                <div class="dropdown">
-                                                    <button type="button" class="btn btn-sm btn-light" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="bi bi-three-dots-vertical"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><button class="dropdown-item edit-record-btn" type="button"><i class="bi bi-pencil me-2 text-primary"></i>Edit</button></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><button class="dropdown-item text-danger delete-record-btn" type="button"><i class="bi bi-trash me-2"></i>Delete</button></li>
-                                                    </ul>
+                        <!-- Record Edit/Add Modal -->
+                        <div class="modal fade" id="recordModal" tabindex="-1" aria-labelledby="recordModalLabel">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="recordModalLabel"
+                                            x-text="recordForm.isEditing ? 'Edit Record' : 'Add Record'"></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="record-form">
+                                            <div class="mb-3">
+                                                <label for="record-name-input" class="form-label">Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="record-name-input"
+                                                       x-model="recordForm.name" required placeholder="www or test or @">
+                                                <div class="form-text">
+                                                    Subdomain (e.g. <code>www</code>, <code>mail</code>). Use <code>@</code> for the zone apex.
                                                 </div>
-                                            </td>
-                                        </tr>
-                                        {{end}}
-                                    </tbody>
-                                </table>
-                            </div>
+                                            </div>
 
-                            <!--begin::Empty State-->
-                            <div id="records-empty-state" class="text-center text-muted py-5" style="display: none;">
-                                <i class="bi bi-inbox fs-2"></i>
-                                <p class="mt-2 mb-0">No records match your filter.</p>
-                            </div>
-                            <!--end::Empty State-->
-                        </div>
-                        <!--end::Body-->
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-auto">
+                                                    <label for="record-type-input" class="form-label">Type <span class="text-danger">*</span></label>
+                                                    <!-- Add mode: dropdown (drives field switching) -->
+                                                    <select class="form-select" id="record-type-input" x-model="recordForm.type"
+                                                            x-show="!recordForm.isEditing" required :disabled="recordForm.isEditing">
+                                                        {{range .AllowedRecordTypes}}
+                                                        <option value="{{.Type}}">{{.Type}}{{if .Description}} — {{.Description}}{{end}}</option>
+                                                        {{end}}
+                                                    </select>
+                                                    <!-- Edit mode: read-only badge (type cannot change) -->
+                                                    <div x-show="recordForm.isEditing" class="form-control-plaintext">
+                                                        <span class="badge bg-light text-dark border fs-6" x-text="recordForm.type"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <label for="record-ttl-preset" class="form-label">TTL <span class="text-danger">*</span></label>
+                                                    <select class="form-select" id="record-ttl-preset"
+                                                            x-model="recordForm.ttlPreset"
+                                                            @change="onTTLPresetChange()">
+                                                        <template x-for="p in ttlPresets" :key="p.seconds">
+                                                            <option :value="String(p.seconds)"
+                                                                    x-text="p.label + ' (' + p.seconds + 's)'"></option>
+                                                        </template>
+                                                        <option value="custom">Custom…</option>
+                                                    </select>
+                                                    <input type="number" class="form-control mt-1" id="record-ttl-input"
+                                                           x-show="recordForm.ttlPreset === 'custom'"
+                                                           x-model.number="recordForm.ttl"
+                                                           :required="recordForm.ttlPreset === 'custom'"
+                                                           min="1" placeholder="seconds">
+                                                    <div class="form-text"
+                                                         x-show="recordForm.ttlPreset !== 'custom'"
+                                                         x-text="recordForm.ttl + ' seconds'"></div>
+                                                </div>
+                                            </div>
 
-                        <!--begin::Footer-->
-                        <div class="card-footer d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-success" id="save-records-btn">
-                                <i class="bi bi-save"></i> Save Changes
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="cancel-records-btn">
-                                <i class="bi bi-x-circle"></i> Discard
-                            </button>
-                            <span id="changes-indicator" class="ms-auto text-warning fw-semibold" style="display: none;">
-                                <i class="bi bi-exclamation-circle"></i> <span id="changes-count">0</span> unsaved change(s)
-                            </span>
+                                            <!-- Generic Data field (hidden and disabled for MX / TXT) -->
+                                            <div class="mb-3" x-show="recordForm.type !== 'MX' && recordForm.type !== 'TXT'">
+                                                <label for="record-content-input" class="form-label">Data <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="record-content-input"
+                                                       x-model="recordForm.content"
+                                                       :required="recordForm.type !== 'MX' && recordForm.type !== 'TXT'"
+                                                       :disabled="recordForm.type === 'MX' || recordForm.type === 'TXT'">
+                                                <div class="form-text" x-text="recordContentHelp"></div>
+                                            </div>
+
+                                            <!-- MX fields -->
+                                            <div x-show="recordForm.type === 'MX'">
+                                                <div class="row g-3 mb-3">
+                                                    <div class="col-4">
+                                                        <label for="record-mx-priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                                                        <input type="number" class="form-control" id="record-mx-priority"
+                                                               x-model.number="recordForm.mxPriority" min="0" max="65535"
+                                                               :required="recordForm.type === 'MX'"
+                                                               :disabled="recordForm.type !== 'MX'">
+                                                        <div class="form-text">0 = highest priority</div>
+                                                    </div>
+                                                    <div class="col-8">
+                                                        <label for="record-mx-hostname" class="form-label">Mail Server <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" id="record-mx-hostname"
+                                                               x-model="recordForm.mxHostname" placeholder="mail.example.com."
+                                                               :required="recordForm.type === 'MX'"
+                                                               :disabled="recordForm.type !== 'MX'">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- TXT fields -->
+                                            <div class="mb-3" x-show="recordForm.type === 'TXT'">
+                                                <label for="record-txt-text" class="form-label">Text Content <span class="text-danger">*</span></label>
+                                                <textarea class="form-control font-monospace" id="record-txt-text"
+                                                          x-model="recordForm.txtText" rows="4"
+                                                          placeholder="v=spf1 include:example.com ~all"
+                                                          :required="recordForm.type === 'TXT'"
+                                                          :disabled="recordForm.type !== 'TXT'"></textarea>
+                                                <div class="form-text">
+                                                    Enter plain text — quotes are added automatically.
+                                                    Strings longer than 255 characters are split into chunks automatically.
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="record-comment-input" class="form-label">Comment</label>
+                                                <textarea class="form-control" id="record-comment-input"
+                                                          x-model="recordForm.comment" rows="2" maxlength="255"></textarea>
+                                                <div class="form-text">Optional, max 255 characters</div>
+                                            </div>
+
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="record-disabled-input"
+                                                       x-model="recordForm.disabled">
+                                                <label class="form-check-label" for="record-disabled-input">Disabled</label>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-primary" @click="saveRecord()">
+                                            <i class="bi me-1" :class="recordForm.isEditing ? 'bi-pencil' : 'bi-plus-circle'"></i>
+                                            <span x-text="recordForm.isEditing ? 'Update Record' : 'Add Record'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <!--end::Footer-->
+
+                        <!-- SOA Edit Modal -->
+                        <div class="modal fade" id="soaModal" tabindex="-1" aria-labelledby="soaModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="soaModalLabel">Edit SOA Record</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="soa-form">
+                                            <div class="mb-3">
+                                                <label for="soa-mname" class="form-label">Primary Name Server <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="soa-mname"
+                                                       x-model="soaForm.mname" required placeholder="ns1.example.com.">
+                                                <div class="form-text">Fully qualified domain name ending with a dot.</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="soa-rname" class="form-label">Hostmaster Contact <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="soa-rname"
+                                                       x-model="soaForm.rname" required placeholder="hostmaster.example.com.">
+                                                <div class="form-text">Contact in DNS RNAME format (e.g. <code>hostmaster.example.com.</code>).</div>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-6">
+                                                    <label for="soa-serial" class="form-label">Serial <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control" id="soa-serial"
+                                                           x-model.number="soaForm.serial" required min="1">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="soa-refresh" class="form-label">Refresh (s) <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control" id="soa-refresh"
+                                                           x-model.number="soaForm.refresh" required min="1">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="soa-retry" class="form-label">Retry (s) <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control" id="soa-retry"
+                                                           x-model.number="soaForm.retry" required min="1">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="soa-expire" class="form-label">Expire (s) <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control" id="soa-expire"
+                                                           x-model.number="soaForm.expire" required min="1">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="soa-minimum" class="form-label">Minimum TTL (s) <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control" id="soa-minimum"
+                                                           x-model.number="soaForm.minimum" required min="0">
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-primary" @click="saveSOA()">
+                                            <i class="bi bi-save me-1"></i> Save SOA
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Zone edit JavaScript (defines zoneEditor before Alpine defer fires) -->
+                        <script src="/static/js/zone-edit.js"></script>
+
                     </div>
-                    <!--end::DNS Records Card-->
+                    <!--end::Alpine zone editor-->
 
                     {{else if eq .Form.Kind "Slave"}}
                     <!--begin::Records Card (Read-only for Slave)-->
@@ -267,7 +526,6 @@
                                 Records are automatically synchronized from the master server and cannot be edited here.
                                 To modify records, update them on the primary server.
                             </div>
-                            <div class="table-responsive">
                                 <table class="table table-striped mb-0">
                                     <thead>
                                         <tr>
@@ -296,7 +554,6 @@
                                         {{end}}
                                     </tbody>
                                 </table>
-                            </div>
                         </div>
                         <!--end::Body-->
                     </div>
@@ -348,12 +605,13 @@
     </div>
 </div>
 
-<!-- Zone Type Change Handler -->
+<!-- Zone settings JavaScript (zone-kind select + delete zone modal) -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Zone kind select — show/hide Masters field
     const zoneKindSelect = document.getElementById('zone-kind');
-    const mastersField = document.getElementById('masters-field');
-    const mastersInput = document.getElementById('masters');
+    const mastersField   = document.getElementById('masters-field');
+    const mastersInput   = document.getElementById('masters');
 
     if (zoneKindSelect && mastersField) {
         zoneKindSelect.addEventListener('change', function() {
@@ -367,22 +625,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Delete zone functionality
-    const deleteZoneBtn = document.getElementById('delete-zone-btn');
-    const deleteZoneModal = document.getElementById('deleteZoneModal');
+    // Delete zone modal
+    const deleteZoneBtn          = document.getElementById('delete-zone-btn');
+    const deleteZoneModal        = document.getElementById('deleteZoneModal');
     const deleteZoneConfirmInput = document.getElementById('delete-zone-confirm-input');
-    const confirmDeleteBtn = document.getElementById('confirm-delete-zone-btn');
-    const deleteZoneError = document.getElementById('delete-zone-error');
-    const zoneName = '{{.Form.Name}}';
+    const confirmDeleteBtn       = document.getElementById('confirm-delete-zone-btn');
+    const deleteZoneError        = document.getElementById('delete-zone-error');
+    const zoneName               = '{{.Form.Name}}';
 
     if (deleteZoneBtn && deleteZoneModal) {
         const modal = new bootstrap.Modal(deleteZoneModal);
 
         deleteZoneModal.addEventListener('hide.bs.modal', function() {
-            const focusedElement = document.activeElement;
-            if (focusedElement && deleteZoneModal.contains(focusedElement)) {
-                focusedElement.blur();
-            }
+            if (deleteZoneModal.contains(document.activeElement)) document.activeElement.blur();
         });
 
         deleteZoneBtn.addEventListener('click', function() {
@@ -394,13 +649,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         deleteZoneConfirmInput.addEventListener('input', function() {
-            if (this.value === zoneName) {
-                confirmDeleteBtn.disabled = false;
-                deleteZoneError.style.display = 'none';
-                this.classList.remove('is-invalid');
-            } else {
-                confirmDeleteBtn.disabled = true;
-            }
+            confirmDeleteBtn.disabled = (this.value !== zoneName);
+            if (this.value !== zoneName) return;
+            deleteZoneError.style.display = 'none';
+            this.classList.remove('is-invalid');
         });
 
         confirmDeleteBtn.addEventListener('click', function() {
@@ -409,15 +661,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 deleteZoneConfirmInput.classList.add('is-invalid');
                 return;
             }
-
             confirmDeleteBtn.disabled = true;
             confirmDeleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting…';
 
             fetch('/zone/edit/' + encodeURIComponent(zoneName) + '/delete', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
                     globalThis.location.href = '/dashboard?success=' + encodeURIComponent('Zone deleted successfully');
@@ -427,275 +678,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmDeleteBtn.innerHTML = '<i class="bi bi-trash me-1"></i> Delete Zone';
                 }
             })
-            .catch(error => {
-                alert('Error deleting zone: ' + error.message);
+            .catch(err => {
+                alert('Error deleting zone: ' + err.message);
                 confirmDeleteBtn.disabled = false;
                 confirmDeleteBtn.innerHTML = '<i class="bi bi-trash me-1"></i> Delete Zone';
             });
         });
     }
-
-    // Record type filter pills — dynamic
-    const typeFilter = document.getElementById('record-type-filter');
-    const searchInput = document.getElementById('record-search');
-    const emptyState = document.getElementById('records-empty-state');
-    const countBadge = document.getElementById('records-count-badge');
-    let activeFilter = 'all';
-
-    // Capture types present on page load so we can badge newly added ones
-    const initialTypes = new Set();
-    document.querySelectorAll('#records-tbody tr').forEach(row => {
-        const t = (row.dataset.type || '').toUpperCase();
-        if (t) initialTypes.add(t);
-    });
-
-    function getActiveTypes() {
-        const types = new Set();
-        document.querySelectorAll('#records-tbody tr').forEach(row => {
-            const t = (row.dataset.type || '').toUpperCase();
-            if (t) types.add(t);
-        });
-        return types;
-    }
-
-    function rebuildTypePills() {
-        if (!typeFilter) return;
-        const activeTypes = getActiveTypes();
-
-        // Remove all existing type pills (keep only "All")
-        typeFilter.querySelectorAll('li[data-pill-type]').forEach(el => el.remove());
-
-        // Sort: common types first, then alphabetical for the rest
-        const order = ['SOA', 'NS', 'A', 'AAAA', 'CNAME', 'MX', 'TXT', 'SRV', 'CAA', 'PTR'];
-        const sorted = [...activeTypes].sort((a, b) => {
-            const ia = order.indexOf(a), ib = order.indexOf(b);
-            if (ia !== -1 && ib !== -1) return ia - ib;
-            if (ia !== -1) return -1;
-            if (ib !== -1) return 1;
-            return a.localeCompare(b);
-        });
-
-        sorted.forEach(type => {
-            const isNew = !initialTypes.has(type);
-            const li = document.createElement('li');
-            li.className = 'nav-item';
-            li.dataset.pillType = type;
-            const link = document.createElement('a');
-            link.className = 'nav-link py-1 px-2' + (activeFilter === type ? ' active' : '');
-            link.href = '#';
-            link.dataset.filter = type;
-            link.textContent = type;
-            if (isNew) {
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-warning text-dark ms-1';
-                badge.textContent = 'new';
-                link.appendChild(badge);
-            }
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                typeFilter.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-                activeFilter = this.dataset.filter;
-                applyFilters();
-            });
-            li.appendChild(link);
-            typeFilter.appendChild(li);
-        });
-
-        // If the active filter type was removed (all records of that type deleted), reset to "all"
-        if (activeFilter !== 'all' && !activeTypes.has(activeFilter)) {
-            activeFilter = 'all';
-            typeFilter.querySelector('[data-filter="all"]').classList.add('active');
-        }
-    }
-
-    function applyFilters() {
-        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        const rows = document.querySelectorAll('#records-tbody tr');
-        let visible = 0;
-
-        rows.forEach(row => {
-            const type = (row.dataset.type || '').toUpperCase();
-            const name = (row.querySelector('.record-name') || {}).textContent || '';
-            const content = (row.querySelector('.record-content') || {}).textContent || '';
-            const comment = (row.querySelector('.record-comment') || {}).textContent || '';
-
-            const matchesType = activeFilter === 'all' || type === activeFilter;
-            const matchesSearch = !query ||
-                name.toLowerCase().includes(query) ||
-                content.toLowerCase().includes(query) ||
-                comment.toLowerCase().includes(query);
-
-            const show = matchesType && matchesSearch;
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-
-        if (countBadge) countBadge.textContent = visible;
-        if (emptyState) emptyState.style.display = visible === 0 ? 'block' : 'none';
-    }
-
-    // "All" pill click
-    typeFilter && typeFilter.querySelector('[data-filter="all"]').addEventListener('click', function(e) {
-        e.preventDefault();
-        typeFilter.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        this.classList.add('active');
-        activeFilter = 'all';
-        applyFilters();
-    });
-
-    if (searchInput) {
-        searchInput.addEventListener('input', applyFilters);
-    }
-
-    // Rebuild pills on initial load
-    rebuildTypePills();
-
-    // Rebuild whenever zone-edit.js signals a records change
-    document.addEventListener('zoneRecordsChanged', function() {
-        rebuildTypePills();
-        applyFilters();
-    });
 });
 </script>
-
-{{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
-<!-- Hidden data for JavaScript -->
-<div id="zone-data" data-zone-name="{{.Form.Name}}" style="display: none;"></div>
-
-<!-- Toast Container -->
-<div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
-
-<!-- Record Edit/Add Modal -->
-<div class="modal fade" id="recordModal" tabindex="-1" aria-labelledby="recordModalLabel">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="recordModalLabel">Add Record</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="record-form">
-                    <input type="hidden" id="record-original-id" value="">
-                    <input type="hidden" id="record-original-name" value="">
-                    <input type="hidden" id="record-original-type" value="">
-                    <input type="hidden" id="record-original-content" value="">
-
-                    <div class="mb-3">
-                        <label for="record-name-input" class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="record-name-input" required placeholder="www or test or @">
-                        <div class="form-text">
-                            Subdomain (e.g. <code>www</code>, <code>mail</code>). Use <code>@</code> for the zone apex.
-                            The zone name is appended automatically.
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-8">
-                            <label for="record-type-input" class="form-label">Type <span class="text-danger">*</span></label>
-                            <select class="form-select" id="record-type-input" required>
-                                {{range .AllowedRecordTypes}}
-                                <option value="{{.Type}}" data-help="{{.Help}}">{{.Type}}{{if .Description}} — {{.Description}}{{end}}</option>
-                                {{end}}
-                            </select>
-                        </div>
-                        <div class="col-4">
-                            <label for="record-ttl-input" class="form-label">TTL <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="record-ttl-input" value="3600" required min="1">
-                            <div class="form-text">Seconds</div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="record-content-input" class="form-label">Data <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="record-content-input" required>
-                        <div class="form-text" id="record-content-help">
-                            Record data (IP address, hostname, text, etc.).
-                            For CNAME, MX, NS, PTR, SRV records enter a full domain name — a trailing dot will be added automatically.
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="record-comment-input" class="form-label">Comment</label>
-                        <textarea class="form-control" id="record-comment-input" rows="2" maxlength="255"></textarea>
-                        <div class="form-text">Optional, max 255 characters</div>
-                    </div>
-
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="record-disabled-input">
-                        <label class="form-check-label" for="record-disabled-input">Disabled</label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="save-record-modal-btn">
-                    <i class="bi bi-plus-circle me-1"></i> Add Record
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- SOA Edit Modal -->
-<div class="modal fade" id="soaModal" tabindex="-1" aria-labelledby="soaModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="soaModalLabel">Edit SOA Record</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="soa-form">
-                    <div class="mb-3">
-                        <label for="soa-mname" class="form-label">Primary Name Server <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="soa-mname" required placeholder="ns1.example.com.">
-                        <div class="form-text">Fully qualified domain name ending with a dot.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="soa-rname" class="form-label">Hostmaster Contact <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="soa-rname" required placeholder="hostmaster.example.com.">
-                        <div class="form-text">Contact in DNS RNAME format (e.g. <code>hostmaster.example.com.</code>).</div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label for="soa-serial" class="form-label">Serial <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="soa-serial" required min="1">
-                        </div>
-                        <div class="col-6">
-                            <label for="soa-refresh" class="form-label">Refresh (s) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="soa-refresh" required min="1">
-                        </div>
-                        <div class="col-6">
-                            <label for="soa-retry" class="form-label">Retry (s) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="soa-retry" required min="1">
-                        </div>
-                        <div class="col-6">
-                            <label for="soa-expire" class="form-label">Expire (s) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="soa-expire" required min="1">
-                        </div>
-                        <div class="col-6">
-                            <label for="soa-minimum" class="form-label">Minimum TTL (s) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="soa-minimum" required min="0">
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="save-soa-modal-btn">
-                    <i class="bi bi-save me-1"></i> Save SOA
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Zone edit JavaScript -->
-<script src="/static/js/zone-edit.js"></script>
-{{end}}
 
     {{ template "partials/footer" .}}
 </div>

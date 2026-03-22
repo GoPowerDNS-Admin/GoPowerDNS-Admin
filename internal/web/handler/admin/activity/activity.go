@@ -3,6 +3,7 @@ package activity
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
@@ -23,6 +24,9 @@ const (
 
 	// TemplateList is the template used to render the activity log list.
 	TemplateList = "admin/activity/list"
+
+	// TemplateDetail is the template used to render a single activity log entry.
+	TemplateDetail = "admin/activity/detail"
 
 	// DefaultPageSize is the default number of entries per page.
 	DefaultPageSize = 50
@@ -78,6 +82,11 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	app.Get(Path,
 		auth.RequirePermission(authService, auth.PermAdminActivityLog),
 		s.List,
+	)
+
+	app.Get(Path+"/:id",
+		auth.RequirePermission(authService, auth.PermAdminActivityLog),
+		s.Get,
 	)
 
 	app.Post(Path+"/:id/undo",
@@ -159,6 +168,33 @@ func (s *Service) List(c fiber.Ctx) error {
 		"Success":      c.Query("success"),
 		"Error":        c.Query("error"),
 		"CanUndo":      auth.HasPermissionInContext(c, s.authService, auth.PermAdminActivityLogUndo),
+	}, handler.BaseLayout)
+}
+
+// Get renders the detail view for a single activity log entry.
+func (s *Service) Get(c fiber.Ctx) error {
+	id := fiber.Params[int](c, "id")
+	if id <= 0 {
+		return c.Redirect().To(Path)
+	}
+
+	var entry models.ActivityLog
+	if err := s.db.First(&entry, uint64(id)).Error; err != nil {
+		return c.Redirect().To(Path)
+	}
+
+	views := getActivityViews([]models.ActivityLog{entry})
+	nav := navigation.NewContext("Activity Entry", "admin", "activity").
+		AddBreadcrumb("Home", dashboard.Path, false).
+		AddBreadcrumb("Admin", "#", false).
+		AddBreadcrumb("Activity Log", Path, false).
+		AddBreadcrumb("#"+strconv.Itoa(id), Path+"/"+strconv.Itoa(id), true)
+
+	return c.Render(TemplateDetail, fiber.Map{
+		"Navigation": nav,
+		"Entry":      views[0],
+		"CanUndo":    auth.HasPermissionInContext(c, s.authService, auth.PermAdminActivityLogUndo),
+		"ReturnURL":  Path,
 	}, handler.BaseLayout)
 }
 

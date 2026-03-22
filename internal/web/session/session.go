@@ -19,11 +19,18 @@ type StorageBackend interface {
 // store is the global session storage backend.
 var store StorageBackend
 
+// DashboardFilters holds the user's last-used dashboard filter state.
+type DashboardFilters struct {
+	Search string `json:"search,omitempty"`
+	Kind   string `json:"kind,omitempty"`
+}
+
 // Data represents the session data structure.
 type Data struct {
-	User           models.User
-	TOTPPending    bool   // password verified, TOTP code still required
-	TOTPTempSecret string // temporary secret during setup, not yet confirmed
+	User             models.User
+	TOTPPending      bool   // password verified, TOTP code still required
+	TOTPTempSecret   string // temporary secret during setup, not yet confirmed
+	DashboardFilters DashboardFilters
 }
 
 // Write writes the session data for the given session ID with an expiration duration.

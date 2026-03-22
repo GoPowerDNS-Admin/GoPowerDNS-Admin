@@ -1,1031 +1,809 @@
 /**
- * Zone Edit - DNS Records Management
- * Handles adding, editing, deleting, and saving DNS records for a zone
+ * Zone Edit — Alpine.js component
+ *
+ * Pure utility functions (showToast, showConfirm, DNS helpers) come first and
+ * have no dependency on Alpine. The Alpine component factory `zoneEditor(initData)`
+ * follows and is registered both as a global and via Alpine.data so that it can be
+ * invoked as  x-data="zoneEditor(_zoneData)"  regardless of script-load order.
  */
 
-// DOM selectors
-const SELECTORS = {
-    RECORDS_TABLE: '#records-table',
-    RECORDS_TBODY: '#records-tbody',
-    ZONE_DATA: '#zone-data',
-    CHANGES_COUNT: '#changes-count',
-    CHANGES_INDICATOR: '#changes-indicator',
-    ADD_RECORD_BTN: '#add-record-btn',
-    SAVE_RECORDS_BTN: '#save-records-btn',
-    CANCEL_RECORDS_BTN: '#cancel-records-btn',
-    RECORD_MODAL: '#recordModal',
-    RECORD_MODAL_LABEL: '#recordModalLabel',
-    RECORD_FORM: '#record-form',
-    RECORD_ORIGINAL_ID: '#record-original-id',
-    RECORD_ORIGINAL_NAME: '#record-original-name',
-    RECORD_ORIGINAL_TYPE: '#record-original-type',
-    RECORD_ORIGINAL_CONTENT: '#record-original-content',
-    RECORD_NAME_INPUT: '#record-name-input',
-    RECORD_TYPE_INPUT: '#record-type-input',
-    RECORD_TTL_INPUT: '#record-ttl-input',
-    RECORD_CONTENT_INPUT: '#record-content-input',
-    RECORD_COMMENT_INPUT: '#record-comment-input',
-    RECORD_DISABLED_INPUT: '#record-disabled-input',
-    SAVE_RECORD_MODAL_BTN: '#save-record-modal-btn',
-    TOAST_CONTAINER: '#toast-container'
-};
+// ── Toast helper ──────────────────────────────────────────────────────────────
 
-// Add SOA modal selectors
-Object.assign(SELECTORS, {
-    SOA_MODAL: '#soaModal',
-    SOA_MNAME: '#soa-mname',
-    SOA_RNAME: '#soa-rname',
-    SOA_SERIAL: '#soa-serial',
-    SOA_REFRESH: '#soa-refresh',
-    SOA_RETRY: '#soa-retry',
-    SOA_EXPIRE: '#soa-expire',
-    SOA_MINIMUM: '#soa-minimum',
-    SAVE_SOA_MODAL_BTN: '#save-soa-modal-btn'
-});
-
-/**
- * Show a Bootstrap toast notification
- * @param {string} message - The message to display
- * @param {string} type - The toast type: 'success', 'danger', 'warning', 'info'
- */
 function showToast(message, type = 'info') {
-    const toastContainer = document.querySelector(SELECTORS.TOAST_CONTAINER);
-    if (!toastContainer) {
-        console.error('Toast container not found');
-        return;
-    }
+    const container = document.getElementById('toast-container');
+    if (!container) return;
 
-    // Map type to Bootstrap color classes and icons
-    const typeConfig = {
-        success: { icon: 'bi-check-circle-fill', bg: 'bg-success', title: 'Success' },
-        danger: { icon: 'bi-exclamation-triangle-fill', bg: 'bg-danger', title: 'Error' },
-        warning: { icon: 'bi-exclamation-circle-fill', bg: 'bg-warning', title: 'Warning' },
-        info: { icon: 'bi-info-circle-fill', bg: 'bg-info', title: 'Info' }
+    const configs = {
+        success: { icon: 'bi-check-circle-fill',        bg: 'bg-success', title: 'Success' },
+        danger:  { icon: 'bi-exclamation-triangle-fill', bg: 'bg-danger',  title: 'Error'   },
+        warning: { icon: 'bi-exclamation-circle-fill',   bg: 'bg-warning', title: 'Warning' },
+        info:    { icon: 'bi-info-circle-fill',           bg: 'bg-info',    title: 'Info'    },
     };
+    const cfg = configs[type] || configs.info;
+    const id = `toast-${Date.now()}`;
 
-    const config = typeConfig[type] || typeConfig.info;
-    const toastId = `toast-${Date.now()}`;
-
-    // Create toast element
-    const toastHTML = `
-        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header ${config.bg} text-white">
-                <i class="bi ${config.icon} me-2"></i>
-                <strong class="me-auto">${config.title}</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header ${cfg.bg} text-white">
+                <i class="bi ${cfg.icon} me-2"></i>
+                <strong class="me-auto">${cfg.title}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
             </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
+            <div class="toast-body">${message}</div>
+        </div>`);
 
-    // Add toast to container
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-
-    // Initialize and show the toast
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, {
-        autohide: true,
-        delay: 5000
-    });
-
-    toast.show();
-
-    // Remove toast element from DOM after it's hidden
-    toastElement.addEventListener('hidden.bs.toast', function() {
-        toastElement.remove();
-    });
+    const el = document.getElementById(id);
+    new bootstrap.Toast(el, { autohide: true, delay: 5000 }).show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
 }
 
-/**
- * Show a Bootstrap 5 confirm dialog (modal)
- * @param {string} message - Confirmation message
- * @param {{confirmText?: string, cancelText?: string, confirmBtnClass?: string}} [opts]
- * @returns {Promise<boolean>} resolves true if confirmed, false otherwise
- */
-function showConfirm(message, opts = {}) {
-    const options = Object.assign({
-        confirmText: 'Confirm',
-        cancelText: 'Cancel',
-        confirmBtnClass: 'btn-danger'
-    }, opts);
+// ── Confirm dialog ────────────────────────────────────────────────────────────
 
-    // Create reusable modal once
+function showConfirm(message, opts = {}) {
+    const { confirmText = 'Confirm', cancelText = 'Cancel', confirmBtnClass = 'btn-danger' } = opts;
+
     let modalEl = document.getElementById('genericConfirmModal');
     if (!modalEl) {
-        const html = `
+        document.body.insertAdjacentHTML('beforeend', `
             <div class="modal fade" id="genericConfirmModal" tabindex="-1" aria-hidden="true">
               <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                   <div class="modal-header">
                     <h5 class="modal-title">Please Confirm</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body">
-                    <p id="genericConfirmMessage" class="mb-0"></p>
-                  </div>
+                  <div class="modal-body"><p id="genericConfirmMessage" class="mb-0"></p></div>
                   <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="genericConfirmCancelBtn">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="genericConfirmOkBtn">Confirm</button>
+                    <button type="button" class="btn btn-secondary" id="genericConfirmCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-danger"    id="genericConfirmOkBtn">Confirm</button>
                   </div>
                 </div>
               </div>
-            </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
+            </div>`);
         modalEl = document.getElementById('genericConfirmModal');
     }
 
-    // Update content and buttons
     modalEl.querySelector('#genericConfirmMessage').textContent = message;
     const cancelBtn = modalEl.querySelector('#genericConfirmCancelBtn');
-    const okBtn = modalEl.querySelector('#genericConfirmOkBtn');
-    cancelBtn.textContent = options.cancelText;
-    okBtn.textContent = options.confirmText;
-    // reset classes
-    okBtn.className = 'btn ' + options.confirmBtnClass;
+    const okBtn     = modalEl.querySelector('#genericConfirmOkBtn');
+    cancelBtn.textContent = cancelText;
+    okBtn.textContent     = confirmText;
+    okBtn.className       = 'btn ' + confirmBtnClass;
 
-    // Return promise that resolves on action
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
-        const handleOk = () => {
-            cleanup();
-            resolve(true);
-            bsModal.hide();
-        };
-        const handleCancel = () => {
-            cleanup();
-            resolve(false);
-        };
-        const handleHidden = () => {
-            cleanup();
-            resolve(false);
-        };
-
         function cleanup() {
-            okBtn.removeEventListener('click', handleOk);
-            cancelBtn.removeEventListener('click', handleCancel);
-            modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            modalEl.removeEventListener('hidden.bs.modal', onHidden);
         }
+        function onOk()     { cleanup(); resolve(true);  bsModal.hide(); }
+        function onCancel() { cleanup(); resolve(false); }
+        function onHidden() { cleanup(); resolve(false); }
 
-        okBtn.addEventListener('click', handleOk, { once: true });
-        cancelBtn.addEventListener('click', handleCancel, { once: true });
-        modalEl.addEventListener('hidden.bs.modal', handleHidden, { once: true });
-
+        okBtn.addEventListener('click', onOk, { once: true });
+        cancelBtn.addEventListener('click', onCancel, { once: true });
+        modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
         bsModal.show();
     });
 }
 
-// Generate record ID
-function generateRecordId(name, type, content) {
-    return `${name}-${type}-${content}`;
-}
+// ── DNS utility functions ─────────────────────────────────────────────────────
 
-/**
- * Canonicalize a hostname (for record content, not name)
- * Only appends zone name if it's a relative subdomain
- * @param {string} hostname - The hostname to canonicalize
- * @returns {string} The canonical hostname with trailing dot
- */
 function canonicalizeHostname(hostname) {
-    if (hostname === null || hostname === undefined || hostname === '') {
-        return hostname;
-    }
+    if (!hostname) return hostname;
     hostname = hostname.trim();
-
-    // If already ends with a dot, it's canonical
-    if (hostname.endsWith('.')) {
-        return hostname;
-    }
-
-    // Check if it contains a dot - if so, it's likely a FQDN to another domain
-    // Just add the trailing dot
-    if (hostname.includes('.')) {
-        return hostname + '.';
-    }
-
-    // No dots mean it's a simple name - could be relative to this zone
-    // Check if user wants zone-relative (e.g., "server") or external (e.g., "localhost")
-    // For safety, if it's a single label, just add a dot (treat as FQDN)
+    if (hostname.endsWith('.')) return hostname;
     return hostname + '.';
 }
 
-// Parse SOA content string into fields
 function parseSOA(content) {
     if (!content) return null;
     const parts = content.trim().split(/\s+/);
     if (parts.length < 7) return null;
-    return {
-        mname: parts[0],
-        rname: parts[1],
-        serial: parts[2],
-        refresh: parts[3],
-        retry: parts[4],
-        expire: parts[5],
-        minimum: parts[6]
-    };
+    return { mname: parts[0], rname: parts[1], serial: parts[2],
+             refresh: parts[3], retry: parts[4], expire: parts[5], minimum: parts[6] };
 }
 
-// Compose SOA content string from fields
 function composeSOA(fields) {
-    const intFields = ['serial','refresh','retry','expire','minimum'];
-    for (const k of intFields) {
-        if (fields[k] === '' || fields[k] === null || fields[k] === undefined) return null;
+    const intKeys = ['serial', 'refresh', 'retry', 'expire', 'minimum'];
+    for (const k of intKeys) {
+        if (fields[k] === '' || fields[k] == null) return null;
         const n = Number.parseInt(String(fields[k]), 10);
         if (!Number.isFinite(n) || n < 0) return null;
         fields[k] = String(n);
     }
-    let mname = canonicalizeHostname(fields.mname || '');
-    let rname = canonicalizeHostname(fields.rname || '');
+    const mname = canonicalizeHostname(fields.mname || '');
+    const rname = canonicalizeHostname(fields.rname || '');
     if (!mname || !rname) return null;
     return `${mname} ${rname} ${fields.serial} ${fields.refresh} ${fields.retry} ${fields.expire} ${fields.minimum}`;
 }
 
-/**
- * Validate an IPv4 address
- * @param {string} ip - The IP address to validate
- * @returns {boolean} True if valid IPv4
- */
 function isValidIPv4(ip) {
     const parts = ip.trim().split('.');
     if (parts.length !== 4) return false;
-    return parts.every(part => {
-        if (!/^\d+$/.test(part)) return false;
-        const n = Number(part);
-        return n >= 0 && n <= 255;
-    });
+    return parts.every(p => /^\d+$/.test(p) && Number(p) >= 0 && Number(p) <= 255);
 }
 
-/**
- * Validate an IPv6 address
- * @param {string} ip - The IP address to validate
- * @returns {boolean} True if valid IPv6
- */
 function isValidIPv6(ip) {
     ip = ip.trim();
-    // Use a URL object trick to validate IPv6
     try {
-        // Remove brackets if present
         const bare = ip.startsWith('[') && ip.endsWith(']') ? ip.slice(1, -1) : ip;
-        // Attempt to use URL parsing to validate
         const url = new URL('http://[' + bare + ']');
         return url.hostname === '[' + bare + ']';
-    } catch (_) {
-        // Fall back to regex validation
-    }
-    // Comprehensive IPv6 regex
-    const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/;
-    return ipv6Regex.test(ip);
+    } catch (_) { /* fall through to regex */ }
+    return /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/.test(ip);
+}
+
+function parseMX(content) {
+    if (!content) return null;
+    const parts = content.trim().split(/\s+/);
+    if (parts.length < 2) return null;
+    const priority = Number.parseInt(parts[0], 10);
+    if (!Number.isFinite(priority) || priority < 0 || priority > 65535) return null;
+    return { priority: String(priority), hostname: parts.slice(1).join(' ') };
+}
+
+function composeMX(fields) {
+    const priority = Number.parseInt(String(fields.priority), 10);
+    if (!Number.isFinite(priority) || priority < 0 || priority > 65535) return null;
+    const hostname = canonicalizeHostname((fields.hostname || '').trim());
+    if (!hostname) return null;
+    return `${priority} ${hostname}`;
 }
 
 /**
- * Canonicalize content for record types that require FQDN
- * @param {string} type - The DNS record type
- * @param {string} content - The record content to canonicalize
- * @returns {string} The canonical content
+ * Parse a TXT record content string (zone-file quoted format) into plain text.
+ * Handles multiple quoted segments, which DNS concatenates without separator.
+ * E.g. `"v=spf1" " include:example.com"` → `"v=spf1 include:example.com"`
  */
+function parseTXT(content) {
+    if (!content) return '';
+    const trimmed = content.trim();
+    const parts = [];
+    const re = /"((?:[^"\\]|\\.)*)"/g;
+    let match;
+    while ((match = re.exec(trimmed)) !== null) {
+        parts.push(match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+    }
+    if (parts.length > 0) return parts.join('');
+    // Not in quoted format — return as-is (best-effort).
+    return trimmed;
+}
+
+/**
+ * Compose plain text back into zone-file TXT content.
+ * Strings longer than 255 chars are split into 255-char quoted chunks (DNS limit per string).
+ */
+function composeTXT(text) {
+    if (text == null) return null;
+    text = String(text);
+    if (text.length === 0) return '""';
+    function escapeChunk(s) {
+        return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    }
+    if (text.length <= 255) return escapeChunk(text);
+    const chunks = [];
+    for (let i = 0; i < text.length; i += 255) {
+        chunks.push(escapeChunk(text.slice(i, i + 255)));
+    }
+    return chunks.join(' ');
+}
+
 function canonicalizeContent(type, content) {
-    if (content === null || content === undefined || content === '') {
-        return content;
-    }
+    if (!content) return content;
     content = content.trim();
-
-    // Record types that require canonical names in content
-    const typesRequiringCanonical = ['CNAME', 'MX', 'NS', 'PTR', 'SRV'];
-
-    if (typesRequiringCanonical.includes(type)) {
-        // For MX and SRV records, only canonicalize the hostname part
-        if (type === 'MX') {
-            // MX format: "priority hostname"
-            const parts = content.split(/\s+/);
-            if (parts.length >= 2) {
-                const priority = parts[0];
-                const hostname = canonicalizeHostname(parts.slice(1).join(' '));
-                return `${priority} ${hostname}`;
-            }
-        } else if (type === 'SRV') {
-            // SRV format: "priority weight port target"
-            const parts = content.split(/\s+/);
-            if (parts.length >= 4) {
-                const priority = parts[0];
-                const weight = parts[1];
-                const port = parts[2];
-                const target = canonicalizeHostname(parts.slice(3).join(' '));
-                return `${priority} ${weight} ${port} ${target}`;
-            }
-        } else {
-            // CNAME, NS, PTR - entire content should be canonical
-            return canonicalizeHostname(content);
-        }
+    const fqdnTypes = ['CNAME', 'MX', 'NS', 'PTR', 'SRV'];
+    if (!fqdnTypes.includes(type)) return content;
+    if (type === 'MX') {
+        const parts = content.split(/\s+/);
+        if (parts.length >= 2) return `${parts[0]} ${canonicalizeHostname(parts.slice(1).join(' '))}`;
+    } else if (type === 'SRV') {
+        const parts = content.split(/\s+/);
+        if (parts.length >= 4) return `${parts[0]} ${parts[1]} ${parts[2]} ${canonicalizeHostname(parts.slice(3).join(' '))}`;
+    } else {
+        return canonicalizeHostname(content);
     }
-
     return content;
 }
 
-$(document).ready(function() {
-    // Only run if we're on the zone edit page
-    const hasRecordsTable = $(SELECTORS.RECORDS_TABLE).length > 0;
-    if (hasRecordsTable === false) {
-        return;
-    }
+// ── Alpine component factory ──────────────────────────────────────────────────
 
-    // Get zone name from data attribute
-    const zoneName = $(SELECTORS.ZONE_DATA).data('zone-name');
+function zoneEditor(initData) {
+    return {
+        // ── Initialisation data ───────────────────────────────────────────────
+        zoneName:     initData.zoneName     || '',
+        allowedTypes: initData.allowedTypes || [],
+        records:      (initData.records || []).map(r => ({ ...r })),
+        ttlPresets:   initData.ttlPresets   || [],
 
-    // Track which records existed in the database on page load
-    const originalRecords = new Set();
-    $(SELECTORS.RECORDS_TABLE).find('tbody tr').each(function() {
-        const fullName = $(this).data('full-name');
-        const type = $(this).find('td').eq(1).text();
-        if (fullName && type) {
-            originalRecords.add(`${fullName}|${type}`);
-        }
-    });
+        // Set once in init() from the server-provided snapshot — never mutated.
+        _originalKeys: {},  // { 'name|type': true }
+        _initialTypeSet: {}, // { 'A': true, ... } — for "new type" badge
 
-    // Track changes to records
-    const pendingChanges = new Map();
+        // ── Pending changes (plain object for Alpine reactivity) ──────────────
+        // Keys: 'name|type'. Values: RecordChange-shaped objects.
+        pendingChanges: {},
 
-    // Initialize DataTable
-    let dataTable = null;
-    if ($.fn.DataTable) {
-        dataTable = $(SELECTORS.RECORDS_TABLE).DataTable({
-            order: [[0, 'asc']], // Sort by Name column by default
-            pageLength: 25,
-            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            columnDefs: [
-                {
-                    targets: -1, // Last column (Actions)
-                    orderable: false,
-                    searchable: false
-                }
-            ],
-            language: {
-                search: "Search records:",
-                lengthMenu: "Show _MENU_ records per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ records",
-                infoEmpty: "No records available",
-                infoFiltered: "(filtered from _TOTAL_ total records)",
-                zeroRecords: "No matching records found"
+        // ── Filter / sort / pagination ────────────────────────────────────────
+        searchQuery:      '',
+        activeTypeFilter: 'all',
+        sortField:        'name',
+        sortAsc:          true,
+        currentPage:      1,
+        pageSize:         initData.pageSize || 25,
+
+        // ── Save state ────────────────────────────────────────────────────────
+        isSaving: false,
+
+        // ── Record modal ──────────────────────────────────────────────────────
+        recordForm: {
+            isEditing:       false,
+            originalId:      '',
+            originalName:    '',
+            originalType:    '',
+            originalContent: '',
+            name:            '',
+            type:            '',
+            ttl:             3600,
+            ttlPreset:       'custom',
+            content:         '',
+            comment:         '',
+            disabled:        false,
+            // MX-specific
+            mxPriority: '10',
+            mxHostname: '',
+            // TXT-specific
+            txtText: '',
+        },
+
+        // ── SOA modal ─────────────────────────────────────────────────────────
+        soaForm: {
+            originalId:      '',
+            originalName:    '',
+            originalContent: '',
+            origTtl:         0,
+            origDisabled:    false,
+            origComment:     '',
+            mname:  '',
+            rname:  '',
+            serial:  '',
+            refresh: '',
+            retry:   '',
+            expire:  '',
+            minimum: '',
+        },
+
+        // ── Alpine lifecycle ──────────────────────────────────────────────────
+
+        init() {
+            // Build immutable snapshots from the initial server-rendered state.
+            this._originalKeys    = Object.fromEntries(this.records.map(r => [r.name + '|' + r.type, true]));
+            this._initialTypeSet  = Object.fromEntries(this.records.map(r => [r.type, true]));
+
+            // Reset page to 1 whenever search or type filter changes.
+            this.$watch('searchQuery',      () => { this.currentPage = 1; });
+            this.$watch('activeTypeFilter', () => { this.currentPage = 1; });
+
+            // Fix Bootstrap aria-hidden focus-trap warning for the record modal.
+            const recModal = document.getElementById('recordModal');
+            if (recModal) {
+                recModal.addEventListener('hide.bs.modal', () => {
+                    if (recModal.contains(document.activeElement)) document.activeElement.blur();
+                });
             }
-        });
-    }
+        },
 
-    // Get display name (strip zone name for display)
-    function getDisplayName(fullName) {
-        if (fullName === null || fullName === undefined || fullName === '') {
+        // ── Computed ──────────────────────────────────────────────────────────
+
+        get pendingCount() {
+            return Object.keys(this.pendingChanges).length;
+        },
+
+        /** All record types currently present in the table, in a consistent order. */
+        get availableTypes() {
+            const types = new Set(this.records.map(r => r.type));
+            const priority = ['SOA', 'NS', 'A', 'AAAA', 'CNAME', 'MX', 'TXT', 'SRV', 'CAA', 'PTR'];
+            return [...types].sort((a, b) => {
+                const ia = priority.indexOf(a), ib = priority.indexOf(b);
+                if (ia !== -1 && ib !== -1) return ia - ib;
+                if (ia !== -1) return -1;
+                if (ib !== -1) return 1;
+                return a.localeCompare(b);
+            });
+        },
+
+        /** Filtered + sorted record list (all pages). */
+        get filteredRecords() {
+            let list = this.records;
+
+            if (this.activeTypeFilter !== 'all') {
+                list = list.filter(r => r.type === this.activeTypeFilter);
+            }
+
+            if (this.searchQuery) {
+                const q = this.searchQuery.toLowerCase();
+                list = list.filter(r =>
+                    r.display_name.toLowerCase().includes(q) ||
+                    r.content.toLowerCase().includes(q) ||
+                    (r.comment || '').toLowerCase().includes(q)
+                );
+            }
+
+            return [...list].sort((a, b) => {
+                let av, bv;
+                switch (this.sortField) {
+                    case 'type': av = a.type;              bv = b.type;              break;
+                    case 'ttl':  av = a.ttl;               bv = b.ttl;               break;
+                    default: {
+                        // @ (zone apex) always sorts first regardless of direction.
+                        const aApex = a.display_name === '@';
+                        const bApex = b.display_name === '@';
+                        if (aApex && !bApex) return -1;
+                        if (!aApex && bApex) return  1;
+                        av = a.display_name.toLowerCase();
+                        bv = b.display_name.toLowerCase();
+                    }
+                }
+                if (av < bv) return this.sortAsc ? -1 : 1;
+                if (av > bv) return this.sortAsc ?  1 : -1;
+                return 0;
+            });
+        },
+
+        get totalPages() {
+            return Math.max(1, Math.ceil(this.filteredRecords.length / this.pageSize));
+        },
+
+        get paginatedRecords() {
+            const page  = Math.min(this.currentPage, this.totalPages);
+            const start = (page - 1) * this.pageSize;
+            return this.filteredRecords.slice(start, start + this.pageSize);
+        },
+
+        /** Help text for the Data field in the record modal, derived from the selected type. */
+        get recordContentHelp() {
+            const found = this.allowedTypes.find(t => t.type === this.recordForm.type);
+            return (found && found.help)
+                ? found.help
+                : 'Record data (e.g., IP address, hostname, text). For CNAME, MX, NS, PTR, SRV records a trailing dot is added automatically.';
+        },
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        recordId(r) {
+            return r.name + '|' + r.type + '|' + r.content;
+        },
+
+        recordRowClass(r) {
+            const key = r.name + '|' + r.type;
+            if (!(key in this.pendingChanges)) return '';
+            return (key in this._originalKeys) ? 'table-warning' : 'table-success';
+        },
+
+        isNewType(type) {
+            return !(type in this._initialTypeSet);
+        },
+
+        getDisplayName(fullName) {
+            if (!fullName) return fullName;
+            const z = this.zoneName.replace(/\.$/, '');
+            if (fullName === this.zoneName || fullName === z) return '@';
+            if (fullName.endsWith('.' + z + '.')) return fullName.slice(0, -(z.length + 2));
+            if (fullName.endsWith('.' + z))       return fullName.slice(0, -(z.length + 1));
             return fullName;
-        }
-        // If it's the zone itself, return @
-        if (fullName === zoneName || fullName === zoneName.replace(/\.$/, '')) {
-            return '@';
-        }
-        // Strip the zone name suffix for display
-        const zoneWithoutDot = zoneName.replace(/\.$/, '');
-        if (fullName.endsWith('.' + zoneWithoutDot + '.')) {
-            return fullName.replace('.' + zoneWithoutDot + '.', '');
-        } else if (fullName.endsWith('.' + zoneWithoutDot)) {
-            return fullName.replace('.' + zoneWithoutDot, '');
-        }
-        return fullName;
-    }
+        },
 
-
-    // Collect all current records for a given name+type from the table.
-    // When excludeContent is provided that specific content string is skipped,
-    // which is used when deleting one record from a multi-record RRset so the
-    // remaining siblings are preserved in the pending change.
-    function collectRRsetRecords(name, type, excludeContent) {
-        const results = [];
-
-        function processRow($row) {
-            if ($row.data('full-name') !== name) return;
-            const rowType = $row.find('td').eq(1).text().trim();
-            if (rowType !== type) return;
-            const content = $row.find('td').eq(4).find('span').attr('title') || $row.find('td').eq(4).text().trim();
-            if (excludeContent !== undefined && content === excludeContent) return;
-            const disabled = $row.find('td').eq(3).find('.badge').hasClass('bg-danger');
-            results.push({ content, disabled });
-        }
-
-        if (dataTable) {
-            dataTable.rows().every(function() {
-                processRow($(this.node()));
-            });
-        } else {
-            $(SELECTORS.RECORDS_TBODY).find('tr').each(function() {
-                processRow($(this));
-            });
-        }
-
-        return results;
-    }
-
-    // Update changes indicator
-    function updateChangesIndicator() {
-        const count = pendingChanges.size;
-        if (count > 0) {
-            $(SELECTORS.CHANGES_COUNT).text(count);
-            $(SELECTORS.CHANGES_INDICATOR).show();
-        } else {
-            $(SELECTORS.CHANGES_INDICATOR).hide();
-        }
-        document.dispatchEvent(new CustomEvent('zoneRecordsChanged'));
-    }
-
-    // Ensure DNS name is in canonical format (ends with a dot)
-    // Automatically appends zone name if only subdomain is provided
-    function canonicalizeName(name) {
-        if (name === null || name === undefined || name === '') {
+        canonicalizeName(name) {
+            if (!name) return name;
+            name = name.trim();
+            if (name === '@') return this.zoneName;
+            if (!name.endsWith('.')) {
+                const z = this.zoneName.replace(/\.$/, '');
+                name = name.endsWith(z) ? name + '.' : name + '.' + this.zoneName;
+            }
             return name;
-        }
-        name = name.trim();
+        },
 
-        // Handle @ as zone apex
-        if (name === '@') {
-            return zoneName;
-        }
+        /** Returns { content, disabled } pairs for all records matching name+type, optionally excluding one content value. */
+        collectRRsetRecords(name, type, excludeContent) {
+            return this.records
+                .filter(r => r.name === name && r.type === type &&
+                    (excludeContent === undefined || r.content !== excludeContent))
+                .map(r => ({ content: r.content, disabled: r.disabled }));
+        },
 
-        // If the name doesn't end with a dot and doesn't already include the zone name,
-        // it's just a subdomain - append the zone name
-        const endsWithDot = name.endsWith('.');
-        if (endsWithDot === false) {
-            // Check if this is already a fully qualified name that includes the zone
-            const endsWithZoneName = name.endsWith(zoneName.replace(/\.$/, ''));
-            if (endsWithZoneName) {
-                // It's already fully qualified, just add the trailing dot
-                name += '.';
+        // ── Sort / filter / pagination ────────────────────────────────────────
+
+        toggleSort(field) {
+            if (this.sortField === field) {
+                this.sortAsc = !this.sortAsc;
             } else {
-                // It's just a subdomain, append zone name
-                name = name + '.' + zoneName;
+                this.sortField = field;
+                this.sortAsc = true;
             }
-        }
+            this.currentPage = 1;
+        },
 
-        return name;
-    }
+        setTypeFilter(type) {
+            this.activeTypeFilter = type;
+        },
 
-    // Add or update record in UI
-    function updateRecordRow(id, record, isNew = false) {
-        const displayName = getDisplayName(record.name);
-        const comment = record.comment || '';
-
-        // Row data for DataTable
-        const rowData = [
-            displayName,
-            `<span class="badge bg-light text-dark border">${record.type}</span>`,
-            record.ttl,
-            `<span class="badge ${record.disabled ? 'bg-danger' : 'bg-success'}">${record.disabled ? 'Disabled' : 'Active'}</span>`,
-            `<span class="text-truncate" style="max-width: 200px; display: inline-block;" title="${record.content}">${record.content}</span>`,
-            `<span class="text-truncate" style="max-width: 150px; display: inline-block;" title="${comment}">${comment}</span>`,
-            `<div class="dropdown"><button type="button" class="btn btn-sm btn-light" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><button class="dropdown-item edit-record-btn" type="button"><i class="bi bi-pencil me-2 text-primary"></i>Edit</button></li><li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger delete-record-btn" type="button"><i class="bi bi-trash me-2"></i>Delete</button></li></ul></div>`
-        ];
-
-        if (dataTable) {
-            // Find existing row
-            let foundRow = null;
-            dataTable.rows().every(function(rowIdx) {
-                const node = dataTable.row(rowIdx).node();
-                if ($(node).data('record-id') === id) {
-                    foundRow = dataTable.row(rowIdx);
-                    return false;
-                }
+        changePageSize(size) {
+            this.pageSize = Number(size);
+            this.currentPage = 1;
+            fetch('/profile/preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zone_edit_page_size: this.pageSize }),
             });
+        },
 
-            if (foundRow) {
-                // Update existing row
-                foundRow.data(rowData);
-                const $node = $(foundRow.node());
-                $node.attr('data-full-name', record.name);
-                $node.attr('data-comment', comment);
-                $node.attr('data-record-id', id);
-                $node.attr('data-type', record.type);
-                if (isNew === false) {
-                    $node.addClass('table-warning');
-                }
+        // ── Bootstrap modal helpers ───────────────────────────────────────────
+
+        _showModal(id) {
+            const el = document.getElementById(id);
+            if (el) bootstrap.Modal.getOrCreateInstance(el).show();
+        },
+
+        _hideModal(id) {
+            const el = document.getElementById(id);
+            if (el) bootstrap.Modal.getOrCreateInstance(el).hide();
+        },
+
+        /** Return the ttlPreset value ('custom' or a seconds string) for a given TTL number. */
+        _ttlPresetFor(ttl) {
+            const match = this.ttlPresets.find(p => p.seconds === ttl);
+            return match ? String(match.seconds) : 'custom';
+        },
+
+        /** Sync recordForm.ttl when the preset select changes. */
+        onTTLPresetChange() {
+            if (this.recordForm.ttlPreset !== 'custom') {
+                this.recordForm.ttl = Number(this.recordForm.ttlPreset);
+            }
+        },
+
+        // ── Open record modal (add) ───────────────────────────────────────────
+
+        openAddRecord() {
+            const defaultType = this.allowedTypes.length > 0 ? this.allowedTypes[0].type : 'A';
+            const defaultTTL  = this.ttlPresets.length > 0 ? this.ttlPresets[0].seconds : 3600;
+            this.recordForm = {
+                isEditing: false,
+                originalId: '', originalName: '', originalType: '', originalContent: '',
+                name: '', type: defaultType,
+                ttl: defaultTTL, ttlPreset: this._ttlPresetFor(defaultTTL),
+                content: '', comment: '', disabled: false,
+                mxPriority: '10', mxHostname: '', txtText: '',
+            };
+            this._showModal('recordModal');
+        },
+
+        // ── Open record modal (edit) ──────────────────────────────────────────
+
+        openEditRecord(record) {
+            if (record.type === 'SOA') { this.openSOAModal(record); return; }
+            const mx  = record.type === 'MX'  ? parseMX(record.content)  : null;
+            const txt = record.type === 'TXT' ? parseTXT(record.content) : '';
+            this.recordForm = {
+                isEditing:       true,
+                originalId:      this.recordId(record),
+                originalName:    record.name,
+                originalType:    record.type,
+                originalContent: record.content,
+                name:            record.display_name,
+                type:            record.type,
+                ttl:             record.ttl,
+                ttlPreset:       this._ttlPresetFor(record.ttl),
+                content:         record.content,
+                comment:         record.comment || '',
+                disabled:        record.disabled,
+                mxPriority: mx?.priority || '10',
+                mxHostname:  mx?.hostname  || '',
+                txtText:     txt,
+            };
+            this._showModal('recordModal');
+        },
+
+        // ── Open SOA modal ────────────────────────────────────────────────────
+
+        openSOAModal(record) {
+            const soa = parseSOA(record.content);
+            if (!soa) showToast('Malformed SOA content; cannot parse existing values.', 'danger');
+            this.soaForm = {
+                originalId:      this.recordId(record),
+                originalName:    record.name,
+                originalContent: record.content,
+                origTtl:         record.ttl,
+                origDisabled:    record.disabled,
+                origComment:     record.comment || '',
+                mname:   soa?.mname   || '',
+                rname:   soa?.rname   || '',
+                serial:  soa?.serial  || '',
+                refresh: soa?.refresh || '',
+                retry:   soa?.retry   || '',
+                expire:  soa?.expire  || '',
+                minimum: soa?.minimum || '',
+            };
+            this._showModal('soaModal');
+        },
+
+        // ── Save record modal ─────────────────────────────────────────────────
+
+        saveRecord() {
+            const form = document.getElementById('record-form');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            const rf = this.recordForm;
+            let content;
+
+            if (rf.type === 'MX') {
+                content = composeMX({ priority: rf.mxPriority, hostname: rf.mxHostname });
+                if (!content) { showToast('Please provide a valid priority (0–65535) and hostname.', 'danger'); return; }
+            } else if (rf.type === 'TXT') {
+                content = composeTXT(rf.txtText);
+                if (content === null) { showToast('Please provide valid TXT content.', 'danger'); return; }
             } else {
-                // Add new row
-                const newRow = dataTable.row.add(rowData).draw(false);
-                const $node = $(newRow.node());
-                $node.attr('data-record-id', id);
-                $node.attr('data-full-name', record.name);
-                $node.attr('data-comment', comment);
-                $node.attr('data-type', record.type);
-                if (isNew) {
-                    $node.addClass('table-success');
+                const rawContent = (rf.content || '').trim();
+                if (rf.type === 'A'    && !isValidIPv4(rawContent)) { showToast('Invalid IPv4 address for A record.', 'danger');    return; }
+                if (rf.type === 'AAAA' && !isValidIPv6(rawContent)) { showToast('Invalid IPv6 address for AAAA record.', 'danger'); return; }
+                content = canonicalizeContent(rf.type, rawContent);
+            }
+
+            const record = {
+                name:         this.canonicalizeName(rf.name),
+                type:         rf.type,
+                ttl:          Number(rf.ttl),
+                content:      content,
+                disabled:     !!rf.disabled,
+                comment:      (rf.comment || '').trim(),
+                display_name: '',
+            };
+            record.display_name = this.getDisplayName(record.name);
+
+            // Detect no-op edits.
+            if (rf.isEditing) {
+                const orig = this.records.find(r => this.recordId(r) === rf.originalId);
+                if (orig &&
+                    orig.name    === record.name    &&
+                    orig.type    === record.type    &&
+                    orig.content === record.content &&
+                    orig.ttl     === record.ttl     &&
+                    orig.disabled === record.disabled &&
+                    (orig.comment || '') === record.comment
+                ) {
+                    showToast('No changes detected for this record.', 'info');
+                    this._hideModal('recordModal');
+                    return;
                 }
             }
-        } else {
-            // Fallback to non-DataTable method
-            let $row = $('tr').filter(function() {
-                return $(this).data('record-id') === id;
-            });
-            if ($row.length === 0) {
-                // Create row element safely to avoid issues with special characters in attributes
-                $row = $('<tr>').addClass(isNew ? 'table-success' : '');
-                $row.attr('data-record-id', id);
-                $row.attr('data-full-name', record.name);
-                $row.attr('data-comment', comment);
-                $row.attr('data-type', record.type);
-                $row.append($('<td>').addClass('record-name').text(displayName));
-                $row.append($('<td>').addClass('record-type').html(`<span class="badge bg-light text-dark border">${record.type}</span>`));
-                $row.append($('<td>').addClass('record-ttl').text(record.ttl));
-                $row.append($('<td>').addClass('record-status').html(rowData[3]));
-                $row.append($('<td>').addClass('record-content').html(rowData[4]));
-                $row.append($('<td>').addClass('record-comment').html(rowData[5]));
-                $row.append($('<td>').html(rowData[6]));
-                $(SELECTORS.RECORDS_TBODY).append($row);
-            } else {
-                $row.attr('data-full-name', record.name);
-                $row.attr('data-comment', comment);
-                $row.find('.record-name').text(displayName);
-                $row.find('.record-type').text(record.type);
-                $row.find('.record-ttl').text(record.ttl);
-                $row.find('.record-status').html(rowData[3]);
-                $row.find('.record-content').html(rowData[4]);
-                $row.find('.record-comment').html(rowData[5]);
-                if (isNew === false) {
-                    $row.addClass('table-warning');
+
+            // Handle name/type change — update the old RRset in pendingChanges.
+            if (rf.isEditing && (rf.originalName !== record.name || rf.originalType !== record.type)) {
+                const oldKey = rf.originalName + '|' + rf.originalType;
+                if (oldKey in this._originalKeys) {
+                    const siblings = this.collectRRsetRecords(rf.originalName, rf.originalType, rf.originalContent);
+                    if (oldKey in this.pendingChanges) {
+                        const updated = { ...this.pendingChanges[oldKey] };
+                        updated.records = updated.records.filter(r => r.content !== rf.originalContent);
+                        this.pendingChanges = { ...this.pendingChanges, [oldKey]: updated };
+                    } else {
+                        const oldTTL = (this.records.find(r => r.name === rf.originalName && r.type === rf.originalType)?.ttl) || 0;
+                        this.pendingChanges = { ...this.pendingChanges, [oldKey]: {
+                            name: rf.originalName, type: rf.originalType,
+                            ttl: oldTTL, comment: '', records: siblings,
+                            existed: true, changed: true,
+                        }};
+                    }
+                } else if (oldKey in this.pendingChanges) {
+                    const updated = { ...this.pendingChanges[oldKey] };
+                    updated.records = updated.records.filter(r => r.content !== rf.originalContent);
+                    if (updated.records.length === 0) {
+                        const { [oldKey]: _, ...rest } = this.pendingChanges;
+                        this.pendingChanges = rest;
+                    } else {
+                        this.pendingChanges = { ...this.pendingChanges, [oldKey]: updated };
+                    }
                 }
             }
-        }
-    }
 
-    // Get modal instance
-    const modalElement = document.querySelector(SELECTORS.RECORD_MODAL);
-    const modal = new bootstrap.Modal(modalElement);
-    const soaModalElement = document.querySelector(SELECTORS.SOA_MODAL);
-    const soaModal = soaModalElement ? new bootstrap.Modal(soaModalElement) : null;
+            // Upsert the new key in pendingChanges.
+            const key        = record.name + '|' + record.type;
+            const existedInDB = key in this._originalKeys;
 
-    // Fix aria-hidden accessibility issue: remove focus before modal is hidden
-    modalElement.addEventListener('hide.bs.modal', function() {
-        // Remove focus from any element inside the modal
-        const focusedElement = document.activeElement;
-        if (focusedElement && modalElement.contains(focusedElement)) {
-            focusedElement.blur();
-        }
-    });
-
-    // Helper: update help text for the Data field based on selected record type
-    function updateRecordContentHelp() {
-        const helpEl = document.getElementById('record-content-help');
-        if (!helpEl) return;
-        const $typeSel = $(SELECTORS.RECORD_TYPE_INPUT);
-        const $opt = $typeSel.find('option:selected');
-        const help = ($opt.data('help') || '').toString();
-        if (help && help.trim().length > 0) {
-            helpEl.textContent = help;
-        } else {
-            helpEl.textContent = 'Record data (e.g., IP address, hostname, text). For CNAME, MX, NS, PTR, and SRV records, enter the full domain name (e.g., cdn.cloudflare.com). A trailing dot will be added automatically.';
-        }
-    }
-
-    // React on record type change in modal
-    $(document).on('change', SELECTORS.RECORD_TYPE_INPUT, function() {
-        updateRecordContentHelp();
-    });
-
-    // Open modal for adding new record
-    $(SELECTORS.ADD_RECORD_BTN).on('click', function() {
-        $(SELECTORS.RECORD_MODAL_LABEL).text('Add Record');
-        $(SELECTORS.RECORD_FORM)[0].reset();
-        $(SELECTORS.RECORD_ORIGINAL_ID).val('');
-        $(SELECTORS.RECORD_ORIGINAL_NAME).val('');
-        $(SELECTORS.RECORD_ORIGINAL_TYPE).val('');
-        $(SELECTORS.RECORD_ORIGINAL_CONTENT).val('');
-        $(SELECTORS.RECORD_TTL_INPUT).val('3600');
-        $(SELECTORS.RECORD_COMMENT_INPUT).val('');
-        $(SELECTORS.SAVE_RECORD_MODAL_BTN).html('<i class="bi bi-plus-circle"></i> Add Record');
-        // Initialize help text for default-selected type
-        updateRecordContentHelp();
-        modal.show();
-    });
-
-    // Open modal for editing record
-    $(document).on('click', '.edit-record-btn', function() {
-        const $row = $(this).closest('tr');
-        const id = $row.data('record-id');
-        const fullName = $row.data('full-name'); // Full canonical name
-        const displayName = $row.find('td').eq(0).text(); // Name column
-        const type = $row.find('td').eq(1).text(); // Type column
-        const ttl = $row.find('td').eq(2).text(); // TTL column
-        const content = $row.find('td').eq(4).find('span').attr('title') || $row.find('td').eq(4).text(); // Data column
-        const disabled = $row.find('td').eq(3).find('.badge').hasClass('bg-danger'); // Status column
-        const comment = $row.data('comment') || '';
-
-        // SOA special editor
-        if (type === 'SOA' && soaModal) {
-            const soa = parseSOA(content);
-            if (!soa) {
-                showToast('Malformed SOA content; cannot parse existing values.', 'danger');
+            if (!(key in this.pendingChanges)) {
+                const existingRecs = existedInDB ? this.collectRRsetRecords(record.name, record.type) : [];
+                this.pendingChanges = { ...this.pendingChanges, [key]: {
+                    name: record.name, type: record.type,
+                    ttl: record.ttl, comment: record.comment,
+                    records: existingRecs, existed: existedInDB, changed: true,
+                }};
             }
-            $(SELECTORS.RECORD_ORIGINAL_ID).val(id);
-            $(SELECTORS.RECORD_ORIGINAL_NAME).val(fullName);
-            $(SELECTORS.RECORD_ORIGINAL_TYPE).val(type);
-            $(SELECTORS.RECORD_ORIGINAL_CONTENT).val(content);
 
-            // Fill fields if parsed
-            if (soa) {
-                $(SELECTORS.SOA_MNAME).val(soa.mname);
-                $(SELECTORS.SOA_RNAME).val(soa.rname);
-                $(SELECTORS.SOA_SERIAL).val(soa.serial);
-                $(SELECTORS.SOA_REFRESH).val(soa.refresh);
-                $(SELECTORS.SOA_RETRY).val(soa.retry);
-                $(SELECTORS.SOA_EXPIRE).val(soa.expire);
-                $(SELECTORS.SOA_MINIMUM).val(soa.minimum);
+            const change = { ...this.pendingChanges[key] };
+            change.changed = true;
+            change.ttl     = record.ttl;
+            change.comment = record.comment;
+
+            // If only content changed, remove the stale content entry.
+            if (rf.isEditing &&
+                rf.originalName === record.name &&
+                rf.originalType === record.type &&
+                rf.originalContent !== record.content
+            ) {
+                change.records = change.records.filter(r => r.content !== rf.originalContent);
             }
-            // Store auxiliary info for saving
-            $(SELECTORS.SOA_MODAL).data('origTtl', ttl);
-            $(SELECTORS.SOA_MODAL).data('origDisabled', disabled);
-            $(SELECTORS.SOA_MODAL).data('origComment', comment);
-            $(SELECTORS.SOA_MODAL).data('displayName', displayName);
-            if (soaModal) soaModal.show();
-            return; // do not open generic modal
-        }
 
-        $(SELECTORS.RECORD_MODAL_LABEL).text('Edit Record');
-        $(SELECTORS.RECORD_ORIGINAL_ID).val(id);
-        $(SELECTORS.RECORD_ORIGINAL_NAME).val(fullName);
-        $(SELECTORS.RECORD_ORIGINAL_TYPE).val(type);
-        $(SELECTORS.RECORD_ORIGINAL_CONTENT).val(content);
-        $(SELECTORS.RECORD_NAME_INPUT).val(displayName);
-        $(SELECTORS.RECORD_TYPE_INPUT).val(type);
-        $(SELECTORS.RECORD_TTL_INPUT).val(ttl);
-        $(SELECTORS.RECORD_CONTENT_INPUT).val(content);
-        $(SELECTORS.RECORD_COMMENT_INPUT).val(comment);
-        $(SELECTORS.RECORD_DISABLED_INPUT).prop('checked', disabled);
-        $(SELECTORS.SAVE_RECORD_MODAL_BTN).html('<i class="bi bi-pencil"></i> Update Record');
-        // Initialize help text for the selected record type
-        updateRecordContentHelp();
-        modal.show();
-    });
-
-    // Save SOA from modal
-    $(SELECTORS.SAVE_SOA_MODAL_BTN).on('click', function() {
-        if (!soaModal) return;
-        const originalId = $(SELECTORS.RECORD_ORIGINAL_ID).val();
-        const originalName = $(SELECTORS.RECORD_ORIGINAL_NAME).val();
-        const originalType = $(SELECTORS.RECORD_ORIGINAL_TYPE).val();
-        const originalContent = $(SELECTORS.RECORD_ORIGINAL_CONTENT).val();
-        if (originalType !== 'SOA') { soaModal.hide(); return; }
-
-        const fields = {
-            mname: $(SELECTORS.SOA_MNAME).val().trim(),
-            rname: $(SELECTORS.SOA_RNAME).val().trim(),
-            serial: $(SELECTORS.SOA_SERIAL).val().trim(),
-            refresh: $(SELECTORS.SOA_REFRESH).val().trim(),
-            retry: $(SELECTORS.SOA_RETRY).val().trim(),
-            expire: $(SELECTORS.SOA_EXPIRE).val().trim(),
-            minimum: $(SELECTORS.SOA_MINIMUM).val().trim()
-        };
-        const composed = composeSOA(fields);
-        if (!composed) {
-            showToast('Please provide valid SOA values.', 'danger');
-            return;
-        }
-
-        const record = {
-            name: originalName,
-            type: 'SOA',
-            ttl: Number.parseInt($(SELECTORS.SOA_MODAL).data('origTtl')) || 0,
-            content: composed,
-            disabled: !!$(SELECTORS.SOA_MODAL).data('origDisabled'),
-            comment: ($(SELECTORS.SOA_MODAL).data('origComment') || '').toString()
-        };
-
-        const newId = generateRecordId(record.name, record.type, record.content);
-        let isChanged = (originalContent !== record.content);
-        if (!isChanged) {
-            showToast('No changes detected for this SOA record.', 'info');
-            soaModal.hide();
-            return;
-        }
-
-        const key = `${record.name}|${record.type}`;
-        const hasExistingChange = pendingChanges.has(key);
-        if (!hasExistingChange) {
-            const existedInDB = originalRecords.has(key);
-            pendingChanges.set(key, {
-                name: record.name,
-                type: record.type,
-                ttl: record.ttl,
-                comment: record.comment,
-                records: [],
-                existed: existedInDB,
-                changed: true
-            });
-        }
-        const change = pendingChanges.get(key);
-        change.changed = true;
-        change.ttl = record.ttl;
-        change.comment = record.comment;
-        // Ensure single SOA record: remove all existing and set one
-        change.records = [{ content: record.content, disabled: record.disabled }];
-
-        // Update UI
-        updateRecordRow(newId, record, false);
-        // Remove old row if id changed (name/type same typically, content changes)
-        if (originalId && originalId !== newId) {
-            $('tr').filter(function() { return $(this).data('record-id') === originalId; }).remove();
-        }
-        updateChangesIndicator();
-        soaModal.hide();
-    });
-
-    // Save record from modal
-    $(SELECTORS.SAVE_RECORD_MODAL_BTN).on('click', function() {
-        const form = $(SELECTORS.RECORD_FORM)[0];
-        const isValid = form.checkValidity();
-        if (isValid === false) {
-            form.reportValidity();
-            return;
-        }
-
-        const recordTypeForValidation = $(SELECTORS.RECORD_TYPE_INPUT).val();
-        const contentForValidation = $(SELECTORS.RECORD_CONTENT_INPUT).val().trim();
-        if (recordTypeForValidation === 'A' && !isValidIPv4(contentForValidation)) {
-            showToast('Invalid IPv4 address for A record.', 'danger');
-            $(SELECTORS.RECORD_CONTENT_INPUT).focus();
-            return;
-        }
-        if (recordTypeForValidation === 'AAAA' && !isValidIPv6(contentForValidation)) {
-            showToast('Invalid IPv6 address for AAAA record.', 'danger');
-            $(SELECTORS.RECORD_CONTENT_INPUT).focus();
-            return;
-        }
-
-        const originalId = $(SELECTORS.RECORD_ORIGINAL_ID).val();
-        const originalName = $(SELECTORS.RECORD_ORIGINAL_NAME).val();
-        const originalType = $(SELECTORS.RECORD_ORIGINAL_TYPE).val();
-        const originalContent = $(SELECTORS.RECORD_ORIGINAL_CONTENT).val();
-        const recordType = $(SELECTORS.RECORD_TYPE_INPUT).val();
-        const record = {
-            name: canonicalizeName($(SELECTORS.RECORD_NAME_INPUT).val()),
-            type: recordType,
-            ttl: Number.parseInt($(SELECTORS.RECORD_TTL_INPUT).val()),
-            content: canonicalizeContent(recordType, $(SELECTORS.RECORD_CONTENT_INPUT).val()),
-            disabled: $(SELECTORS.RECORD_DISABLED_INPUT).is(':checked'),
-            comment: $(SELECTORS.RECORD_COMMENT_INPUT).val().trim()
-        };
-
-        const newId = generateRecordId(record.name, record.type, record.content);
-        const isNewRecord = (originalId === '' || originalId === null || originalId === undefined);
-
-        // Determine if anything actually changed
-        let isChanged = isNewRecord;
-        if (!isNewRecord) {
-            const $origRow = $('tr').filter(function() {
-                return $(this).data('record-id') === originalId;
-            });
-            if ($origRow.length > 0) {
-                const rowTTL = Number.parseInt($origRow.find('td').eq(2).text()) || 0;
-                const rowDisabled = $origRow.find('td').eq(3).find('.badge').hasClass('bg-danger');
-                const rowComment = $origRow.data('comment') || '';
-                // Name and Type we have in hidden fields
-                isChanged = (
-                    originalName !== record.name ||
-                    originalType !== record.type ||
-                    originalContent !== record.content ||
-                    rowTTL !== record.ttl ||
-                    rowDisabled !== record.disabled ||
-                    rowComment !== record.comment
+            const existingIdx = change.records.findIndex(r => r.content === record.content);
+            if (existingIdx >= 0) {
+                change.records = change.records.map((r, i) =>
+                    i === existingIdx ? { content: record.content, disabled: record.disabled } : r
                 );
             } else {
-                // If row not found, treat as changed to be safe
-                isChanged = true;
+                change.records = [...change.records, { content: record.content, disabled: record.disabled }];
             }
-        }
 
-        if (!isChanged) {
-            showToast('No changes detected for this record.', 'info');
-            modal.hide();
-            return;
-        }
+            this.pendingChanges = { ...this.pendingChanges, [key]: change };
 
-        // If editing and name/type changed, remove old record from old key
-        if (!isNewRecord && (originalName !== record.name || originalType !== record.type)) {
-            const oldKey = `${originalName}|${originalType}`;
+            // Update the records array (Alpine x-for re-renders on splice).
+            const origIdx = rf.isEditing
+                ? this.records.findIndex(r => this.recordId(r) === rf.originalId)
+                : -1;
 
-            // Check if the old record existed in the database on page load
-            if (originalRecords.has(oldKey)) {
-                // Record existed in database, mark for deletion with empty record set
-                if (pendingChanges.has(oldKey)) {
-                    // Already have changes for this key, filter out this content
-                    const oldChange = pendingChanges.get(oldKey);
-                    oldChange.records = oldChange.records.filter(r => r.content !== originalContent);
-                } else {
-                    // Collect sibling records (same name/type, excluding the renamed one)
-                    // so multi-record RRsets are only partially updated, not fully deleted.
-                    let oldTTL = 0;
-                    if (dataTable) {
-                        dataTable.rows().every(function() {
-                            const $n = $(this.node());
-                            if ($n.data('full-name') === originalName && $n.find('td').eq(1).text().trim() === originalType) {
-                                oldTTL = Number.parseInt($n.find('td').eq(2).text(), 10) || 0;
-                                return false;
-                            }
-                        });
-                    } else {
-                        $(SELECTORS.RECORDS_TBODY).find('tr').each(function() {
-                            if ($(this).data('full-name') === originalName && $(this).find('td').eq(1).text().trim() === originalType) {
-                                oldTTL = Number.parseInt($(this).find('td').eq(2).text(), 10) || 0;
-                                return false;
-                            }
-                        });
-                    }
-                    pendingChanges.set(oldKey, {
-                        name: originalName,
-                        type: originalType,
-                        ttl: oldTTL,
-                        comment: '',
-                        records: collectRRsetRecords(originalName, originalType, originalContent),
-                        existed: true,
-                        changed: true
-                    });
-                }
+            if (origIdx >= 0) {
+                this.records.splice(origIdx, 1, record);
             } else {
-                // Record was added in this session, just remove the content
-                if (pendingChanges.has(oldKey)) {
-                    const oldChange = pendingChanges.get(oldKey);
-                    oldChange.records = oldChange.records.filter(r => r.content !== originalContent);
-                    // If no records left, remove the key entirely (never existed in DB)
-                    if (oldChange.records.length === 0) {
-                        pendingChanges.delete(oldKey);
-                    }
-                }
+                this.records.push(record);
             }
-        }
 
-        // Add to pending changes with new key
-        const key = `${record.name}|${record.type}`;
-        const hasExistingChange = pendingChanges.has(key);
-        if (hasExistingChange === false) {
-            // Check if this is a new RRset or existed in database
-            const existedInDB = originalRecords.has(key);
-            // Pre-populate with the sibling records already in the table so they
-            // are not lost when the server replaces the entire RRset.
-            pendingChanges.set(key, {
-                name: record.name,
-                type: record.type,
-                ttl: record.ttl,
-                comment: record.comment,
-                records: existedInDB ? collectRRsetRecords(record.name, record.type) : [],
-                existed: existedInDB,
-                changed: true
+            this._hideModal('recordModal');
+        },
+
+        // ── Save SOA modal ────────────────────────────────────────────────────
+
+        saveSOA() {
+            const sf = this.soaForm;
+            const composed = composeSOA({
+                mname: sf.mname.trim(), rname: sf.rname.trim(),
+                serial: sf.serial.trim(), refresh: sf.refresh.trim(),
+                retry: sf.retry.trim(), expire: sf.expire.trim(), minimum: sf.minimum.trim(),
             });
-        }
 
-        const change = pendingChanges.get(key);
-        change.changed = true;
-        change.ttl = record.ttl;
-        change.comment = record.comment;
+            if (!composed) { showToast('Please provide valid SOA values.', 'danger'); return; }
 
-        // If editing and only content changed (same name/type), remove old content
-        if (!isNewRecord && originalName === record.name && originalType === record.type && originalContent !== record.content) {
-            change.records = change.records.filter(r => r.content !== originalContent);
-        }
-
-        // Check if this content already exists for this name/type
-        const existingIndex = change.records.findIndex(r => r.content === record.content);
-        if (existingIndex >= 0) {
-            // Update existing record
-            change.records[existingIndex] = {
-                content: record.content,
-                disabled: record.disabled
-            };
-        } else {
-            // Add new record
-            change.records.push({
-                content: record.content,
-                disabled: record.disabled
-            });
-        }
-
-        // Update UI
-        updateRecordRow(newId, record, isNewRecord);
-
-        // Remove old row if name/type/content changed
-        if (originalId && originalId !== newId) {
-            $('tr').filter(function() {
-                return $(this).data('record-id') === originalId;
-            }).remove();
-        }
-
-        updateChangesIndicator();
-        modal.hide();
-    });
-
-    // Delete record
-    $(document).on('click', '.delete-record-btn', function() {
-        const $btn = $(this);
-        showConfirm('Are you sure you want to delete this record?', {
-            confirmText: 'Delete',
-            confirmBtnClass: 'btn-danger'
-        }).then(function(confirmed) {
-            if (!confirmed) {
+            if (composed === sf.originalContent) {
+                showToast('No changes detected for this SOA record.', 'info');
+                this._hideModal('soaModal');
                 return;
             }
 
-            const $row = $btn.closest('tr');
-            const fullName = $row.data('full-name') || $row.find('.record-name').text();
-            const type = $row.find('td').eq(1).text();
-            const content = $row.find('td').eq(4).find('span').attr('title') || $row.find('td').eq(4).text();
+            const record = {
+                name:         sf.originalName,
+                type:         'SOA',
+                ttl:          sf.origTtl,
+                content:      composed,
+                disabled:     sf.origDisabled,
+                comment:      sf.origComment,
+                display_name: this.getDisplayName(sf.originalName),
+            };
 
-            // Mark for deletion by removing from pending changes or adding empty record set
-            const key = `${fullName}|${type}`;
+            const key = record.name + '|SOA';
+            const existedInDB = key in this._originalKeys;
 
-            // Check if the record existed in the database on page load
-            if (originalRecords.has(key)) {
-                // Record existed in database, mark for deletion
-                if (pendingChanges.has(key)) {
-                    // Already have changes for this key, filter out this content
-                    const change = pendingChanges.get(key);
-                    change.records = change.records.filter(r => r.content !== content);
-                    change.changed = true;
+            if (!(key in this.pendingChanges)) {
+                this.pendingChanges = { ...this.pendingChanges, [key]: {
+                    name: record.name, type: 'SOA',
+                    ttl: record.ttl, comment: record.comment,
+                    records: [], existed: existedInDB, changed: true,
+                }};
+            }
+
+            const change = { ...this.pendingChanges[key] };
+            change.changed = true;
+            change.ttl     = record.ttl;
+            change.comment = record.comment;
+            change.records = [{ content: record.content, disabled: record.disabled }];
+            this.pendingChanges = { ...this.pendingChanges, [key]: change };
+
+            const origIdx = this.records.findIndex(r => this.recordId(r) === sf.originalId);
+            if (origIdx >= 0) {
+                this.records.splice(origIdx, 1, record);
+            } else {
+                this.records.push(record);
+            }
+
+            this._hideModal('soaModal');
+        },
+
+        // ── Delete record ─────────────────────────────────────────────────────
+
+        async deleteRecord(record) {
+            const confirmed = await showConfirm('Are you sure you want to delete this record?', {
+                confirmText: 'Delete', confirmBtnClass: 'btn-danger',
+            });
+            if (!confirmed) return;
+
+            const key = record.name + '|' + record.type;
+
+            if (key in this._originalKeys) {
+                // Existed in DB — mark for deletion by setting remaining siblings.
+                if (key in this.pendingChanges) {
+                    const updated = { ...this.pendingChanges[key] };
+                    updated.records = updated.records.filter(r => r.content !== record.content);
+                    updated.changed = true;
+                    this.pendingChanges = { ...this.pendingChanges, [key]: updated };
                 } else {
-                    // Collect the siblings that must be kept (row is still in the
-                    // DOM here, so exclude the content being deleted explicitly).
-                    const ttl = parseInt($row.find('td').eq(2).text(), 10) || 0;
-                    pendingChanges.set(key, {
-                        name: fullName,
-                        type: type,
-                        ttl: ttl,
-                        comment: '',
-                        records: collectRRsetRecords(fullName, type, content),
-                        existed: true,
-                        changed: true
-                    });
+                    this.pendingChanges = { ...this.pendingChanges, [key]: {
+                        name: record.name, type: record.type, ttl: record.ttl, comment: '',
+                        records: this.collectRRsetRecords(record.name, record.type, record.content),
+                        existed: true, changed: true,
+                    }};
                 }
             } else {
-                // Record was added in this session, just remove it from pending changes
-                if (pendingChanges.has(key)) {
-                    const change = pendingChanges.get(key);
-                    change.records = change.records.filter(r => r.content !== content);
-                    // If no records left, remove the key entirely (never existed in DB)
-                    if (change.records.length === 0) {
-                        pendingChanges.delete(key);
+                // Added in this session — clean up from pendingChanges.
+                if (key in this.pendingChanges) {
+                    const updated = { ...this.pendingChanges[key] };
+                    updated.records = updated.records.filter(r => r.content !== record.content);
+                    if (updated.records.length === 0) {
+                        const { [key]: _, ...rest } = this.pendingChanges;
+                        this.pendingChanges = rest;
+                    } else {
+                        this.pendingChanges = { ...this.pendingChanges, [key]: updated };
                     }
                 }
             }
 
-            // Remove row using DataTable API if available
-            if (dataTable) {
-                dataTable.row($row).remove().draw(false);
-            } else {
-                $row.remove();
-            }
+            const idx = this.records.findIndex(r => this.recordId(r) === this.recordId(record));
+            if (idx >= 0) this.records.splice(idx, 1);
+        },
 
-            updateChangesIndicator();
-        });
-    });
+        // ── Save all changes ──────────────────────────────────────────────────
 
-    // Save all changes
-    $(SELECTORS.SAVE_RECORDS_BTN).on('click', function() {
-        if (pendingChanges.size === 0) {
-            showToast('No changes to save', 'warning');
-            return;
-        }
+        async saveChanges() {
+            if (this.pendingCount === 0) { showToast('No changes to save', 'warning'); return; }
 
-        const changes = Array.from(pendingChanges.values());
+            this.isSaving = true;
+            try {
+                const res = await fetch(`/zone/edit/${this.zoneName}/records`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ changes: Object.values(this.pendingChanges) }),
+                });
 
-        $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+                let data;
+                try { data = await res.json(); } catch (_) { data = {}; }
 
-        $.ajax({
-            url: `/zone/edit/${zoneName}/records`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ changes: changes }),
-            success: function(response) {
-                if (response.success) {
+                if (res.ok && data.success) {
                     showToast('Records saved successfully!', 'success');
-                    setTimeout(() => {
-                        globalThis.location.reload();
-                    }, 1000);
+                    setTimeout(() => location.reload(), 1000);
                 } else {
-                    showToast('Error: ' + response.message, 'danger');
-                    $(SELECTORS.SAVE_RECORDS_BTN).prop('disabled', false).html('<i class="bi bi-save"></i> Save Changes');
+                    showToast('Error: ' + (data.message || `HTTP ${res.status}`), 'danger');
+                    this.isSaving = false;
                 }
-            },
-            error: function(xhr) {
-                const response = xhr.responseJSON || {};
-                showToast('Error saving records: ' + (response.message || 'Unknown error'), 'danger');
-                $(SELECTORS.SAVE_RECORDS_BTN).prop('disabled', false).html('<i class="bi bi-save"></i> Save Changes');
+            } catch (err) {
+                showToast('Error saving records: ' + err.message, 'danger');
+                this.isSaving = false;
             }
-        });
-    });
+        },
 
-    // Cancel changes
-    $(SELECTORS.CANCEL_RECORDS_BTN).on('click', function() {
-        if (pendingChanges.size > 0) {
-            showConfirm('Are you sure you want to discard all changes?', {
-                confirmText: 'Discard',
-                confirmBtnClass: 'btn-warning'
-            }).then(function(confirmed) {
-                if (confirmed) {
-                    globalThis.location.reload();
-                }
-            });
-            return;
-        }
-        globalThis.location.reload();
-    });
+        // ── Discard all changes ───────────────────────────────────────────────
+
+        async discardChanges() {
+            if (this.pendingCount > 0) {
+                const ok = await showConfirm('Are you sure you want to discard all changes?', {
+                    confirmText: 'Discard', confirmBtnClass: 'btn-warning',
+                });
+                if (!ok) return;
+            }
+            location.reload();
+        },
+    };
+}
+
+// Register as an Alpine.data component so the factory is available before Alpine
+// processes the DOM even if this script loads after Alpine's defer fires.
+document.addEventListener('alpine:init', () => {
+    Alpine.data('zoneEditor', zoneEditor);
 });

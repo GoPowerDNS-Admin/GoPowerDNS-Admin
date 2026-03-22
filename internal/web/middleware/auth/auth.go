@@ -60,13 +60,7 @@ func Middleware(c fiber.Ctx) error {
 
 	// If TOTP is pending, restrict to TOTP-related pages only
 	if sessData.TOTPPending {
-		url := strings.ToLower(c.OriginalURL())
-
-		allowed := strings.HasPrefix(url, "/auth/totp") ||
-			strings.HasPrefix(url, "/profile/totp/setup") ||
-			strings.HasPrefix(url, "/logout") ||
-			strings.HasPrefix(url, "/static")
-		if !allowed {
+		if !isTOTPAllowedPage(c) {
 			if sessData.User.TOTPEnabled {
 				return c.Redirect().To("/auth/totp/verify")
 			}
@@ -76,6 +70,16 @@ func Middleware(c fiber.Ctx) error {
 	}
 
 	return c.Next()
+}
+
+// isTOTPAllowedPage returns true if the request path is accessible during a pending TOTP challenge.
+func isTOTPAllowedPage(c fiber.Ctx) bool {
+	url := strings.ToLower(c.OriginalURL())
+
+	return strings.HasPrefix(url, "/auth/totp") ||
+		strings.HasPrefix(url, "/profile/totp/setup") ||
+		strings.HasPrefix(url, "/logout") ||
+		strings.HasPrefix(url, "/static")
 }
 
 // IsLoginPage checks if the current request is for the login page.

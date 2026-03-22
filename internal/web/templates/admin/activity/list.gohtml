@@ -79,26 +79,28 @@
                             <table class="table table-hover mb-0 align-middle">
                                 <thead>
                                     <tr>
-                                        <th style="width: 80px;">ID</th>
-                                        <th style="width: 165px;">Timestamp</th>
-                                        <th style="width: 140px;">User</th>
-                                        <th style="width: 130px;">Action</th>
-                                        <th style="width: 180px;">Resource</th>
+                                        <th class="d-none d-xl-table-cell">ID</th>
+                                        <th class="text-nowrap">Timestamp</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Resource</th>
+                                        <th>Actions</th>
                                         <th>Diff / Details</th>
-                                        <th style="width: 115px;">IP Address</th>
-                                        <th style="width: 90px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                 {{ if .Entries }}
                                     {{ range .Entries }}
                                         <tr>
-                                            <td class="text-muted small">{{ .ID }}</td>
+                                            <td class="d-none d-xl-table-cell text-muted small">{{ .ID }}</td>
                                             <td><small>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</small></td>
                                             <td>
                                                 <span class="fw-semibold">{{ .Username }}</span>
                                                 {{ if .UserID }}
                                                     <br><small class="text-muted">#{{ .UserID }}</small>
+                                                {{ end }}
+                                                {{ if .IPAddress }}
+                                                    <br><small class="text-muted">{{ .IPAddress }}</small>
                                                 {{ end }}
                                             </td>
                                             <td>
@@ -134,6 +136,24 @@
                                                 {{ end }}
                                             </td>
                                             <td>
+                                                <a href="/admin/activity/{{ .ID }}" class="btn btn-sm btn-outline-primary mb-1">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {{ if $.CanUndo }}
+                                                    {{ if eq .Action "record_changed" }}
+                                                    <form method="post" action="/admin/activity/{{ .ID }}/undo"
+                                                          onsubmit="return confirm('Undo these record changes?');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning mb-1">Undo</button>
+                                                    </form>
+                                                    {{ else if eq .Action "zone_deleted" }}
+                                                    <form method="post" action="/admin/activity/{{ .ID }}/undo"
+                                                          onsubmit="return confirm('Restore this deleted zone? This will recreate it in PowerDNS.');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning mb-1">Undo</button>
+                                                    </form>
+                                                    {{ end }}
+                                                {{ end }}
+                                            </td>
+                                            <td class="activity-diff">
                                                 {{- /* ── Zone settings diff ── */}}
                                                 {{ if .ZoneSettings }}
                                                     {{ if .ZoneSettings.Fields }}
@@ -259,22 +279,6 @@
                                                     <span class="text-muted">&mdash;</span>
                                                 {{ end }}
                                             </td>
-                                            <td><small class="text-muted">{{ .IPAddress }}</small></td>
-                                            <td>
-                                                {{ if $.CanUndo }}
-                                                    {{ if eq .Action "record_changed" }}
-                                                    <form method="post" action="/admin/activity/{{ .ID }}/undo"
-                                                          onsubmit="return confirm('Undo these record changes?');">
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>
-                                                    </form>
-                                                    {{ else if eq .Action "zone_deleted" }}
-                                                    <form method="post" action="/admin/activity/{{ .ID }}/undo"
-                                                          onsubmit="return confirm('Restore this deleted zone? This will recreate it in PowerDNS.');">
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Undo</button>
-                                                    </form>
-                                                    {{ end }}
-                                                {{ end }}
-                                            </td>
                                         </tr>
                                     {{ end }}
                                 {{ else }}
@@ -309,3 +313,19 @@
         </div>
     </main>
 </div>
+
+<style>
+.activity-diff {
+    max-width: 420px;
+}
+.activity-diff code {
+    word-break: break-all;
+    white-space: normal;
+}
+.activity-diff .small > div {
+    max-height: 8rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+</style>

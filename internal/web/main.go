@@ -228,7 +228,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	app.Use("/static",
 		static.New("", static.Config{
 			FS:     staticFS,
-			Browse: true,
+			Browse: cfg.Webserver.BrowseStatic,
 		}),
 	)
 

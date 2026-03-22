@@ -1,0 +1,168 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-linux:
+    name: Linux / ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            goarch: amd64
+            cc: gcc
+          - arch: arm64
+            goarch: arm64
+            cc: aarch64-linux-gnu-gcc
+          - arch: armv7
+            goarch: arm
+            goarm: "7"
+            cc: arm-linux-gnueabihf-gcc
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install cross-compilers
+        run: |
+          sudo apt-get update
+          case "${{ matrix.arch }}" in
+            arm64) sudo apt-get install -y gcc-aarch64-linux-gnu ;;
+            armv7) sudo apt-get install -y gcc-arm-linux-gnueabihf ;;
+          esac
+
+      - name: Build
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CC: ${{ matrix.cc }}
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p dist
+          go build -v \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=${{ github.ref_name }}" \
+            -o dist/gopowerdns-admin-linux-${{ matrix.arch }} \
+            .
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: gopowerdns-admin-linux-${{ matrix.arch }}
+          path: dist/
+          retention-days: 1
+
+  build-darwin:
+    name: macOS / amd64 + arm64
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build arm64
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p dist
+          go build -v \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=${{ github.ref_name }}" \
+            -o dist/gopowerdns-admin-darwin-arm64 \
+            .
+
+      - name: Build amd64 (cross-compile via universal Clang)
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_ENABLED: "1"
+          CC: "clang -arch x86_64"
+          CGO_CFLAGS: "-arch x86_64"
+          CGO_LDFLAGS: "-arch x86_64"
+        run: |
+          go build -v \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=${{ github.ref_name }}" \
+            -o dist/gopowerdns-admin-darwin-amd64 \
+            .
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: gopowerdns-admin-darwin
+          path: dist/gopowerdns-admin-darwin-*
+          retention-days: 1
+
+  build-freebsd:
+    name: FreeBSD / ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+          - arch: aarch64
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build inside FreeBSD VM
+        uses: vmactions/freebsd-vm@v1.4.3
+        with:
+          arch: ${{ matrix.arch }}
+          usesh: true
+          prepare: |
+            pkg install -y go sqlite3
+          run: |
+            mkdir -p dist
+            go build -v \
+              -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=${{ github.ref_name }}" \
+              -o dist/gopowerdns-admin-freebsd-${{ matrix.arch }} \
+              .
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: gopowerdns-admin-freebsd-${{ matrix.arch }}
+          path: dist/
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-darwin, build-freebsd]
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRERELEASE=""
+          if echo "${{ github.ref_name }}" | grep -qE '-(alpha|beta|rc)'; then
+            PRERELEASE="--prerelease"
+          fi
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --notes-file CHANGELOG.md \
+            $PRERELEASE \
+            dist/*

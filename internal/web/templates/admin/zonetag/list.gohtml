@@ -35,44 +35,68 @@
             <div class="container-fluid">
                 <p class="text-muted mb-3">Assign tags to zones to control which users and groups can access them. Zones without tags are accessible to all.</p>
 
-                <div class="card card-outline card-primary shadow">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Zone</th>
-                                        <th>Tags</th>
-                                        <th style="width: 100px;" class="text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                {{ if .Zones }}
-                                    {{ range .Zones }}
+                <script>const _zoneTags = {{ .ZonesJSON }};</script>
+                <div x-data="zoneTagList(_zoneTags)">
+
+                    <div class="card card-outline card-primary shadow">
+                        <div class="card-header d-flex align-items-center gap-2">
+                            <div class="input-group input-group-sm ms-auto" style="max-width: 260px;">
+                                <input type="text" x-model="search" class="form-control" placeholder="Search zones…">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            </div>
+                            <span class="text-muted small text-nowrap" x-text="`${filtered.length} zone${filtered.length !== 1 ? 's' : ''}`"></span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
                                         <tr>
-                                            <td class="font-monospace">{{ .Name }}</td>
-                                            <td>
-                                                {{ if eq .TagCount 0 }}
-                                                    <span class="text-muted small">unrestricted</span>
-                                                {{ else }}
-                                                    <span class="badge text-bg-secondary">{{ .TagCount }} tag{{ if gt .TagCount 1 }}s{{ end }}</span>
-                                                {{ end }}
-                                            </td>
-                                            <td class="text-end">
-                                                <a href="/admin/zone-tag/{{ .Name }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            </td>
+                                            <th>Zone</th>
+                                            <th>Tags</th>
+                                            <th style="width: 100px;" class="text-end">Actions</th>
                                         </tr>
-                                    {{ end }}
-                                {{ else }}
-                                    <tr>
-                                        <td colspan="3" class="text-center p-4">No zones found.</td>
-                                    </tr>
-                                {{ end }}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        <template x-if="paged.length === 0">
+                                            <tr>
+                                                <td colspan="3" class="text-center p-4 text-muted">No zones found.</td>
+                                            </tr>
+                                        </template>
+                                        <template x-for="zone in paged" :key="zone.Name">
+                                            <tr>
+                                                <td class="font-monospace" x-text="zone.Name"></td>
+                                                <td>
+                                                    <span x-show="zone.TagCount === 0" class="text-muted small">unrestricted</span>
+                                                    <span x-show="zone.TagCount > 0" class="badge text-bg-secondary" x-text="zone.TagCount + (zone.TagCount === 1 ? ' tag' : ' tags')"></span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <a :href="`/admin/zone-tag/${zone.Name}/edit`" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex align-items-center justify-content-between" x-show="totalPages > 1">
+                            <nav aria-label="Zone tags pagination">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item" :class="{ disabled: currentPage <= 1 }">
+                                        <button type="button" class="page-link" @click="if(currentPage > 1) currentPage--">«</button>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link" x-text="`${currentPage} / ${totalPages}`"></span>
+                                    </li>
+                                    <li class="page-item" :class="{ disabled: currentPage >= totalPages }">
+                                        <button type="button" class="page-link" @click="if(currentPage < totalPages) currentPage++">»</button>
+                                    </li>
+                                </ul>
+                            </nav>
+                            <span class="text-muted small" x-text="`${filtered.length} total`"></span>
                         </div>
                     </div>
-                </div>
+
+                </div><!-- end x-data -->
             </div>
         </div>
         <!--end::App Content-->
@@ -80,4 +104,30 @@
     <!--end::App Main-->
 </div>
 <!--end::App Wrapper-->
+
+<script>
+function zoneTagList(zones) {
+    return {
+        zones,
+        search: '',
+        currentPage: 1,
+        pageSize: 25,
+        get filtered() {
+            const q = this.search.trim().toLowerCase();
+            if (!q) return this.zones;
+            return this.zones.filter(z => z.Name.toLowerCase().includes(q));
+        },
+        get totalPages() {
+            return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
+        },
+        get paged() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.filtered.slice(start, start + this.pageSize);
+        },
+        init() {
+            this.$watch('search', () => { this.currentPage = 1; });
+        },
+    };
+}
+</script>
 {{ end }}

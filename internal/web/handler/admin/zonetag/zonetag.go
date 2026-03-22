@@ -3,6 +3,8 @@ package zonetag
 
 import (
 	"context"
+	"encoding/json"
+	"html/template"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -103,9 +105,17 @@ func (s *Service) List(c fiber.Ctx) error {
 	var allTags []models.Tag
 	s.db.Order("name asc").Find(&allTags)
 
+	zonesJSON, err := json.Marshal(rows)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to marshal zone-tag rows")
+
+		zonesJSON = []byte("[]")
+	}
+
 	return c.Render(templateList, fiber.Map{
 		"Navigation": nav,
 		"Zones":      rows,
+		"ZonesJSON":  template.JS(zonesJSON), //nolint:gosec // safe: json.Marshal escapes HTML chars
 		"AllTags":    allTags,
 		"ZoneTags":   zoneTags,
 	}, handler.BaseLayout)

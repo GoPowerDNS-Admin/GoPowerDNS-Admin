@@ -2,9 +2,10 @@ Title = "GO PowerDNS-Admin"
 DevMode = false
 
 [webserver]
-CookieEncryptionKey = "change_this_to_a_random_string"
-# if you change this after users have been created, they will need to reset their passwords
-Argon2Salt = "change_this_to_a_random_string"
+# REQUIRED: replace with a random string of at least 32 characters before production use.
+CookieEncryptionKey = "replace_with_a_random_string_before_going_to_production"
+# REQUIRED: replace before production use. Changing this after users exist forces password resets.
+Argon2Salt = "replace_with_a_random_salt_before_going_to_production"
 Domain = "localhost"
 Port = 8080
 URL = "http://localhost:8080"

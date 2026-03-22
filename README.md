@@ -27,11 +27,13 @@ Core features are functional. Interfaces and configuration may still change betw
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
 - Go backend with server-rendered templates
-- Nightly builds for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
 - Health check endpoint (`GET /health`) for load balancer and container probes
 - Native TLS (manual cert/key) and automatic TLS via Let's Encrypt / ACME
 - Reverse proxy support (HAProxy, nginx, Traefik) with configurable trusted IP allowlist and proxy header
 - Security headers on all responses: `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, `Referrer-Policy`, and more
+- Docker image published to `ghcr.io/gopowerdns-admin/gopowerdns-admin` on each release (multi-arch: amd64, arm64, armv7)
+- Release binaries for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
+- Version string baked into binary, visible via `--version` / `-v` and in the UI footer
 
 ## Getting Started (Development)
 
@@ -61,18 +63,32 @@ Prerequisites:
 
    Adjust webserver, database, authentication, and record settings as needed.
 
-3. Run the application:
+3. Build and run:
 
-   Default (embedded templates and static assets):
+   Quick run (embedded templates and static assets):
 
    ```bash
    go run . start
    ```
 
-   Development mode (use templates from local filesystem, auto‑reload enabled):
+   Build with version and branch baked in:
+
+   ```bash
+   make build
+   ./gopowerdns-admin start
+   ```
+
+   Development mode (templates reloaded from local filesystem on each request):
 
    ```bash
    go run . start --dev
+   ```
+
+   Check the version:
+
+   ```bash
+   ./gopowerdns-admin --version
+   # gopowerdns-admin version v0.1.0-alpha.1-5-gabc1234-dirty (main)
    ```
 
 ## Project Structure (high level)
@@ -232,12 +248,24 @@ proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
 
 A multi-stage `Dockerfile` is included. The final image is based on Alpine, contains only the compiled binary, and runs as a non-root user (`gopdns`).
 
+### Published image
+
+Release images are published to the GitHub Container Registry on every tagged release:
+
+```bash
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.1
+# or latest stable (not set for pre-releases):
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
+```
+
+Supported platforms: `linux/amd64`, `linux/arm64`, `linux/arm/v7`.
+
 | Path                | Purpose                                                      |
 | ------------------- | ------------------------------------------------------------ |
 | `/etc/go-pdns/`     | Configuration — mount your `main.toml` here (read-only)      |
 | `/var/lib/go-pdns/` | Persistent data — SQLite DB files and ACME certificate cache |
 
-### Build
+### Build locally
 
 ```bash
 make docker-build

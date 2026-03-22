@@ -1,5 +1,9 @@
 
-.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data
+.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
+
+# Docker image
+IMAGE_NAME ?= gopowerdns-admin
+IMAGE_TAG  ?= latest
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
@@ -18,7 +22,12 @@ TMP_DIR := /tmp/gopowerdns-vendor
 help:
 	@echo "Available targets:"
 	@echo ""
-	@echo "Docker:"
+	@echo "Application Docker image:"
+	@echo "  docker-build      - Build the application image (IMAGE_NAME, IMAGE_TAG)"
+	@echo "  docker-run        - Run the application image locally"
+	@echo "  docker-push       - Push the application image to a registry"
+	@echo ""
+	@echo "Dev Docker Compose:"
 	@echo "  docker-up         - Start Docker Compose services"
 	@echo "  docker-down       - Stop Docker Compose services"
 	@echo "  docker-logs       - View Docker Compose logs"
@@ -148,6 +157,24 @@ vendor-clean:
 	@rm -rf $(VENDOR_DIR)/source-sans-3-*
 	@rm -rf $(VENDOR_DIR)/alpinejs-*
 	@echo "✓ Vendor dependencies cleaned"
+
+docker-build:
+	@echo "Building $(IMAGE_NAME):$(IMAGE_TAG)..."
+	@docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	@echo "✓ Image built: $(IMAGE_NAME):$(IMAGE_TAG)"
+
+docker-run:
+	@echo "Running $(IMAGE_NAME):$(IMAGE_TAG)..."
+	@docker run --rm \
+		-p 8080:8080 \
+		-v "$(PWD)/etc:/etc/go-pdns:ro" \
+		-v gopowerdns-data:/var/lib/go-pdns \
+		$(IMAGE_NAME):$(IMAGE_TAG)
+
+docker-push:
+	@echo "Pushing $(IMAGE_NAME):$(IMAGE_TAG)..."
+	@docker push $(IMAGE_NAME):$(IMAGE_TAG)
+	@echo "✓ Pushed: $(IMAGE_NAME):$(IMAGE_TAG)"
 
 docker-up:
 	@echo "Starting Docker Compose services..."

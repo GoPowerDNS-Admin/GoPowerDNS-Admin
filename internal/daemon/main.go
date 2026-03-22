@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"fmt"
+
 	sessionmysql "github.com/gofiber/storage/mysql/v2"
 	sessionpostgres "github.com/gofiber/storage/postgres/v3"
 	sessionsqlite "github.com/gofiber/storage/sqlite3"
@@ -20,12 +22,15 @@ import (
 
 // Daemon represents the main application daemon.
 type Daemon struct {
+	cfg        *config.Config
 	webService web.Service
 }
 
-// Start starts the Daemon's web service.
+// Start starts the Daemon's web service on the configured port.
 func (d *Daemon) Start() error {
-	return d.webService.Start(":8080")
+	addr := fmt.Sprintf(":%d", d.cfg.Webserver.Port)
+
+	return d.webService.Start(addr)
 }
 
 // New creates a new Daemon instance with the provided configuration.
@@ -72,6 +77,7 @@ func New(cfg *config.Config) *Daemon {
 	}
 
 	return &Daemon{
+		cfg:        cfg,
 		webService: *web.New(cfg, db),
 	}
 }

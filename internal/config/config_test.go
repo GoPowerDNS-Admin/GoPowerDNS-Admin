@@ -76,6 +76,40 @@ func TestConfigValidation(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "valid config with TLS",
+			config: Config{
+				Webserver: Webserver{
+					Port:        8443,
+					URL:         "https://localhost:8443",
+					TLSCertFile: "/etc/ssl/server.crt",
+					TLSKeyFile:  "/etc/ssl/server.key",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "TLS cert without key",
+			config: Config{
+				Webserver: Webserver{
+					Port:        8443,
+					URL:         "https://localhost:8443",
+					TLSCertFile: "/etc/ssl/server.crt",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "TLS key without cert",
+			config: Config{
+				Webserver: Webserver{
+					Port:       8443,
+					URL:        "https://localhost:8443",
+					TLSKeyFile: "/etc/ssl/server.key",
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "missing port",
 			config: func() Config {
 				c := validBase()
@@ -247,6 +281,24 @@ func TestConfigValidation(t *testing.T) {
 				t.Errorf("validate() error = %v, want %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestTLSEnabled(t *testing.T) {
+	if (&Webserver{}).TLSEnabled() {
+		t.Error("expected TLSEnabled=false when both fields are empty")
+	}
+
+	if (&Webserver{TLSCertFile: "cert.pem"}).TLSEnabled() {
+		t.Error("expected TLSEnabled=false when only cert is set")
+	}
+
+	if (&Webserver{TLSKeyFile: "key.pem"}).TLSEnabled() {
+		t.Error("expected TLSEnabled=false when only key is set")
+	}
+
+	if !(&Webserver{TLSCertFile: "cert.pem", TLSKeyFile: "key.pem"}).TLSEnabled() {
+		t.Error("expected TLSEnabled=true when both are set")
 	}
 }
 

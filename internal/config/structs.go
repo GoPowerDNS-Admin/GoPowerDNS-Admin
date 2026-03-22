@@ -34,6 +34,8 @@ type Webserver struct {
 	URL                 string  `mapstructure:"url"`
 	CookieEncryptionKey string  `mapstructure:"cookieencryptionkey"`
 	Argon2Salt          string  `mapstructure:"argon2salt"`
+	TLSCertFile         string  `mapstructure:"tlscertfile"`
+	TLSKeyFile          string  `mapstructure:"tlskeyfile"`
 	Session             Session `mapstructure:"session"`
 }
 

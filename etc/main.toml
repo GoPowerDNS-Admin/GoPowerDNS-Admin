@@ -12,6 +12,11 @@ URL = "http://localhost:8080"
 BrowseStatic = false
 
 
+# TLS (optional) — both fields must be set together to enable HTTPS.
+# Leave empty to run plain HTTP (e.g. behind a TLS-terminating reverse proxy).
+# TLSCertFile = "/etc/ssl/certs/server.crt"
+# TLSKeyFile  = "/etc/ssl/private/server.key"
+
 [webserver.session]
 ExpiryTime = "24h"
 # RefreshTime = 3600

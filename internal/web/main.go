@@ -57,7 +57,19 @@ func (s *Service) Start(addr string) error {
 	var doneFiber = make(chan bool)
 
 	go func() {
-		if err := s.App.Listen(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		listenCfg := fiber.ListenConfig{}
+
+		if s.cfg.Webserver.TLSEnabled() {
+			log.Info().
+				Str("cert", s.cfg.Webserver.TLSCertFile).
+				Str("key", s.cfg.Webserver.TLSKeyFile).
+				Msg("TLS enabled")
+
+			listenCfg.CertFile = s.cfg.Webserver.TLSCertFile
+			listenCfg.CertKeyFile = s.cfg.Webserver.TLSKeyFile
+		}
+
+		if err := s.App.Listen(addr, listenCfg); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal().Msgf("fiber listen error: %v", err)
 		}
 

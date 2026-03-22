@@ -121,7 +121,7 @@ function zoneTagList(zones) {
         zones,
         search: '',
         currentPage: 1,
-        pageSize: 25,
+        pageSize: 10,
         get filtered() {
             const q = this.search.trim().toLowerCase();
             if (!q) return this.zones;

@@ -50,6 +50,12 @@ func (s *Service) validateRecordsUpdateAreValidTypes(
 
 	for _, change := range request.Changes {
 		if !allowedTypesMap[change.Type] {
+			// Allow editing records that already exist even if their type is not in
+			// the allowed-types list (e.g. SOA records managed outside the admin UI).
+			if change.Existed {
+				continue
+			}
+
 			log.Warn().Str("zone_name", zoneName).Str("record_type", change.Type).
 				Msg("attempt to modify disallowed record type")
 

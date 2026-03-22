@@ -397,7 +397,7 @@ var defaultRecordSettings = config.Record{
 		Help:        "Mailbox and TXT pointer (e.g., hostmaster.example.com. txt-host.example.com.).",
 	},
 	"SOA": {
-		Forward: false, Reverse: false,
+		Forward: true, Reverse: true,
 		Description: "Start of Authority",
 		Help:        "Use the SOA editor by editing an existing SOA record.",
 	},

@@ -242,13 +242,17 @@
                                                                         <i class="bi bi-pencil me-2 text-primary"></i>Edit
                                                                     </button>
                                                                 </li>
-                                                                <li><hr class="dropdown-divider"></li>
-                                                                <li>
-                                                                    <button class="dropdown-item text-danger" type="button"
-                                                                            @click="deleteRecord(record)">
-                                                                        <i class="bi bi-trash me-2"></i>Delete
-                                                                    </button>
-                                                                </li>
+                                                                <template x-if="record.type !== 'SOA'">
+                                                                    <div>
+                                                                        <li><hr class="dropdown-divider"></li>
+                                                                        <li>
+                                                                            <button class="dropdown-item text-danger" type="button"
+                                                                                    @click="deleteRecord(record)">
+                                                                                <i class="bi bi-trash me-2"></i>Delete
+                                                                            </button>
+                                                                        </li>
+                                                                    </div>
+                                                                </template>
                                                             </ul>
                                                         </div>
                                                     </td>
@@ -340,9 +344,9 @@
                                                     <!-- Add mode: dropdown (drives field switching) -->
                                                     <select class="form-select" id="record-type-input" x-model="recordForm.type"
                                                             x-show="!recordForm.isEditing" required :disabled="recordForm.isEditing">
-                                                        {{range .AllowedRecordTypes}}
+                                                        {{range .AllowedRecordTypes}}{{if ne .Type "SOA"}}
                                                         <option value="{{.Type}}">{{.Type}}{{if .Description}} — {{.Description}}{{end}}</option>
-                                                        {{end}}
+                                                        {{end}}{{end}}
                                                     </select>
                                                     <!-- Edit mode: read-only badge (type cannot change) -->
                                                     <div x-show="recordForm.isEditing" class="form-control-plaintext">

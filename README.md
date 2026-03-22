@@ -29,6 +29,7 @@ This project is under active, heavy development. Interfaces and configuration ma
 - Go backend with server-rendered templates
 - Nightly builds for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
 - Health check endpoint (`GET /health`) for load balancer and container probes
+- Native TLS (manual cert/key) and automatic TLS via Let's Encrypt / ACME
 
 ## Getting Started (Development)
 
@@ -171,6 +172,40 @@ All significant user actions (login, logout, zone create/update/delete, record c
 | `powerdns` | `ok` / `not_configured` | PDNS client presence; `not_configured` does not degrade overall status |
 
 Returns **200** when healthy, **503** when `alive=shutting_down` or the database is unreachable. Suitable for Kubernetes liveness/readiness probes and load balancer health checks.
+
+## TLS / HTTPS
+
+Three modes are supported; configure them in `etc/main.toml` (or an overlay file).
+
+### Plain HTTP (default)
+
+No extra config needed. Suitable when TLS is terminated by a reverse proxy.
+
+### Manual certificate
+
+Provide both fields together — they must be set as a pair:
+
+```toml
+[webserver]
+TLSCertFile = "/etc/ssl/certs/server.crt"
+TLSKeyFile  = "/etc/ssl/private/server.key"
+```
+
+The certificate is loaded once at startup. To pick up a renewed certificate, restart the server.
+
+### Let's Encrypt / ACME (automatic)
+
+Obtains and renews a certificate automatically. The server must be reachable on port 80 for the HTTP-01 challenge:
+
+```toml
+[webserver]
+ACMEEnabled  = true
+ACMEDomain   = "pdns.example.com"
+ACMEEmail    = "admin@example.com"
+ACMECacheDir = "/var/lib/go-pdns/acme-cache"
+```
+
+Renewed certificates are picked up on the next TLS handshake — no restart required. ACME and manual `TLSCertFile`/`TLSKeyFile` are mutually exclusive.
 
 ## Background & Inspiration
 

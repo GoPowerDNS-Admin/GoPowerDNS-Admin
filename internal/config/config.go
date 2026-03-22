@@ -152,6 +152,10 @@ func validate(c *Config) error {
 		return errors.Wrap(err, invalidErrMessage)
 	}
 
+	if err := validateReverseProxy(c); err != nil {
+		return errors.Wrap(err, invalidErrMessage)
+	}
+
 	return nil
 }
 
@@ -252,4 +256,17 @@ func validateAuth(c *Config) error {
 // TLSEnabled reports whether TLS is configured (both cert and key are set).
 func (w *Webserver) TLSEnabled() bool {
 	return w.TLSCertFile != "" && w.TLSKeyFile != ""
+}
+
+func validateReverseProxy(c *Config) error {
+	rp := c.Webserver.ReverseProxy
+	if !rp.Enabled {
+		return nil
+	}
+
+	if len(rp.TrustedIPs) == 0 {
+		return ErrReverseProxyMissingTrustedIPs
+	}
+
+	return nil
 }

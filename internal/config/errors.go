@@ -74,4 +74,10 @@ var (
 
 	// ErrACMEMissingCacheDir is returned when ACME is enabled but no cache dir is set.
 	ErrACMEMissingCacheDir = errors.New("webserver.acmecachedir is required when acmeenabled is true")
+
+	// ErrReverseProxyMissingTrustedIPs is returned when reverse proxy is enabled
+	// but no trusted IP addresses are configured.
+	ErrReverseProxyMissingTrustedIPs = errors.New(
+		"webserver.reverseproxy.trustedips must not be empty when reverseproxy.enabled is true",
+	)
 )

@@ -25,6 +25,14 @@ BrowseStatic = false
 # ACMEEmail    = "admin@example.com"
 # ACMECacheDir = "/var/lib/go-pdns/acme-cache"
 
+# Reverse proxy support (HAProxy, nginx, Traefik, etc.)
+# Set enabled = true and list your proxy IP(s)/CIDRs to trust X-Forwarded-For.
+# Without this, c.IP() returns the real remote TCP address regardless of headers.
+# [webserver.reverseproxy]
+# enabled     = true
+# trustedips  = ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+# proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
+
 [webserver.session]
 ExpiryTime = "24h"
 # RefreshTime = 3600

@@ -30,6 +30,7 @@ This project is under active, heavy development. Interfaces and configuration ma
 - Nightly builds for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
 - Health check endpoint (`GET /health`) for load balancer and container probes
 - Native TLS (manual cert/key) and automatic TLS via Let's Encrypt / ACME
+- Reverse proxy support (HAProxy, nginx, Traefik) with configurable trusted IP allowlist and proxy header
 
 ## Getting Started (Development)
 
@@ -206,6 +207,25 @@ ACMECacheDir = "/var/lib/go-pdns/acme-cache"
 ```
 
 Renewed certificates are picked up on the next TLS handshake — no restart required. ACME and manual `TLSCertFile`/`TLSKeyFile` are mutually exclusive.
+
+## Reverse Proxy
+
+When running behind HAProxy, nginx, Traefik, or any other reverse proxy, enable the `[webserver.reverseproxy]` block so that `c.IP()` returns the real client IP instead of the proxy's address. This affects activity log entries and any IP-based logic.
+
+```toml
+[webserver.reverseproxy]
+enabled     = true
+trustedips  = ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
+```
+
+| Field         | Default           | Description                                                                                  |
+| ------------- | ----------------- | -------------------------------------------------------------------------------------------- |
+| `enabled`     | `false`           | Activates trusted-proxy IP checking. When `false`, `proxyheader` is trusted unconditionally. |
+| `trustedips`  | _(none)_          | Required when `enabled = true`. IPv4/IPv6 addresses or CIDR ranges of your upstream proxies. |
+| `proxyheader` | `X-Forwarded-For` | HTTP header used to read the real client IP.                                                 |
+
+> **Note:** `trustedips` must not be empty when `enabled = true`; the application will refuse to start otherwise.
 
 ## Background & Inspiration
 

@@ -23,13 +23,20 @@ FROM alpine:3
 # tzdata: allows the container timezone to be set via TZ env var.
 RUN apk add --no-cache ca-certificates tzdata
 
+RUN addgroup -S gopdns && adduser -S -G gopdns gopdns
+
 WORKDIR /app
 
 COPY --from=builder /build/go-pdns /app/go-pdns
 
 # /etc/go-pdns  — mount your main.toml here (required)
 # /var/lib/go-pdns — persistent data: SQLite DB files, ACME certificate cache
+RUN mkdir -p /etc/go-pdns /var/lib/go-pdns \
+    && chown gopdns:gopdns /etc/go-pdns /var/lib/go-pdns
+
 VOLUME ["/etc/go-pdns", "/var/lib/go-pdns"]
+
+USER gopdns
 
 EXPOSE 8080
 

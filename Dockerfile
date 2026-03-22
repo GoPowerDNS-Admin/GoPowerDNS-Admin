@@ -8,16 +8,15 @@ ARG VERSION=dev
 
 WORKDIR /build
 
-# Copy dependency manifests and vendored modules first so Docker can cache the
-# layer when only application source changes.
+# Download dependencies first so this layer is cached when only source changes.
 COPY go.mod go.sum ./
-COPY vendor/ vendor/
+RUN go mod download
 
 COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux \
-    go build -mod=vendor \
-    -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=${VERSION}" \
+    go build \
+    -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${VERSION}" \
     -o go-pdns .
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────

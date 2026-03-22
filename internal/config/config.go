@@ -141,6 +141,41 @@ func validate(c *Config) error {
 		return errors.Wrap(err, invalidErrMessage)
 	}
 
+	certSet := c.Webserver.TLSCertFile != ""
+	keySet := c.Webserver.TLSKeyFile != ""
+
+	if certSet != keySet {
+		return errors.Wrap(ErrTLSPartialConfig, invalidErrMessage)
+	}
+
+	if err := validateACME(c); err != nil {
+		return errors.Wrap(err, invalidErrMessage)
+	}
+
+	return nil
+}
+
+func validateACME(c *Config) error {
+	if !c.Webserver.ACMEEnabled {
+		return nil
+	}
+
+	if c.Webserver.TLSCertFile != "" || c.Webserver.TLSKeyFile != "" {
+		return ErrACMEConflict
+	}
+
+	if c.Webserver.ACMEDomain == "" {
+		return ErrACMEMissingDomain
+	}
+
+	if c.Webserver.ACMEEmail == "" {
+		return ErrACMEMissingEmail
+	}
+
+	if c.Webserver.ACMECacheDir == "" {
+		return ErrACMEMissingCacheDir
+	}
+
 	return nil
 }
 
@@ -212,4 +247,9 @@ func validateAuth(c *Config) error {
 	}
 
 	return nil
+}
+
+// TLSEnabled reports whether TLS is configured (both cert and key are set).
+func (w *Webserver) TLSEnabled() bool {
+	return w.TLSCertFile != "" && w.TLSKeyFile != ""
 }

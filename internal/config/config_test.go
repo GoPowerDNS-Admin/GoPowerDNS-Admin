@@ -76,6 +76,101 @@ func TestConfigValidation(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "valid config with TLS",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.TLSCertFile = "/etc/ssl/server.crt"
+				c.Webserver.TLSKeyFile = "/etc/ssl/server.key"
+
+				return c
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "TLS cert without key",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.TLSCertFile = "/etc/ssl/server.crt"
+
+				return c
+			}(),
+			wantErr: ErrTLSPartialConfig,
+		},
+		{
+			name: "TLS key without cert",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.TLSKeyFile = "/etc/ssl/server.key"
+
+				return c
+			}(),
+			wantErr: ErrTLSPartialConfig,
+		},
+		{
+			name: "valid ACME config",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMEEmail = "admin@example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+
+				return c
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "ACME conflicts with TLS cert",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMEEmail = "admin@example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+				c.Webserver.TLSCertFile = "/etc/ssl/server.crt"
+				c.Webserver.TLSKeyFile = "/etc/ssl/server.key"
+
+				return c
+			}(),
+			wantErr: ErrACMEConflict,
+		},
+		{
+			name: "ACME missing domain",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEEmail = "admin@example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+
+				return c
+			}(),
+			wantErr: ErrACMEMissingDomain,
+		},
+		{
+			name: "ACME missing email",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+
+				return c
+			}(),
+			wantErr: ErrACMEMissingEmail,
+		},
+		{
+			name: "ACME missing cache dir",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMEEmail = "admin@example.com"
+
+				return c
+			}(),
+			wantErr: ErrACMEMissingCacheDir,
+		},
+		{
 			name: "missing port",
 			config: func() Config {
 				c := validBase()
@@ -247,6 +342,24 @@ func TestConfigValidation(t *testing.T) {
 				t.Errorf("validate() error = %v, want %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestTLSEnabled(t *testing.T) {
+	if (&Webserver{}).TLSEnabled() {
+		t.Error("expected TLSEnabled=false when both fields are empty")
+	}
+
+	if (&Webserver{TLSCertFile: "cert.pem"}).TLSEnabled() {
+		t.Error("expected TLSEnabled=false when only cert is set")
+	}
+
+	if (&Webserver{TLSKeyFile: "key.pem"}).TLSEnabled() {
+		t.Error("expected TLSEnabled=false when only key is set")
+	}
+
+	if !(&Webserver{TLSCertFile: "cert.pem", TLSKeyFile: "key.pem"}).TLSEnabled() {
+		t.Error("expected TLSEnabled=true when both are set")
 	}
 }
 

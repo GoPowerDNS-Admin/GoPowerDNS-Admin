@@ -58,4 +58,20 @@ var (
 
 	// ErrDBMissingEngine is returned when no database engine is configured.
 	ErrDBMissingEngine = errors.New("db.gormengine is required (sqlite, mysql, or postgres)")
+
+	// ErrTLSPartialConfig is returned when only one of TLSCertFile / TLSKeyFile
+	// is set. Both must be provided together.
+	ErrTLSPartialConfig = errors.New("webserver.tlscertfile and webserver.tlskeyfile must both be set to enable TLS")
+
+	// ErrACMEConflict is returned when ACME is enabled alongside manual TLS cert/key.
+	ErrACMEConflict = errors.New("webserver.acmeenabled cannot be used together with tlscertfile/tlskeyfile")
+
+	// ErrACMEMissingDomain is returned when ACME is enabled but no domain is set.
+	ErrACMEMissingDomain = errors.New("webserver.acmedomain is required when acmeenabled is true")
+
+	// ErrACMEMissingEmail is returned when ACME is enabled but no email is set.
+	ErrACMEMissingEmail = errors.New("webserver.acmeemail is required when acmeenabled is true")
+
+	// ErrACMEMissingCacheDir is returned when ACME is enabled but no cache dir is set.
+	ErrACMEMissingCacheDir = errors.New("webserver.acmecachedir is required when acmeenabled is true")
 )

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"golang.org/x/crypto/acme/autocert"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/html/v3"
 	"github.com/rs/zerolog/log"
@@ -57,7 +58,49 @@ func (s *Service) Start(addr string) error {
 	var doneFiber = make(chan bool)
 
 	go func() {
-		if err := s.App.Listen(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		listenCfg := fiber.ListenConfig{}
+
+		switch {
+		case s.cfg.Webserver.ACMEEnabled:
+			m := &autocert.Manager{
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist(s.cfg.Webserver.ACMEDomain),
+				Cache:      autocert.DirCache(s.cfg.Webserver.ACMECacheDir),
+				Email:      s.cfg.Webserver.ACMEEmail,
+			}
+
+			// Start HTTP-01 challenge listener on port 80.
+			go func() {
+				challengeAddr := listenHost(addr) + ":80"
+				log.Info().Str("addr", challengeAddr).Msg("ACME HTTP-01 challenge listener starting")
+
+				srv := &http.Server{ //nolint:gosec // port 80 is intentional for ACME HTTP-01 challenges
+					Addr:    challengeAddr,
+					Handler: m.HTTPHandler(nil),
+				}
+				if err := srv.ListenAndServe(); err != nil {
+					log.Error().Err(err).Msg("ACME HTTP-01 challenge listener stopped")
+				}
+			}()
+
+			log.Info().
+				Str("domain", s.cfg.Webserver.ACMEDomain).
+				Str("cache", s.cfg.Webserver.ACMECacheDir).
+				Msg("ACME/Let's Encrypt enabled")
+
+			listenCfg.AutoCertManager = m
+
+		case s.cfg.Webserver.TLSEnabled():
+			log.Info().
+				Str("cert", s.cfg.Webserver.TLSCertFile).
+				Str("key", s.cfg.Webserver.TLSKeyFile).
+				Msg("TLS enabled")
+
+			listenCfg.CertFile = s.cfg.Webserver.TLSCertFile
+			listenCfg.CertKeyFile = s.cfg.Webserver.TLSKeyFile
+		}
+
+		if err := s.App.Listen(addr, listenCfg); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal().Msgf("fiber listen error: %v", err)
 		}
 
@@ -67,6 +110,17 @@ func (s *Service) Start(addr string) error {
 	<-doneFiber // wait for fiber to stop
 
 	return nil
+}
+
+// listenHost extracts the host part from an addr string like ":8443" or "0.0.0.0:8443".
+func listenHost(addr string) string {
+	for i := len(addr) - 1; i >= 0; i-- {
+		if addr[i] == ':' {
+			return addr[:i]
+		}
+	}
+
+	return addr
 }
 
 // WaitShutdown waits for graceful shutdown of tweety.

@@ -4,8 +4,6 @@ package zoneadd
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -17,7 +15,6 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/activitylog"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
@@ -36,61 +33,6 @@ const (
 
 	defaultTimeout = 30 * time.Second
 )
-
-// ZoneKind represents the zone kind/type.
-type ZoneKind string
-
-const (
-	// ZoneKindNative represents a Native zone.
-	ZoneKindNative ZoneKind = "Native"
-
-	// ZoneKindMaster represents a Primary/Master zone.
-	ZoneKindMaster ZoneKind = "Master"
-
-	// ZoneKindSlave represents a Secondary/Slave zone.
-	ZoneKindSlave ZoneKind = "Slave"
-)
-
-// SOAEditAPI represents the SOA-EDIT-API setting.
-type SOAEditAPI string
-
-const (
-	// SOAEditAPIDefault uses the default SOA-EDIT-API setting.
-	SOAEditAPIDefault SOAEditAPI = "DEFAULT"
-
-	// SOAEditAPIIncrease increments the serial number.
-	SOAEditAPIIncrease SOAEditAPI = "INCREASE"
-
-	// SOAEditAPIEpoch sets the serial to the current epoch timestamp.
-	SOAEditAPIEpoch SOAEditAPI = "EPOCH"
-
-	// SOAEditAPIOff disables SOA-EDIT-API.
-	SOAEditAPIOff SOAEditAPI = "OFF"
-)
-
-// ZoneType distinguishes forward from reverse zone creation modes.
-type ZoneType string
-
-const (
-	// ZoneTypeForward is a standard forward DNS zone.
-	ZoneTypeForward ZoneType = "forward"
-
-	// ZoneTypeReverseIPv4 is a reverse DNS zone for IPv4.
-	ZoneTypeReverseIPv4 ZoneType = "reverse-ipv4"
-
-	// ZoneTypeReverseIPv6 is a reverse DNS zone for IPv6.
-	ZoneTypeReverseIPv6 ZoneType = "reverse-ipv6"
-)
-
-// ZoneForm represents the form data for creating a new zone.
-type ZoneForm struct {
-	ZoneType       ZoneType   `form:"zone_type"`
-	Name           string     `form:"name"`
-	ReverseNetwork string     `form:"reverse_network"` // CIDR for reverse zone conversion
-	Kind           ZoneKind   `form:"kind"            validate:"required,oneof=Native Master Slave"`
-	SOAEditAPI     SOAEditAPI `form:"soa_edit_api"    validate:"required,oneof=DEFAULT INCREASE EPOCH OFF"`
-	Masters        string     `form:"masters"` // Comma-separated list for Slave zones
-}
 
 // Service is the add zone handler service.
 type Service struct {
@@ -262,64 +204,4 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	// Redirect to dashboard with success message
 	return c.Redirect().To(dashboard.Path + "?success=Zone created successfully")
-}
-
-// resolveZoneName sets form.Name based on the zone type.
-// For reverse zones it computes the name from the CIDR; for forward zones it
-// ensures a trailing dot.
-func resolveZoneName(form *ZoneForm) error {
-	switch form.ZoneType {
-	case ZoneTypeReverseIPv4:
-		name, err := ReverseIPv4Zone(form.ReverseNetwork)
-		if err != nil {
-			return fmt.Errorf("invalid IPv4 network: %w", err)
-		}
-
-		form.Name = name
-
-	case ZoneTypeReverseIPv6:
-		name, err := ReverseIPv6Zone(form.ReverseNetwork)
-		if err != nil {
-			return fmt.Errorf("invalid IPv6 network: %w", err)
-		}
-
-		form.Name = name
-
-	case ZoneTypeForward:
-		if !strings.HasSuffix(form.Name, ".") {
-			form.Name += "."
-		}
-	}
-
-	return nil
-}
-
-// createZone creates the zone in PowerDNS according to form.Kind.
-func createZone(ctx context.Context, form *ZoneForm) (*pdnsapi.Zone, error) {
-	soaEditAPIStr := string(form.SOAEditAPI)
-
-	switch form.Kind {
-	case ZoneKindNative:
-		return powerdns.Engine.Zones.AddNative(
-			ctx, form.Name,
-			false, "", false, "", soaEditAPIStr, false, nil,
-		)
-	case ZoneKindMaster:
-		return powerdns.Engine.Zones.AddMaster(
-			ctx, form.Name,
-			false, "", false, "", soaEditAPIStr, false, nil,
-		)
-	case ZoneKindSlave:
-		var masters []string
-
-		if form.Masters != "" {
-			for master := range strings.SplitSeq(form.Masters, ",") {
-				masters = append(masters, strings.TrimSpace(master))
-			}
-		}
-
-		return powerdns.Engine.Zones.AddSlave(ctx, form.Name, masters)
-	}
-
-	return nil, fmt.Errorf("unknown zone kind: %s", form.Kind)
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,49 +48,203 @@ func TestReadConfig(t *testing.T) {
 	}
 }
 
+// validBase returns a Config that passes all validation rules.
+func validBase() Config {
+	return Config{
+		Webserver: Webserver{
+			Port:                8080,
+			URL:                 "http://localhost:8080",
+			CookieEncryptionKey: "a-random-string-that-is-at-least-32-chars!",
+			Argon2Salt:          "a-random-salt-16c!",
+		},
+		DB: DB{GormEngine: "sqlite"},
+		Auth: Auth{
+			LocalDB: LocalDBAuth{Enabled: true},
+		},
+	}
+}
+
 func TestConfigValidation(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  Config
-		wantErr bool
+		wantErr error
 	}{
 		{
-			name: "valid config",
-			config: Config{
-				Webserver: Webserver{
-					Port: 8080,
-					URL:  "http://localhost:8080",
-				},
-			},
-			wantErr: false,
+			name:    "valid config",
+			config:  validBase(),
+			wantErr: nil,
 		},
 		{
 			name: "missing port",
-			config: Config{
-				Webserver: Webserver{
-					Port: 0,
-					URL:  "http://localhost:8080",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.Port = 0
+
+				return c
+			}(),
+			wantErr: ErrWebServerPortCanNotBeZero,
 		},
 		{
 			name: "missing URL",
-			config: Config{
-				Webserver: Webserver{
-					Port: 8080,
-					URL:  "",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.URL = ""
+
+				return c
+			}(),
+			wantErr: ErrEmptyURL,
+		},
+		{
+			name: "placeholder cookie key",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.CookieEncryptionKey = placeholderSecret
+
+				return c
+			}(),
+			wantErr: ErrPlaceholderCookieKey,
+		},
+		{
+			name: "cookie key too short",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.CookieEncryptionKey = "tooshort"
+
+				return c
+			}(),
+			wantErr: ErrCookieKeyTooShort,
+		},
+		{
+			name: "placeholder argon2 salt",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.Argon2Salt = placeholderSecret
+
+				return c
+			}(),
+			wantErr: ErrPlaceholderArgon2Salt,
+		},
+		{
+			name: "argon2 salt too short",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.Argon2Salt = "short"
+
+				return c
+			}(),
+			wantErr: ErrArgon2SaltTooShort,
+		},
+		{
+			name: "missing DB engine",
+			config: func() Config {
+				c := validBase()
+				c.DB.GormEngine = ""
+
+				return c
+			}(),
+			wantErr: ErrDBMissingEngine,
+		},
+		{
+			name: "no auth provider enabled",
+			config: func() Config {
+				c := validBase()
+				c.Auth.LocalDB.Enabled = false
+
+				return c
+			}(),
+			wantErr: ErrNoAuthProviderEnabled,
+		},
+		{
+			name: "OIDC enabled missing provider URL",
+			config: func() Config {
+				c := validBase()
+				c.Auth.OIDC = OIDCAuth{Enabled: true, ClientID: "id", ClientSecret: "secret", RedirectURL: "http://x"}
+
+				return c
+			}(),
+			wantErr: ErrOIDCMissingProviderURL,
+		},
+		{
+			name: "OIDC enabled missing client ID",
+			config: func() Config {
+				c := validBase()
+				c.Auth.OIDC = OIDCAuth{Enabled: true, ProviderURL: "https://x", ClientSecret: "secret", RedirectURL: "http://x"}
+
+				return c
+			}(),
+			wantErr: ErrOIDCMissingClientID,
+		},
+		{
+			name: "OIDC enabled missing client secret",
+			config: func() Config {
+				c := validBase()
+				c.Auth.OIDC = OIDCAuth{Enabled: true, ProviderURL: "https://x", ClientID: "id", RedirectURL: "http://x"}
+
+				return c
+			}(),
+			wantErr: ErrOIDCMissingClientSecret,
+		},
+		{
+			name: "OIDC enabled missing redirect URL",
+			config: func() Config {
+				c := validBase()
+				c.Auth.OIDC = OIDCAuth{Enabled: true, ProviderURL: "https://x", ClientID: "id", ClientSecret: "secret"}
+
+				return c
+			}(),
+			wantErr: ErrOIDCMissingRedirectURL,
+		},
+		{
+			name: "LDAP enabled missing host",
+			config: func() Config {
+				c := validBase()
+				c.Auth.LDAP = LDAPAuth{Enabled: true, Port: 389, BaseDN: "dc=example,dc=com"}
+
+				return c
+			}(),
+			wantErr: ErrLDAPMissingHost,
+		},
+		{
+			name: "LDAP enabled missing port",
+			config: func() Config {
+				c := validBase()
+				c.Auth.LDAP = LDAPAuth{Enabled: true, Host: "ldap.example.com", BaseDN: "dc=example,dc=com"}
+
+				return c
+			}(),
+			wantErr: ErrLDAPMissingPort,
+		},
+		{
+			name: "LDAP enabled missing base DN",
+			config: func() Config {
+				c := validBase()
+				c.Auth.LDAP = LDAPAuth{Enabled: true, Host: "ldap.example.com", Port: 389}
+
+				return c
+			}(),
+			wantErr: ErrLDAPMissingBaseDN,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validate(&tt.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validate() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr == nil {
+				if err != nil {
+					t.Errorf("validate() unexpected error: %v", err)
+				}
+
+				return
+			}
+
+			if err == nil {
+				t.Errorf("validate() expected error %v, got nil", tt.wantErr)
+				return
+			}
+
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("validate() error = %v, want %v", err, tt.wantErr)
 			}
 		})
 	}

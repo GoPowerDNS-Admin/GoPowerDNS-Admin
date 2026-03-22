@@ -107,6 +107,12 @@ func DumpConfigJSON(c *Config) (string, error) {
 	return buffer.String(), nil
 }
 
+const (
+	placeholderSecret  = "change_this_to_a_random_string"
+	minCookieKeyLength = 32
+	minArgon2SaltLen   = 16
+)
+
 // validate checks the minimal required config fields.
 func validate(c *Config) error {
 	const invalidErrMessage = "invalid config"
@@ -121,6 +127,88 @@ func validate(c *Config) error {
 
 	if c.Webserver.ShutDownTime == 0 {
 		c.Webserver.ShutDownTime = 5
+	}
+
+	if err := validateSecrets(c); err != nil {
+		return errors.Wrap(err, invalidErrMessage)
+	}
+
+	if err := validateDB(c); err != nil {
+		return errors.Wrap(err, invalidErrMessage)
+	}
+
+	if err := validateAuth(c); err != nil {
+		return errors.Wrap(err, invalidErrMessage)
+	}
+
+	return nil
+}
+
+func validateSecrets(c *Config) error {
+	key := c.Webserver.CookieEncryptionKey
+	if key == placeholderSecret {
+		return ErrPlaceholderCookieKey
+	}
+
+	if key != "" && len(key) < minCookieKeyLength {
+		return ErrCookieKeyTooShort
+	}
+
+	salt := c.Webserver.Argon2Salt
+	if salt == placeholderSecret {
+		return ErrPlaceholderArgon2Salt
+	}
+
+	if salt != "" && len(salt) < minArgon2SaltLen {
+		return ErrArgon2SaltTooShort
+	}
+
+	return nil
+}
+
+func validateDB(c *Config) error {
+	if c.DB.GormEngine == "" {
+		return ErrDBMissingEngine
+	}
+
+	return nil
+}
+
+func validateAuth(c *Config) error {
+	if !c.Auth.LocalDB.Enabled && !c.Auth.OIDC.Enabled && !c.Auth.LDAP.Enabled {
+		return ErrNoAuthProviderEnabled
+	}
+
+	if c.Auth.OIDC.Enabled {
+		if c.Auth.OIDC.ProviderURL == "" {
+			return ErrOIDCMissingProviderURL
+		}
+
+		if c.Auth.OIDC.ClientID == "" {
+			return ErrOIDCMissingClientID
+		}
+
+		if c.Auth.OIDC.ClientSecret == "" {
+			return ErrOIDCMissingClientSecret
+		}
+
+		if c.Auth.OIDC.RedirectURL == "" {
+			return ErrOIDCMissingRedirectURL
+		}
+	}
+
+	if c.Auth.LDAP.Enabled {
+		if c.Auth.LDAP.Host == "" {
+			return ErrLDAPMissingHost
+		}
+
+		if c.Auth.LDAP.Port == 0 {
+			return ErrLDAPMissingPort
+		}
+
+		if c.Auth.LDAP.BaseDN == "" {
+			return ErrLDAPMissingBaseDN
+		}
 	}
 
 	return nil

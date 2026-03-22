@@ -2,10 +2,9 @@ package zoneadd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
-
-	pdnsapi "github.com/joeig/go-powerdns/v3"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 )
@@ -41,20 +40,36 @@ func resolveZoneName(form *ZoneForm) error {
 }
 
 // createZone creates the zone in PowerDNS according to form.Kind.
-func createZone(ctx context.Context, form *ZoneForm) (*pdnsapi.Zone, error) {
+func createZone(ctx context.Context, form *ZoneForm) error {
+	// Validate kind before making any API calls.
+	switch form.Kind {
+	case ZoneKindNative, ZoneKindMaster, ZoneKindSlave:
+		// valid
+	default:
+		return fmt.Errorf("unknown zone kind: %s", form.Kind)
+	}
+
+	if powerdns.Engine.Client == nil {
+		return errors.New("PowerDNS client is not initialized")
+	}
+
 	soaEditAPIStr := string(form.SOAEditAPI)
 
 	switch form.Kind {
 	case ZoneKindNative:
-		return powerdns.Engine.Zones.AddNative(
+		_, err := powerdns.Engine.Zones.AddNative(
 			ctx, form.Name,
 			false, "", false, "", soaEditAPIStr, false, nil,
 		)
+
+		return err
 	case ZoneKindMaster:
-		return powerdns.Engine.Zones.AddMaster(
+		_, err := powerdns.Engine.Zones.AddMaster(
 			ctx, form.Name,
 			false, "", false, "", soaEditAPIStr, false, nil,
 		)
+
+		return err
 	case ZoneKindSlave:
 		var masters []string
 
@@ -64,8 +79,10 @@ func createZone(ctx context.Context, form *ZoneForm) (*pdnsapi.Zone, error) {
 			}
 		}
 
-		return powerdns.Engine.Zones.AddSlave(ctx, form.Name, masters)
+		_, err := powerdns.Engine.Zones.AddSlave(ctx, form.Name, masters)
+
+		return err
 	}
 
-	return nil, fmt.Errorf("unknown zone kind: %s", form.Kind)
+	return fmt.Errorf("unknown zone kind: %s", form.Kind)
 }

@@ -139,8 +139,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	createdZone, err := createZone(ctx, form)
-	if err != nil {
+	if err := createZone(ctx, form); err != nil {
 		var pdnsErr *pdnsapi.Error
 
 		isConflict := (errors.As(err, &pdnsErr) && pdnsErr.StatusCode == fiber.StatusConflict) ||
@@ -166,8 +165,6 @@ func (s *Service) Post(c fiber.Ctx) error {
 			"Error":      "Failed to create zone: " + err.Error(),
 		}, handler.BaseLayout)
 	}
-
-	_ = createdZone // Zone was created successfully
 
 	log.Info().
 		Str("zone_name", form.Name).

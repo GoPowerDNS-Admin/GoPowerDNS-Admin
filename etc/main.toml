@@ -2,9 +2,9 @@ Title = "GO PowerDNS-Admin"
 DevMode = false
 
 [webserver]
-# REQUIRED: replace with a random string of at least 32 characters before production use.
+# REQUIRED: replace it with a random string of at least 32 characters before production use.
 CookieEncryptionKey = "replace_with_a_random_string_before_going_to_production"
-# REQUIRED: replace before production use. Changing this after users exist forces password resets.
+# REQUIRED: replace it before production use. Changing this after users exist forces password resets.
 Argon2Salt = "replace_with_a_random_salt_before_going_to_production"
 Domain = "localhost"
 Port = 8080
@@ -13,12 +13,12 @@ BrowseStatic = false
 
 
 # TLS (optional) — both fields must be set together to enable HTTPS.
-# Leave empty to run plain HTTP (e.g. behind a TLS-terminating reverse proxy).
+# Leave empty to run plain HTTP (e.g., behind a TLS-terminating reverse proxy).
 # TLSCertFile = "/etc/ssl/certs/server.crt"
 # TLSKeyFile  = "/etc/ssl/private/server.key"
 
 # Let's Encrypt / ACME (optional) — mutually exclusive with TLSCertFile/TLSKeyFile.
-# Automatically obtains and renews a certificate for the given domain.
+# Automatically gets and renews a certificate for the given domain.
 # Requires the server to be reachable on port 80 (HTTP-01 challenge).
 # ACMEEnabled  = true
 # ACMEDomain   = "pdns.example.com"

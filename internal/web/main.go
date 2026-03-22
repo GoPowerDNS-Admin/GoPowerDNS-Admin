@@ -11,32 +11,33 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"golang.org/x/crypto/acme/autocert"
+	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/html/v3"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/acme/autocert"
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/activity"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/health"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/role"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
 	ttlsettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/ttl"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/role"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/tag"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/user"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/zonetag"
+	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/health"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/logout"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/profile"
 	profiletotp "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/profile/totp"
 	totphandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/totp"
-	oidchandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/auth/oidc"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/login"
-	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/logout"
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
 	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
@@ -230,6 +231,24 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			Browse: true,
 		}),
 	)
+
+	// security headers
+	app.Use(helmet.New(helmet.Config{
+		XFrameOptions:  "DENY",
+		ReferrerPolicy: "strict-origin-when-cross-origin",
+		// Alpine.js v3 evaluates x-data/x-on expressions via new Function(),
+		// requiring 'unsafe-eval'. Inline <style> in maincss.gohtml requires
+		// 'unsafe-inline' for styles.
+		ContentSecurityPolicy: "default-src 'self'; " +
+			"script-src 'self' 'unsafe-eval'; " +
+			"style-src 'self' 'unsafe-inline'; " +
+			"img-src 'self' data:; " +
+			"font-src 'self' data:; " +
+			"connect-src 'self'; " +
+			"frame-ancestors 'none'; " +
+			"base-uri 'self'; " +
+			"form-action 'self'",
+	}))
 
 	// basic auth middleware
 	app.Use(authmiddleware.Middleware)

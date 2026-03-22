@@ -142,12 +142,12 @@
                                                 {{ if $.CanUndo }}
                                                     {{ if eq .Action "record_changed" }}
                                                     <form method="post" action="/admin/activity/{{ .ID }}/undo"
-                                                          onsubmit="return confirm('Undo these record changes?');">
+                                                          data-confirm="Undo these record changes?">
                                                         <button type="submit" class="btn btn-sm btn-outline-warning mb-1">Undo</button>
                                                     </form>
                                                     {{ else if eq .Action "zone_deleted" }}
                                                     <form method="post" action="/admin/activity/{{ .ID }}/undo"
-                                                          onsubmit="return confirm('Restore this deleted zone? This will recreate it in PowerDNS.');">
+                                                          data-confirm="Restore this deleted zone? This will recreate it in PowerDNS.">
                                                         <button type="submit" class="btn btn-sm btn-outline-warning mb-1">Undo</button>
                                                     </form>
                                                     {{ end }}

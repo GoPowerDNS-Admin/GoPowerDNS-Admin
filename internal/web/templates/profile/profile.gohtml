@@ -175,7 +175,7 @@
                         {{ if .User.TOTPRequired }}
                         <div class="callout callout-warning mb-3">TOTP is required by your administrator and cannot be disabled.</div>
                         {{ else }}
-                        <form method="POST" action="/profile/totp/disable" onsubmit="return confirm('Disable two-factor authentication?')">
+                        <form method="POST" action="/profile/totp/disable" data-confirm="Disable two-factor authentication?">
                             <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-shield-x me-1"></i>Disable TOTP</button>
                         </form>
                         {{ end }}

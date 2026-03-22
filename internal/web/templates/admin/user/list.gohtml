@@ -83,7 +83,7 @@
                                                 {{ if or $isCurrentUser $isAdmin }}
                                                     <button type="button" class="btn btn-sm btn-outline-danger" disabled title="{{ if $isCurrentUser }}Cannot delete yourself{{ else }}Cannot delete admin users{{ end }}">Delete</button>
                                                 {{ else }}
-                                                    <form action="/admin/user/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                                                    <form action="/admin/user/{{ .ID }}/delete" method="post" class="d-inline" data-confirm="Delete this user?">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                                     </form>
                                                 {{ end }}

@@ -24,23 +24,38 @@ type Config struct {
 
 // Webserver implement webserver settings.
 type Webserver struct {
-	BrowseStatic        bool    `mapstructure:"browsestatic"`
-	CacheEnabled        bool    `mapstructure:"cacheenabled"`
-	CleanPath           bool    `mapstructure:"cleanpath"`
-	DisableRecover      bool    `mapstructure:"disablerecover"`
-	Domain              string  `mapstructure:"domain"`
-	Port                int     `mapstructure:"port"`
-	ShutDownTime        int     `mapstructure:"shutdowntime"`
-	URL                 string  `mapstructure:"url"`
-	CookieEncryptionKey string  `mapstructure:"cookieencryptionkey"`
-	Argon2Salt          string  `mapstructure:"argon2salt"`
-	TLSCertFile         string  `mapstructure:"tlscertfile"`
-	TLSKeyFile          string  `mapstructure:"tlskeyfile"`
-	ACMEEnabled         bool    `mapstructure:"acmeenabled"`
-	ACMEEmail           string  `mapstructure:"acmeemail"`
-	ACMEDomain          string  `mapstructure:"acmedomain"`
-	ACMECacheDir        string  `mapstructure:"acmecachedir"`
-	Session             Session `mapstructure:"session"`
+	BrowseStatic        bool         `mapstructure:"browsestatic"`
+	CacheEnabled        bool         `mapstructure:"cacheenabled"`
+	CleanPath           bool         `mapstructure:"cleanpath"`
+	DisableRecover      bool         `mapstructure:"disablerecover"`
+	Domain              string       `mapstructure:"domain"`
+	Port                int          `mapstructure:"port"`
+	ShutDownTime        int          `mapstructure:"shutdowntime"`
+	URL                 string       `mapstructure:"url"`
+	CookieEncryptionKey string       `mapstructure:"cookieencryptionkey"`
+	Argon2Salt          string       `mapstructure:"argon2salt"`
+	TLSCertFile         string       `mapstructure:"tlscertfile"`
+	TLSKeyFile          string       `mapstructure:"tlskeyfile"`
+	ACMEEnabled         bool         `mapstructure:"acmeenabled"`
+	ACMEEmail           string       `mapstructure:"acmeemail"`
+	ACMEDomain          string       `mapstructure:"acmedomain"`
+	ACMECacheDir        string       `mapstructure:"acmecachedir"`
+	Session             Session      `mapstructure:"session"`
+	ReverseProxy        ReverseProxy `mapstructure:"reverseproxy"`
+}
+
+// ReverseProxy holds settings for running behind a reverse proxy (HAProxy, nginx, etc.).
+type ReverseProxy struct {
+	// Enabled activates trusted-proxy IP checking. When false, the proxy header
+	// is trusted unconditionally (less secure; only suitable for local setups).
+	Enabled bool `mapstructure:"enabled"`
+	// TrustedIPs is the list of upstream proxy IP addresses or CIDR ranges to
+	// trust. Only used when Enabled is true. Accepts IPv4/IPv6 and CIDR notation
+	// (e.g. "192.168.1.0/24").
+	TrustedIPs []string `mapstructure:"trustedips"`
+	// ProxyHeader is the HTTP header used to read the real client IP.
+	// Defaults to "X-Forwarded-For". Other common values: "X-Real-IP".
+	ProxyHeader string `mapstructure:"proxyheader"`
 }
 
 // RecordTypeSettings defines whether a DNS record type can be edited in forward or reverse zones.

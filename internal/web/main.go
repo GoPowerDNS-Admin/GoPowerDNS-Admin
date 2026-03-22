@@ -199,6 +199,11 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	})
 
 	// create fiber app
+	rp := cfg.Webserver.ReverseProxy
+	if rp.ProxyHeader == "" {
+		rp.ProxyHeader = "X-Forwarded-For"
+	}
+
 	app := fiber.New(
 		fiber.Config{
 			ReadBufferSize:    8192,
@@ -207,6 +212,9 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			Immutable:         true,
 			Views:             templateEngine,
 			PassLocalsToViews: true,
+			ProxyHeader:       rp.ProxyHeader,
+			TrustProxy:        rp.Enabled,
+			TrustProxyConfig:  fiber.TrustProxyConfig{Proxies: rp.TrustedIPs},
 		},
 	)
 

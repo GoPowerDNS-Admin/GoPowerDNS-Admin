@@ -320,6 +320,39 @@ func TestConfigValidation(t *testing.T) {
 			}(),
 			wantErr: ErrLDAPMissingBaseDN,
 		},
+		{
+			name: "reverse proxy enabled with trusted IPs",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ReverseProxy = ReverseProxy{
+					Enabled:    true,
+					TrustedIPs: []string{"127.0.0.1", "10.0.0.0/8"},
+				}
+
+				return c
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "reverse proxy enabled without trusted IPs",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ReverseProxy = ReverseProxy{Enabled: true}
+
+				return c
+			}(),
+			wantErr: ErrReverseProxyMissingTrustedIPs,
+		},
+		{
+			name: "reverse proxy disabled without trusted IPs",
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ReverseProxy = ReverseProxy{Enabled: false}
+
+				return c
+			}(),
+			wantErr: nil,
+		},
 	}
 
 	for _, tt := range tests {

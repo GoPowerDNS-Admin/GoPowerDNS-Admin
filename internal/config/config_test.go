@@ -77,106 +77,98 @@ func TestConfigValidation(t *testing.T) {
 		},
 		{
 			name: "valid config with TLS",
-			config: Config{
-				Webserver: Webserver{
-					Port:        8443,
-					URL:         "https://localhost:8443",
-					TLSCertFile: "/etc/ssl/server.crt",
-					TLSKeyFile:  "/etc/ssl/server.key",
-				},
-			},
-			wantErr: false,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.TLSCertFile = "/etc/ssl/server.crt"
+				c.Webserver.TLSKeyFile = "/etc/ssl/server.key"
+
+				return c
+			}(),
+			wantErr: nil,
 		},
 		{
 			name: "TLS cert without key",
-			config: Config{
-				Webserver: Webserver{
-					Port:        8443,
-					URL:         "https://localhost:8443",
-					TLSCertFile: "/etc/ssl/server.crt",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.TLSCertFile = "/etc/ssl/server.crt"
+
+				return c
+			}(),
+			wantErr: ErrTLSPartialConfig,
 		},
 		{
 			name: "TLS key without cert",
-			config: Config{
-				Webserver: Webserver{
-					Port:       8443,
-					URL:        "https://localhost:8443",
-					TLSKeyFile: "/etc/ssl/server.key",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.TLSKeyFile = "/etc/ssl/server.key"
+
+				return c
+			}(),
+			wantErr: ErrTLSPartialConfig,
 		},
 		{
 			name: "valid ACME config",
-			config: Config{
-				Webserver: Webserver{
-					Port:         443,
-					URL:          "https://pdns.example.com",
-					ACMEEnabled:  true,
-					ACMEDomain:   "pdns.example.com",
-					ACMEEmail:    "admin@example.com",
-					ACMECacheDir: "/tmp/acme",
-				},
-			},
-			wantErr: false,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMEEmail = "admin@example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+
+				return c
+			}(),
+			wantErr: nil,
 		},
 		{
 			name: "ACME conflicts with TLS cert",
-			config: Config{
-				Webserver: Webserver{
-					Port:         443,
-					URL:          "https://pdns.example.com",
-					ACMEEnabled:  true,
-					ACMEDomain:   "pdns.example.com",
-					ACMEEmail:    "admin@example.com",
-					ACMECacheDir: "/tmp/acme",
-					TLSCertFile:  "/etc/ssl/server.crt",
-					TLSKeyFile:   "/etc/ssl/server.key",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMEEmail = "admin@example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+				c.Webserver.TLSCertFile = "/etc/ssl/server.crt"
+				c.Webserver.TLSKeyFile = "/etc/ssl/server.key"
+
+				return c
+			}(),
+			wantErr: ErrACMEConflict,
 		},
 		{
 			name: "ACME missing domain",
-			config: Config{
-				Webserver: Webserver{
-					Port:         443,
-					URL:          "https://pdns.example.com",
-					ACMEEnabled:  true,
-					ACMEEmail:    "admin@example.com",
-					ACMECacheDir: "/tmp/acme",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEEmail = "admin@example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+
+				return c
+			}(),
+			wantErr: ErrACMEMissingDomain,
 		},
 		{
 			name: "ACME missing email",
-			config: Config{
-				Webserver: Webserver{
-					Port:         443,
-					URL:          "https://pdns.example.com",
-					ACMEEnabled:  true,
-					ACMEDomain:   "pdns.example.com",
-					ACMECacheDir: "/tmp/acme",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMECacheDir = "/tmp/acme"
+
+				return c
+			}(),
+			wantErr: ErrACMEMissingEmail,
 		},
 		{
 			name: "ACME missing cache dir",
-			config: Config{
-				Webserver: Webserver{
-					Port:        443,
-					URL:         "https://pdns.example.com",
-					ACMEEnabled: true,
-					ACMEDomain:  "pdns.example.com",
-					ACMEEmail:   "admin@example.com",
-				},
-			},
-			wantErr: true,
+			config: func() Config {
+				c := validBase()
+				c.Webserver.ACMEEnabled = true
+				c.Webserver.ACMEDomain = "pdns.example.com"
+				c.Webserver.ACMEEmail = "admin@example.com"
+
+				return c
+			}(),
+			wantErr: ErrACMEMissingCacheDir,
 		},
 		{
 			name: "missing port",

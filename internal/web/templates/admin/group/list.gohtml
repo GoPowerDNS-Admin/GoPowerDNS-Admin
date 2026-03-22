@@ -91,7 +91,7 @@
                                             <td>{{ .Description }}</td>
                                             <td class="text-end">
                                                 <a href="/admin/group/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <form action="/admin/group/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete this group?');">
+                                                <form action="/admin/group/{{ .ID }}/delete" method="post" class="d-inline" data-confirm="Delete this group?">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                                 </form>
                                             </td>

@@ -118,14 +118,14 @@
                                 {{ if $.CanUndo }}
                                     {{ if eq .Entry.Action "record_changed" }}
                                     <form method="post" action="/admin/activity/{{ .Entry.ID }}/undo"
-                                          onsubmit="return confirm('Undo these record changes?');">
+                                          data-confirm="Undo these record changes?">
                                         <button type="submit" class="btn btn-sm btn-outline-warning">
                                             <i class="bi bi-arrow-counterclockwise"></i> Undo
                                         </button>
                                     </form>
                                     {{ else if eq .Entry.Action "zone_deleted" }}
                                     <form method="post" action="/admin/activity/{{ .Entry.ID }}/undo"
-                                          onsubmit="return confirm('Restore this deleted zone?');">
+                                          data-confirm="Restore this deleted zone?">
                                         <button type="submit" class="btn btn-sm btn-outline-warning">
                                             <i class="bi bi-arrow-counterclockwise"></i> Restore Zone
                                         </button>

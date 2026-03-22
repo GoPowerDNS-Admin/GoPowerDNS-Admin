@@ -77,7 +77,7 @@
                                                 {{ if .IsSystem }}
                                                     <button type="button" class="btn btn-sm btn-outline-danger" disabled title="System roles cannot be deleted">Delete</button>
                                                 {{ else }}
-                                                    <form action="/admin/role/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete role \'{{ .Name }}\'?');">
+                                                    <form action="/admin/role/{{ .ID }}/delete" method="post" class="d-inline" data-confirm="Delete role '{{ .Name }}'?">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                                     </form>
                                                 {{ end }}

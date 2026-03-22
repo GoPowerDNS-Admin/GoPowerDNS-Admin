@@ -68,11 +68,10 @@
                                             <td>{{.Label}}</td>
                                             <td>{{.Seconds}}</td>
                                             <td class="text-end">
-                                                <form method="POST" action="/admin/settings/ttl-presets" class="d-inline">
+                                                <form method="POST" action="/admin/settings/ttl-presets" class="d-inline" data-confirm="Remove this TTL preset?">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="seconds" value="{{.Seconds}}">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                            onclick="return confirm('Remove this TTL preset?')">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>

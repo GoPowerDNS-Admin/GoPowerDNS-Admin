@@ -68,7 +68,7 @@
                                             <td class="text-muted">{{ .Description }}</td>
                                             <td class="text-end">
                                                 <a href="/admin/tag/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <form action="/admin/tag/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Delete tag \'{{ .Name }}\'? This will remove all zone/user/group assignments for this tag.');">
+                                                <form action="/admin/tag/{{ .ID }}/delete" method="post" class="d-inline" data-confirm="Delete tag '{{ .Name }}'? This will remove all zone/user/group assignments for this tag.">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                                 </form>
                                             </td>

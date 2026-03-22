@@ -35,8 +35,8 @@
             <div class="container-fluid">
                 <p class="text-muted mb-3">Assign tags to zones to control which users and groups can access them. Zones without tags are accessible to all.</p>
 
-                <script>const _zoneTags = {{ .ZonesJSON }};</script>
-                <div x-data="zoneTagList(_zoneTags)">
+                <script type="application/json" id="zone-tags-data">{{ .ZonesJSON }}</script>
+                <div x-data="zoneTagList()">
 
                     <div class="card card-outline card-primary shadow">
                         <div class="card-header d-flex align-items-center gap-2">
@@ -115,29 +115,5 @@
 </div>
 <!--end::App Wrapper-->
 
-<script>
-function zoneTagList(zones) {
-    return {
-        zones,
-        search: '',
-        currentPage: 1,
-        pageSize: 10,
-        get filtered() {
-            const q = this.search.trim().toLowerCase();
-            if (!q) return this.zones;
-            return this.zones.filter(z => z.Name.toLowerCase().includes(q));
-        },
-        get totalPages() {
-            return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
-        },
-        get paged() {
-            const start = (this.currentPage - 1) * this.pageSize;
-            return this.filtered.slice(start, start + this.pageSize);
-        },
-        init() {
-            this.$watch('search', () => { this.currentPage = 1; });
-        },
-    };
-}
-</script>
+<script src="/static/js/zone-tag-list.js"></script>
 {{ end }}

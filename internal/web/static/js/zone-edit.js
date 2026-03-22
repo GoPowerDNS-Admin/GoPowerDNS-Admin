@@ -2,9 +2,10 @@
  * Zone Edit — Alpine.js component
  *
  * Pure utility functions (showToast, showConfirm, DNS helpers) come first and
- * have no dependency on Alpine. The Alpine component factory `zoneEditor(initData)`
+ * have no dependency on Alpine. The Alpine component factory `zoneEditor()`
  * follows and is registered both as a global and via Alpine.data so that it can be
- * invoked as  x-data="zoneEditor(_zoneData)"  regardless of script-load order.
+ * invoked as  x-data="zoneEditor()"  regardless of script-load order.
+ * Init data is read from <script type="application/json" id="zone-data">.
  */
 
 // ── Toast helper ──────────────────────────────────────────────────────────────
@@ -211,6 +212,10 @@ function canonicalizeContent(type, content) {
 // ── Alpine component factory ──────────────────────────────────────────────────
 
 function zoneEditor(initData) {
+    if (!initData) {
+        const el = document.getElementById('zone-data');
+        initData = el ? JSON.parse(el.textContent) : {};
+    }
     return {
         // ── Initialisation data ───────────────────────────────────────────────
         zoneName:     initData.zoneName     || '',
@@ -286,13 +291,15 @@ function zoneEditor(initData) {
             this.$watch('searchQuery',      () => { this.currentPage = 1; });
             this.$watch('activeTypeFilter', () => { this.currentPage = 1; });
 
-            // Fix Bootstrap aria-hidden focus-trap warning for the record modal.
-            const recModal = document.getElementById('recordModal');
-            if (recModal) {
-                recModal.addEventListener('hide.bs.modal', () => {
-                    if (recModal.contains(document.activeElement)) document.activeElement.blur();
-                });
-            }
+            // Fix Bootstrap aria-hidden focus-trap warning: blur any focused descendant on hide.
+            ['recordModal', 'soaModal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.addEventListener('hide.bs.modal', () => {
+                        if (modal.contains(document.activeElement)) document.activeElement.blur();
+                    });
+                }
+            });
         },
 
         // ── Computed ──────────────────────────────────────────────────────────

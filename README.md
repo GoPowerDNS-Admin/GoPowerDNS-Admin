@@ -227,6 +227,43 @@ proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
 
 > **Note:** `trustedips` must not be empty when `enabled = true`; the application will refuse to start otherwise.
 
+## Docker
+
+A multi-stage `Dockerfile` is included. The final image is based on Alpine and contains only the compiled binary.
+
+### Build
+
+```bash
+docker build -t gopowerdns-admin .
+```
+
+### Run
+
+Mount your `main.toml` into `/etc/go-pdns/` and a persistent data volume into `/var/lib/go-pdns/` for the SQLite database and ACME certificate cache:
+
+```bash
+docker run -d \
+  --name gopowerdns-admin \
+  -p 8080:8080 \
+  -v /path/to/your/etc:/etc/go-pdns:ro \
+  -v gopowerdns-data:/var/lib/go-pdns \
+  gopowerdns-admin
+```
+
+> **Tip:** When using SQLite, set `Name = "/var/lib/go-pdns/go-pdns.db"` in your `main.toml` so the database file lands in the persistent volume.
+> For ACME, set `ACMECacheDir = "/var/lib/go-pdns/acme-cache"`.
+
+### Environment variable overrides
+
+All config keys can be overridden via environment variables prefixed with `GPDNS_`:
+
+```bash
+docker run -d \
+  -e GPDNS_WEBSERVER_PORT=9090 \
+  -e GPDNS_DB_GORMENGINE=sqlite \
+  ...
+```
+
 ## Background & Inspiration
 
 The idea for this Go-based version came from the PowerDNS-Admin project (https://github.com/PowerDNS-Admin/PowerDNS-Admin), which is not further developed. This repository provides a Go implementation that follows similar goals while evolving independently.

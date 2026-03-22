@@ -229,19 +229,26 @@ proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
 
 ## Docker
 
-A multi-stage `Dockerfile` is included. The final image is based on Alpine and contains only the compiled binary.
+A multi-stage `Dockerfile` is included. The final image is based on Alpine, contains only the compiled binary, and runs as a non-root user (`gopdns`).
+
+| Path                | Purpose                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| `/etc/go-pdns/`     | Configuration — mount your `main.toml` here (read-only)      |
+| `/var/lib/go-pdns/` | Persistent data — SQLite DB files and ACME certificate cache |
 
 ### Build
 
 ```bash
-docker build -t gopowerdns-admin .
+make docker-build
+# or with a custom tag:
+make docker-build IMAGE_NAME=ghcr.io/myorg/gopowerdns-admin IMAGE_TAG=v1.0.0
 ```
 
 ### Run
 
-Mount your `main.toml` into `/etc/go-pdns/` and a persistent data volume into `/var/lib/go-pdns/` for the SQLite database and ACME certificate cache:
-
 ```bash
+make docker-run
+# or manually:
 docker run -d \
   --name gopowerdns-admin \
   -p 8080:8080 \
@@ -250,17 +257,27 @@ docker run -d \
   gopowerdns-admin
 ```
 
-> **Tip:** When using SQLite, set `Name = "/var/lib/go-pdns/go-pdns.db"` in your `main.toml` so the database file lands in the persistent volume.
-> For ACME, set `ACMECacheDir = "/var/lib/go-pdns/acme-cache"`.
+### Push
+
+```bash
+make docker-push IMAGE_NAME=ghcr.io/myorg/gopowerdns-admin IMAGE_TAG=v1.0.0
+```
+
+### Tips
+
+- **SQLite:** set `Name = "/var/lib/go-pdns/go-pdns.db"` in `main.toml` so the database lands in the persistent volume.
+- **ACME:** set `ACMECacheDir = "/var/lib/go-pdns/acme-cache"` for the same reason.
+- **Port:** defaults to `8080`; override with `GPDNS_WEBSERVER_PORT` (see below).
 
 ### Environment variable overrides
 
-All config keys can be overridden via environment variables prefixed with `GPDNS_`:
+All config keys can be overridden via environment variables prefixed with `GPDNS_`. The key maps directly to the TOML path with `_` as the separator:
 
 ```bash
 docker run -d \
   -e GPDNS_WEBSERVER_PORT=9090 \
   -e GPDNS_DB_GORMENGINE=sqlite \
+  -e GPDNS_DB_NAME=/var/lib/go-pdns/go-pdns.db \
   ...
 ```
 

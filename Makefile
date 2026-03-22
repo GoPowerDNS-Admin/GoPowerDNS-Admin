@@ -1,5 +1,5 @@
 
-.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
+.PHONY: help test test-race linter changelog vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
 
 # Docker image
 IMAGE_NAME ?= gopowerdns-admin
@@ -37,6 +37,7 @@ help:
 	@echo "  test              - Run all tests"
 	@echo "  linter            - Run golangci-lint"
 	@echo "  pre-commit        - Run pre-commit checks"
+	@echo "  changelog         - Regenerate CHANGELOG.md via git-cliff"
 	@echo ""
 	@echo "Vendor Dependencies:"
 	@echo "  vendor-update            - Update all vendor dependencies"
@@ -64,6 +65,11 @@ pre-commit: linter
 	@echo "Running Pre-commit checks..."
 	@pre-commit run --all-files
 	@echo "✓ Pre-commit checks passed"
+
+changelog:
+	@echo "Generating CHANGELOG.md..."
+	@git-cliff -o CHANGELOG.md
+	@echo "✓ CHANGELOG.md updated"
 
 vendor-update: vendor-bootstrap vendor-adminlte vendor-jquery vendor-datatables vendor-overlayscrollbars vendor-bootstrap-icons vendor-source-sans-3 vendor-alpinejs
 	@echo "✓ All vendor dependencies updated"

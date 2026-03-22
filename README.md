@@ -19,13 +19,14 @@ This project is under active, heavy development. Interfaces and configuration ma
   - OpenID Connect (OIDC)
   - LDAP
 - TOTP two-factor authentication for local accounts (per-user opt-in or admin-enforced)
-- RBAC (Role-Based Access Control) with role and permission CRUD
+- RBAC (Role-Based Access Control) with grouped permission cards and tri-state toggles
 - Zone tag-based access control
-- Activity/audit log with diff tracking and undo support (record changes and zone deletes)
+- Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
+- Admin-configurable TTL presets shown as a dropdown in the record modal
 - DNSSEC-managed records automatically hidden from the zone editor and dashboard
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite
-- Responsive web UI built on AdminLTE 4 / Bootstrap 5
-- Go backend with server-rendered templates and a small amount of client-side JS
+- Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
+- Go backend with server-rendered templates
 - Nightly builds for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
 
 ## Getting Started (Development)
@@ -108,17 +109,35 @@ See `internal/config/structs.go` for available configuration fields.
 
 The zone editor provides a full-featured DNS record management interface:
 
+- Reactive UI powered by Alpine.js — no page reloads for record add/edit/delete
+- Unified record modal for all record types with type-specific fields (MX priority, TXT chunking, DS algorithm badge)
+- TXT records: monospace textarea with automatic RFC-compliant 255-byte chunking and quote handling
 - Live search and per-type filter pills to quickly find records
+- Apex (`@`) records sorted first within each name group
 - Inline zone metadata (kind, serial, DNSSEC status) in the record list header
 - Collapsible zone settings card (SOA-EDIT-API, kind, masters)
 - DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
+- Admin-configurable TTL presets available as a dropdown in the record modal (see TTL Presets below)
+
+## TTL Presets
+
+Admins can configure a list of TTL presets at `/admin/settings/ttl-presets`. Presets appear as a dropdown in the record modal so operators can pick a standard TTL without typing. A **Custom…** option is always available for manual override. Sensible defaults (1 min – 1 week) are seeded on first run.
+
+## Roles & Permissions
+
+The role editor groups permissions by resource with icon badges and tri-state toggles:
+
+- Each resource group shows a count badge and an **All** toggle (checked / indeterminate / unchecked)
+- **Select All** / **Deselect All** buttons apply across all groups at once
 
 ## Activity Log & Undo
 
-All significant user actions (login, logout, zone create/update/delete, record changes) are recorded in the activity log, accessible at `/admin/activity`. Each entry stores a before/after diff. Admins can undo:
+All significant user actions (login, logout, zone create/update/delete, record changes) are recorded in the activity log, accessible at `/admin/activity`. Each entry stores a before/after diff. Admins can:
 
-- **Record changes** — restores a zone's RRsets to their previous state
-- **Zone deletes** — recreates the zone including all RRsets from a full snapshot taken at delete time
+- Browse the paginated list with filters; long diffs are truncated with a fade and a link to the detail page
+- Open a full detail page (`/admin/activity/:id`) showing the complete diff and an **Undo** button
+- **Undo record changes** — restores a zone's RRsets to their previous state
+- **Undo zone deletes** — recreates the zone including all RRsets from a full snapshot taken at delete time
 
 ## Background & Inspiration
 

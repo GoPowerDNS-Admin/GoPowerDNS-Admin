@@ -46,6 +46,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, _ *auth.
 
 	app.Get(Path, s.View)
 	app.Post(Path+"/password", s.ChangePassword)
+	app.Post(Path+"/preferences", s.SavePreferences)
 }
 
 // View renders the profile page for the currently logged-in user.
@@ -165,6 +166,30 @@ func (s *Service) currentUser(c fiber.Ctx) (models.User, bool) {
 	}
 
 	return user, true
+}
+
+// SavePreferences updates UI preferences (e.g. page sizes) for the current user.
+func (s *Service) SavePreferences(c fiber.Ctx) error {
+	user, ok := s.currentUser(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	var body struct {
+		ZoneEditPageSize *int `json:"zone_edit_page_size"`
+	}
+	if err := c.Bind().Body(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid body"})
+	}
+
+	if body.ZoneEditPageSize != nil {
+		ps := *body.ZoneEditPageSize
+		if ps >= 1 && ps <= 100 {
+			s.db.Model(&models.User{}).Where("id = ?", user.ID).Update("zone_edit_page_size", ps)
+		}
+	}
+
+	return c.JSON(fiber.Map{"ok": true})
 }
 
 func profileNav() *navigation.Context {

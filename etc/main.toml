@@ -16,16 +16,17 @@ ExpiryTime = "24h"
 # RefreshTime = 3600
 # RememberMeExpireTime = 604800
 
-# --- MySQL (default) ---
+# --- SQLite example ---
+# Only Name is used (file path). Host, Port, User, Password are ignored.
+# Sessions are stored in a separate file named <Name>-sessions.db.
+#
 [DB]
-GormEngine = "mysql"
-Host = "127.0.0.1"
-Port = 3306
-Name = "go-pdns"
-User = "go-pdns"
-Password = "go-pdns"
-Extras = "charset=utf8mb4&parseTime=True&loc=Local"
+GormEngine = "sqlite"
+Name       = "./go-pdns.db"
 
+# --- MySQL ---
+# [DB]
+#
 # --- PostgreSQL example ---
 # To use PostgreSQL, set GormEngine = "postgres" and update the fields below.
 # Extras sets the sslmode (e.g. "disable", "require", "verify-full").
@@ -39,14 +40,6 @@ Extras = "charset=utf8mb4&parseTime=True&loc=Local"
 # User       = "go-pdns"
 # Password   = "go-pdns"
 # Extras     = "disable"   # sslmode value
-
-# --- SQLite example ---
-# Only Name is used (file path). Host, Port, User, Password are ignored.
-# Sessions are stored in a separate file named <Name>-sessions.db.
-#
-# [DB]
-# GormEngine = "sqlite"
-# Name       = "./go-pdns.db"
 
 [log]
 Level = "info"

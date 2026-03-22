@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version"
 )
 
 var (
@@ -12,8 +13,9 @@ var (
 	cfg        config.Config
 
 	rootCmd = &cobra.Command{
-		Use:   "go-powerdns-admin",
-		Short: "GoPowerDNS-Admin is a web-based management tool for PowerDNS",
+		Use:     "go-powerdns-admin",
+		Version: version.Version,
+		Short:   "GoPowerDNS-Admin is a web-based management tool for PowerDNS",
 		Long: `GoPowerDNS-Admin is a web-based management tool for PowerDNS
 that provides an easy-to-use interface for managing domains, records, and users.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {

@@ -36,6 +36,10 @@ type Webserver struct {
 	Argon2Salt          string  `mapstructure:"argon2salt"`
 	TLSCertFile         string  `mapstructure:"tlscertfile"`
 	TLSKeyFile          string  `mapstructure:"tlskeyfile"`
+	ACMEEnabled         bool    `mapstructure:"acmeenabled"`
+	ACMEEmail           string  `mapstructure:"acmeemail"`
+	ACMEDomain          string  `mapstructure:"acmedomain"`
+	ACMECacheDir        string  `mapstructure:"acmecachedir"`
 	Session             Session `mapstructure:"session"`
 }
 

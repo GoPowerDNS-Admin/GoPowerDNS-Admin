@@ -17,6 +17,14 @@ BrowseStatic = false
 # TLSCertFile = "/etc/ssl/certs/server.crt"
 # TLSKeyFile  = "/etc/ssl/private/server.key"
 
+# Let's Encrypt / ACME (optional) — mutually exclusive with TLSCertFile/TLSKeyFile.
+# Automatically obtains and renews a certificate for the given domain.
+# Requires the server to be reachable on port 80 (HTTP-01 challenge).
+# ACMEEnabled  = true
+# ACMEDomain   = "pdns.example.com"
+# ACMEEmail    = "admin@example.com"
+# ACMECacheDir = "/var/lib/go-pdns/acme-cache"
+
 [webserver.session]
 ExpiryTime = "24h"
 # RefreshTime = 3600

@@ -110,6 +110,75 @@ func TestConfigValidation(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "valid ACME config",
+			config: Config{
+				Webserver: Webserver{
+					Port:         443,
+					URL:          "https://pdns.example.com",
+					ACMEEnabled:  true,
+					ACMEDomain:   "pdns.example.com",
+					ACMEEmail:    "admin@example.com",
+					ACMECacheDir: "/tmp/acme",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "ACME conflicts with TLS cert",
+			config: Config{
+				Webserver: Webserver{
+					Port:         443,
+					URL:          "https://pdns.example.com",
+					ACMEEnabled:  true,
+					ACMEDomain:   "pdns.example.com",
+					ACMEEmail:    "admin@example.com",
+					ACMECacheDir: "/tmp/acme",
+					TLSCertFile:  "/etc/ssl/server.crt",
+					TLSKeyFile:   "/etc/ssl/server.key",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ACME missing domain",
+			config: Config{
+				Webserver: Webserver{
+					Port:         443,
+					URL:          "https://pdns.example.com",
+					ACMEEnabled:  true,
+					ACMEEmail:    "admin@example.com",
+					ACMECacheDir: "/tmp/acme",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ACME missing email",
+			config: Config{
+				Webserver: Webserver{
+					Port:         443,
+					URL:          "https://pdns.example.com",
+					ACMEEnabled:  true,
+					ACMEDomain:   "pdns.example.com",
+					ACMECacheDir: "/tmp/acme",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ACME missing cache dir",
+			config: Config{
+				Webserver: Webserver{
+					Port:        443,
+					URL:         "https://pdns.example.com",
+					ACMEEnabled: true,
+					ACMEDomain:  "pdns.example.com",
+					ACMEEmail:   "admin@example.com",
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "missing port",
 			config: func() Config {
 				c := validBase()

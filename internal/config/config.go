@@ -148,6 +148,34 @@ func validate(c *Config) error {
 		return errors.Wrap(ErrTLSPartialConfig, invalidErrMessage)
 	}
 
+	if err := validateACME(c); err != nil {
+		return errors.Wrap(err, invalidErrMessage)
+	}
+
+	return nil
+}
+
+func validateACME(c *Config) error {
+	if !c.Webserver.ACMEEnabled {
+		return nil
+	}
+
+	if c.Webserver.TLSCertFile != "" || c.Webserver.TLSKeyFile != "" {
+		return ErrACMEConflict
+	}
+
+	if c.Webserver.ACMEDomain == "" {
+		return ErrACMEMissingDomain
+	}
+
+	if c.Webserver.ACMEEmail == "" {
+		return ErrACMEMissingEmail
+	}
+
+	if c.Webserver.ACMECacheDir == "" {
+		return ErrACMEMissingCacheDir
+	}
+
 	return nil
 }
 

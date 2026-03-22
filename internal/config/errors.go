@@ -31,29 +31,29 @@ var (
 		"at least one auth provider must be enabled (auth.localdb, auth.oidc, or auth.ldap)",
 	)
 
-	// ErrOIDCMissingProviderURL is returned when OIDC is enabled but ProviderURL
+	// ErrOIDCMissingProviderURL is returned when OIDC is enabled, but ProviderURL
 	// is empty.
 	ErrOIDCMissingProviderURL = errors.New("auth.oidc.provider_url is required when OIDC is enabled")
 
-	// ErrOIDCMissingClientID is returned when OIDC is enabled but ClientID is
+	// ErrOIDCMissingClientID is returned when OIDC is enabled, but ClientID is
 	// empty.
 	ErrOIDCMissingClientID = errors.New("auth.oidc.client_id is required when OIDC is enabled")
 
-	// ErrOIDCMissingClientSecret is returned when OIDC is enabled but
+	// ErrOIDCMissingClientSecret is returned when OIDC is enabled, but
 	// ClientSecret is empty.
 	ErrOIDCMissingClientSecret = errors.New("auth.oidc.client_secret is required when OIDC is enabled")
 
-	// ErrOIDCMissingRedirectURL is returned when OIDC is enabled but RedirectURL
+	// ErrOIDCMissingRedirectURL is returned when OIDC is enabled, but RedirectURL
 	// is empty.
 	ErrOIDCMissingRedirectURL = errors.New("auth.oidc.redirect_url is required when OIDC is enabled")
 
-	// ErrLDAPMissingHost is returned when LDAP is enabled but Host is empty.
+	// ErrLDAPMissingHost is returned when LDAP is enabled, but Host is empty.
 	ErrLDAPMissingHost = errors.New("auth.ldap.host is required when LDAP is enabled")
 
-	// ErrLDAPMissingPort is returned when LDAP is enabled but Port is zero.
+	// ErrLDAPMissingPort is returned when LDAP is enabled, but Port is zero.
 	ErrLDAPMissingPort = errors.New("auth.ldap.port is required when LDAP is enabled")
 
-	// ErrLDAPMissingBaseDN is returned when LDAP is enabled but BaseDN is empty.
+	// ErrLDAPMissingBaseDN is returned when LDAP is enabled, but BaseDN is empty.
 	ErrLDAPMissingBaseDN = errors.New("auth.ldap.base_dn is required when LDAP is enabled")
 
 	// ErrDBMissingEngine is returned when no database engine is configured.

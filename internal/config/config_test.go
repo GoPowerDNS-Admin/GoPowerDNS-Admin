@@ -310,7 +310,6 @@ func TestReadConfigWithEnvOverride(t *testing.T) {
 	}
 }
 
-
 func TestDumpConfigJSON(t *testing.T) {
 	var err error
 
@@ -334,7 +333,7 @@ func TestDumpConfigJSON(t *testing.T) {
 		t.Error("DumpConfigJSON() returned empty string")
 	}
 
-	// Check if output is valid JSON by checking for expected fields
+	// Check if the output is valid JSON by checking for expected fields
 	if !strings.Contains(jsonStr, "Test") {
 		t.Error("DumpConfigJSON() output should contain Title")
 	}

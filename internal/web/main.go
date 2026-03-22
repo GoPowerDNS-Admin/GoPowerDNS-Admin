@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/activity"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/role"
@@ -249,6 +250,12 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			"base-uri 'self'; " +
 			"form-action 'self'",
 	}))
+
+	// expose version to all templates via PassLocalsToViews
+	app.Use(func(c fiber.Ctx) error {
+		c.Locals("AppVersion", version.Version)
+		return c.Next()
+	})
 
 	// basic auth middleware
 	app.Use(authmiddleware.Middleware)

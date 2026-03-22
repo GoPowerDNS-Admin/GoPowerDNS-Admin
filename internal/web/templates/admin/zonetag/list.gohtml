@@ -78,21 +78,31 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="card-footer d-flex align-items-center justify-content-between" x-show="totalPages > 1">
-                            <nav aria-label="Zone tags pagination">
-                                <ul class="pagination pagination-sm mb-0">
-                                    <li class="page-item" :class="{ disabled: currentPage <= 1 }">
-                                        <button type="button" class="page-link" @click="if(currentPage > 1) currentPage--">«</button>
-                                    </li>
-                                    <li class="page-item disabled">
-                                        <span class="page-link" x-text="`${currentPage} / ${totalPages}`"></span>
-                                    </li>
-                                    <li class="page-item" :class="{ disabled: currentPage >= totalPages }">
-                                        <button type="button" class="page-link" @click="if(currentPage < totalPages) currentPage++">»</button>
-                                    </li>
-                                </ul>
-                            </nav>
-                            <span class="text-muted small" x-text="`${filtered.length} total`"></span>
+                        <div class="card-footer d-flex align-items-center gap-2">
+                            <label class="small text-muted mb-0">Rows:</label>
+                            <select class="form-select form-select-sm" style="width:auto"
+                                    x-model.number="pageSize" @change="currentPage = 1">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <template x-if="totalPages > 1">
+                                <nav aria-label="Zone tags pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item" :class="{ disabled: currentPage <= 1 }">
+                                            <button type="button" class="page-link" @click="if(currentPage > 1) currentPage--">«</button>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link" x-text="`${currentPage} / ${totalPages}`"></span>
+                                        </li>
+                                        <li class="page-item" :class="{ disabled: currentPage >= totalPages }">
+                                            <button type="button" class="page-link" @click="if(currentPage < totalPages) currentPage++">»</button>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </template>
+                            <span class="text-muted small ms-auto" x-text="`${filtered.length} total`"></span>
                         </div>
                     </div>
 

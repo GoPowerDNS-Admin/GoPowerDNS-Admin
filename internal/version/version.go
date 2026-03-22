@@ -1,23 +1,39 @@
 // Package version provides version information for the application.
 package version
 
-import "runtime/debug"
+import (
+	"runtime/debug"
+	"strings"
+)
 
-// version is set at build time via -ldflags:
+// version and branch are set at build time via -ldflags:
 //
 //	-X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=v1.2.3
+//	-X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=main
 const devVersion = "dev"
 
 var version = devVersion //nolint:gochecknoglobals // must be a var so -ldflags -X can override it at link time
+var branch = ""          //nolint:gochecknoglobals // must be a var so -ldflags -X can override it at link time
 
-// Get returns the application version. When not set via -ldflags (e.g. go build
-// on a branch), it falls back to the VCS commit hash embedded by the Go toolchain
-// (Go 1.18+), optionally suffixed with "-dirty" if there are uncommitted changes.
+// Get returns the application version, optionally suffixed with the branch
+// name when available (e.g. "abc1234-dirty (feat/my-feature)").
+// When not set via -ldflags, the commit hash is read from the VCS info
+// embedded by the Go toolchain (Go 1.18+).
 func Get() string {
-	if version != devVersion {
-		return version
+	v := version
+
+	if v == devVersion {
+		v = commitFromBuildInfo()
 	}
 
+	if b := strings.TrimSpace(branch); b != "" && b != "HEAD" {
+		return v + " (" + b + ")"
+	}
+
+	return v
+}
+
+func commitFromBuildInfo() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		return devVersion

@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p dist
           go build -v \
-            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty)" \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty) -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ github.ref_name }}" \
             -o dist/gopowerdns-admin-linux-${{ matrix.arch }} \
             .
 
@@ -80,7 +80,7 @@ jobs:
         run: |
           mkdir -p dist
           go build -v \
-            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty)" \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty) -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ github.ref_name }}" \
             -o dist/gopowerdns-admin-darwin-arm64 \
             .
 
@@ -94,7 +94,7 @@ jobs:
           CGO_LDFLAGS: "-arch x86_64"
         run: |
           go build -v \
-            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty)" \
+            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty) -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ github.ref_name }}" \
             -o dist/gopowerdns-admin-darwin-amd64 \
             .
 
@@ -127,7 +127,7 @@ jobs:
           run: |
             mkdir -p dist
             go build -v \
-              -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty)" \
+              -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(git describe --tags --always --dirty) -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ github.ref_name }}" \
               -o dist/gopowerdns-admin-freebsd-${{ matrix.arch }} \
               .
 

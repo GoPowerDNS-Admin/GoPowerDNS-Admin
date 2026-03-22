@@ -1,5 +1,5 @@
 
-.PHONY: help test test-race linter changelog vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
+.PHONY: help build test test-race linter changelog vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
 
 # Docker image
 IMAGE_NAME ?= gopowerdns-admin
@@ -34,6 +34,7 @@ help:
 	@echo "  load-test-data    - Load PowerDNS test data into running instance"
 	@echo ""
 	@echo "Development:"
+	@echo "  build             - Build binary with version and branch baked in"
 	@echo "  test              - Run all tests"
 	@echo "  linter            - Run golangci-lint"
 	@echo "  pre-commit        - Run pre-commit checks"
@@ -50,6 +51,15 @@ help:
 	@echo "  vendor-source-sans-3     - Update only Source Sans 3 font"
 	@echo "  vendor-alpinejs          - Update only Alpine.js"
 	@echo "  vendor-clean             - Remove all vendor dependencies"
+
+build:
+	@echo "Building..."
+	@go build \
+		-ldflags="-s -w \
+			-X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=$(shell git describe --tags --always --dirty) \
+			-X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=$(shell git rev-parse --abbrev-ref HEAD)" \
+		-o gopowerdns-admin .
+	@echo "✓ Built: gopowerdns-admin"
 
 test:
 	@echo "Running tests..."

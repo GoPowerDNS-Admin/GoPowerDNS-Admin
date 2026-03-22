@@ -4,6 +4,7 @@ package zoneadd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -165,36 +166,12 @@ func (s *Service) Post(c fiber.Ctx) error {
 	}
 
 	// Compute zone name for reverse zones, or normalise forward zone name
-	switch form.ZoneType {
-	case ZoneTypeReverseIPv4:
-		name, err := ReverseIPv4Zone(form.ReverseNetwork)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
-				"Navigation": nav,
-				"Form":       form,
-				"Error":      "Invalid IPv4 network: " + err.Error(),
-			}, handler.BaseLayout)
-		}
-
-		form.Name = name
-
-	case ZoneTypeReverseIPv6:
-		name, err := ReverseIPv6Zone(form.ReverseNetwork)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
-				"Navigation": nav,
-				"Form":       form,
-				"Error":      "Invalid IPv6 network: " + err.Error(),
-			}, handler.BaseLayout)
-		}
-
-		form.Name = name
-
-	case ZoneTypeForward:
-		// Ensure forward zone name ends with a dot
-		if !strings.HasSuffix(form.Name, ".") {
-			form.Name += "."
-		}
+	if err := resolveZoneName(form); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
+			"Navigation": nav,
+			"Form":       form,
+			"Error":      err.Error(),
+		}, handler.BaseLayout)
 	}
 
 	// Validate form
@@ -220,55 +197,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	// Prepare common parameters
-	var (
-		nameservers   []string
-		soaEditAPIStr = string(form.SOAEditAPI)
-		createdZone   *pdnsapi.Zone
-		err           error
-	)
-
-	switch form.Kind { // Create zone based on kind
-	case ZoneKindNative:
-		createdZone, err = powerdns.Engine.Zones.AddNative(
-			ctx,
-			form.Name,
-			false, // dnssec
-			"",    // nsec3Param
-			false, // nsec3Narrow
-			"",    // soaEdit
-			soaEditAPIStr,
-			false, // apiRectify
-			nameservers,
-		)
-	case ZoneKindMaster:
-		createdZone, err = powerdns.Engine.Zones.AddMaster(
-			ctx,
-			form.Name,
-			false, // dnssec
-			"",    // nsec3Param
-			false, // nsec3Narrow
-			"",    // soaEdit
-			soaEditAPIStr,
-			false, // apiRectify
-			nameservers,
-		)
-	case ZoneKindSlave:
-		var masters []string
-
-		if form.Masters != "" {
-			for master := range strings.SplitSeq(form.Masters, ",") {
-				masters = append(masters, strings.TrimSpace(master))
-			}
-		}
-
-		createdZone, err = powerdns.Engine.Zones.AddSlave(
-			ctx,
-			form.Name,
-			masters,
-		)
-	}
-
+	createdZone, err := createZone(ctx, form)
 	if err != nil {
 		var pdnsErr *pdnsapi.Error
 
@@ -333,4 +262,64 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	// Redirect to dashboard with success message
 	return c.Redirect().To(dashboard.Path + "?success=Zone created successfully")
+}
+
+// resolveZoneName sets form.Name based on the zone type.
+// For reverse zones it computes the name from the CIDR; for forward zones it
+// ensures a trailing dot.
+func resolveZoneName(form *ZoneForm) error {
+	switch form.ZoneType {
+	case ZoneTypeReverseIPv4:
+		name, err := ReverseIPv4Zone(form.ReverseNetwork)
+		if err != nil {
+			return fmt.Errorf("invalid IPv4 network: %w", err)
+		}
+
+		form.Name = name
+
+	case ZoneTypeReverseIPv6:
+		name, err := ReverseIPv6Zone(form.ReverseNetwork)
+		if err != nil {
+			return fmt.Errorf("invalid IPv6 network: %w", err)
+		}
+
+		form.Name = name
+
+	case ZoneTypeForward:
+		if !strings.HasSuffix(form.Name, ".") {
+			form.Name += "."
+		}
+	}
+
+	return nil
+}
+
+// createZone creates the zone in PowerDNS according to form.Kind.
+func createZone(ctx context.Context, form *ZoneForm) (*pdnsapi.Zone, error) {
+	soaEditAPIStr := string(form.SOAEditAPI)
+
+	switch form.Kind {
+	case ZoneKindNative:
+		return powerdns.Engine.Zones.AddNative(
+			ctx, form.Name,
+			false, "", false, "", soaEditAPIStr, false, nil,
+		)
+	case ZoneKindMaster:
+		return powerdns.Engine.Zones.AddMaster(
+			ctx, form.Name,
+			false, "", false, "", soaEditAPIStr, false, nil,
+		)
+	case ZoneKindSlave:
+		var masters []string
+
+		if form.Masters != "" {
+			for master := range strings.SplitSeq(form.Masters, ",") {
+				masters = append(masters, strings.TrimSpace(master))
+			}
+		}
+
+		return powerdns.Engine.Zones.AddSlave(ctx, form.Name, masters)
+	}
+
+	return nil, fmt.Errorf("unknown zone kind: %s", form.Kind)
 }

@@ -123,6 +123,14 @@ The zone editor provides a full-featured DNS record management interface:
 
 Admins can configure a list of TTL presets at `/admin/settings/ttl-presets`. Presets appear as a dropdown in the record modal so operators can pick a standard TTL without typing. A **Custom…** option is always available for manual override. Sensible defaults (1 min – 1 week) are seeded on first run.
 
+## Zone Tag Access Control
+
+Zone tags restrict which users and groups can see a zone. Zones without any tags are accessible to all authenticated users.
+
+- Assign tags to zones at `/admin/zone-tag`; the list is searchable and paginated (configurable rows per page)
+- Zones are sorted alphabetically
+- Assign tags to users and groups to grant access to matching zones
+
 ## Roles & Permissions
 
 The role editor groups permissions by resource with icon badges and tri-state toggles:

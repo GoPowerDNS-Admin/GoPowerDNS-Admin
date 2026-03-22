@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Build output
+GoPowerDNS-Admin
+bin/
+
+# Local config overrides (contain secrets)
+etc/local/
+
+# Local database files
+*.db
+*.db-sessions.db
+
+# Development / CI
+.github/
+.pre-commit-config.yaml
+sonar-project.properties
+cookies.txt
+
+# Docker dev helpers (not needed in the app image)
+docker/
+docker-compose.yaml

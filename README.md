@@ -227,6 +227,60 @@ proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
 
 > **Note:** `trustedips` must not be empty when `enabled = true`; the application will refuse to start otherwise.
 
+## Docker
+
+A multi-stage `Dockerfile` is included. The final image is based on Alpine, contains only the compiled binary, and runs as a non-root user (`gopdns`).
+
+| Path                | Purpose                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| `/etc/go-pdns/`     | Configuration — mount your `main.toml` here (read-only)      |
+| `/var/lib/go-pdns/` | Persistent data — SQLite DB files and ACME certificate cache |
+
+### Build
+
+```bash
+make docker-build
+# or with a custom tag:
+make docker-build IMAGE_NAME=ghcr.io/myorg/gopowerdns-admin IMAGE_TAG=v1.0.0
+```
+
+### Run
+
+```bash
+make docker-run
+# or manually:
+docker run -d \
+  --name gopowerdns-admin \
+  -p 8080:8080 \
+  -v /path/to/your/etc:/etc/go-pdns:ro \
+  -v gopowerdns-data:/var/lib/go-pdns \
+  gopowerdns-admin
+```
+
+### Push
+
+```bash
+make docker-push IMAGE_NAME=ghcr.io/myorg/gopowerdns-admin IMAGE_TAG=v1.0.0
+```
+
+### Tips
+
+- **SQLite:** set `Name = "/var/lib/go-pdns/go-pdns.db"` in `main.toml` so the database lands in the persistent volume.
+- **ACME:** set `ACMECacheDir = "/var/lib/go-pdns/acme-cache"` for the same reason.
+- **Port:** defaults to `8080`; override with `GPDNS_WEBSERVER_PORT` (see below).
+
+### Environment variable overrides
+
+All config keys can be overridden via environment variables prefixed with `GPDNS_`. The key maps directly to the TOML path with `_` as the separator:
+
+```bash
+docker run -d \
+  -e GPDNS_WEBSERVER_PORT=9090 \
+  -e GPDNS_DB_GORMENGINE=sqlite \
+  -e GPDNS_DB_NAME=/var/lib/go-pdns/go-pdns.db \
+  ...
+```
+
 ## Background & Inspiration
 
 The idea for this Go-based version came from the PowerDNS-Admin project (https://github.com/PowerDNS-Admin/PowerDNS-Admin), which is not further developed. This repository provides a Go implementation that follows similar goals while evolving independently.

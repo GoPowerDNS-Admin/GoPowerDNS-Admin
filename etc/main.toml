@@ -44,7 +44,7 @@ ExpiryTime = "24h"
 #
 [DB]
 GormEngine = "sqlite"
-Name       = "./go-pdns.db"
+Name       = "/var/lib/go-pdns/go-pdns.db"
 
 # --- MySQL ---
 # [DB]

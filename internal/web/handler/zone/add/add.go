@@ -25,10 +25,10 @@ const (
 	// Path is the path to the add zone page.
 	Path = handler.RootPath + "zone/add"
 
-	// TemplateName is the name of the add zone template.
+	// TemplateName is the name of the template.
 	TemplateName = "zone/add"
 
-	// PageTitle is the title of the add zone page.
+	// PageTitle is the title of the page.
 	PageTitle = "Add Zone"
 
 	defaultTimeout = 30 * time.Second
@@ -75,7 +75,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 		AddBreadcrumb("Dashboard", dashboard.Path, false).
 		AddBreadcrumb(PageTitle, Path, true)
 
-	// Render empty form
+	// Render an empty form
 	return c.Render(TemplateName, fiber.Map{
 		"Navigation": nav,
 		"Form":       &ZoneForm{},
@@ -107,7 +107,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 		form.ZoneType = ZoneTypeForward
 	}
 
-	// Compute zone name for reverse zones, or normalise forward zone name
+	// Compute zone name for reverse zones, or normalize forward zone name
 	if err := resolveZoneName(form); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
 			"Navigation": nav,
@@ -199,6 +199,6 @@ func (s *Service) Post(c fiber.Ctx) error {
 		},
 	)
 
-	// Redirect to dashboard with success message
+	// Redirect to the dashboard with a success message
 	return c.Redirect().To(dashboard.Path + "?success=Zone created successfully")
 }

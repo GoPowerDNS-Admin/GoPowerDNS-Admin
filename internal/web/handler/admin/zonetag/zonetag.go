@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"html/template"
+	"slices"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -100,6 +101,18 @@ func (s *Service) List(c fiber.Ctx) error {
 			TagCount: tagCountByZone[name],
 		})
 	}
+
+	slices.SortFunc(rows, func(a, b ZoneRow) int {
+		if a.Name < b.Name {
+			return -1
+		}
+
+		if a.Name > b.Name {
+			return 1
+		}
+
+		return 0
+	})
 
 	// Load all tags for display
 	var allTags []models.Tag

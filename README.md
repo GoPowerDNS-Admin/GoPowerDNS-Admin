@@ -4,9 +4,9 @@
 
 GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
 
-## Status: Heavy Development
+## Status: Alpha
 
-This project is under active, heavy development. Interfaces and configuration may change without notice. Expect incomplete features, rough edges, and potential breaking changes between commits. Use in production at your own risk.
+Core features are functional. Interfaces and configuration may still change between releases. Bug reports and feedback are welcome — please open an issue.
 
 ## Key Features
 
@@ -31,6 +31,7 @@ This project is under active, heavy development. Interfaces and configuration ma
 - Health check endpoint (`GET /health`) for load balancer and container probes
 - Native TLS (manual cert/key) and automatic TLS via Let's Encrypt / ACME
 - Reverse proxy support (HAProxy, nginx, Traefik) with configurable trusted IP allowlist and proxy header
+- Security headers on all responses: `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, `Referrer-Policy`, and more
 
 ## Getting Started (Development)
 

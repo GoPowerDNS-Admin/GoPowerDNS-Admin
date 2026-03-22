@@ -1,0 +1,317 @@
+{{ define "admin/activity/detail" }}
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0">{{ if .Navigation }}{{ .Navigation.PageTitle }}{{ else }}Activity Entry{{ end }}</h3>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{ if .Navigation }}
+                                {{ range .Navigation.Breadcrumbs }}
+                                    {{ if .Active }}
+                                        <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+                                    {{ else }}
+                                        <li class="breadcrumb-item"><a href="{{ .URL }}">{{ .Title }}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            {{ end }}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                <div class="row">
+                    <!--begin::Left column - Entry Details-->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card card-primary card-outline shadow h-100">
+                            <div class="card-header">
+                                <h3 class="card-title fw-semibold">Entry Details</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="text-muted ps-3" style="width:120px">ID</th>
+                                            <td class="pe-3">{{ .Entry.ID }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-muted ps-3">Timestamp</th>
+                                            <td class="pe-3">{{ .Entry.CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-muted ps-3">User</th>
+                                            <td class="pe-3">
+                                                <span class="fw-semibold">{{ .Entry.Username }}</span>
+                                                {{ if .Entry.UserID }}
+                                                    <br><small class="text-muted">#{{ .Entry.UserID }}</small>
+                                                {{ end }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-muted ps-3">IP Address</th>
+                                            <td class="pe-3">
+                                                {{ if .Entry.IPAddress }}
+                                                    <code>{{ .Entry.IPAddress }}</code>
+                                                {{ else }}
+                                                    <span class="text-muted">&mdash;</span>
+                                                {{ end }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-muted ps-3">Action</th>
+                                            <td class="pe-3">
+                                                {{ if eq .Entry.Action "login" }}
+                                                    <span class="badge text-bg-success">login</span>
+                                                {{ else if eq .Entry.Action "logout" }}
+                                                    <span class="badge text-bg-secondary">logout</span>
+                                                {{ else if eq .Entry.Action "login_failed" }}
+                                                    <span class="badge text-bg-danger">login failed</span>
+                                                {{ else if eq .Entry.Action "zone_created" }}
+                                                    <span class="badge text-bg-primary">zone created</span>
+                                                {{ else if eq .Entry.Action "zone_updated" }}
+                                                    <span class="badge text-bg-warning text-dark">zone updated</span>
+                                                {{ else if eq .Entry.Action "zone_deleted" }}
+                                                    <span class="badge text-bg-danger">zone deleted</span>
+                                                {{ else if eq .Entry.Action "record_changed" }}
+                                                    <span class="badge text-bg-info text-dark">record changed</span>
+                                                {{ else if eq .Entry.Action "record_undone" }}
+                                                    <span class="badge text-bg-secondary">record undone</span>
+                                                {{ else if eq .Entry.Action "zone_deleted_undone" }}
+                                                    <span class="badge text-bg-secondary">zone restored</span>
+                                                {{ else }}
+                                                    <span class="badge text-bg-light text-dark">{{ .Entry.Action }}</span>
+                                                {{ end }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-muted ps-3">Resource</th>
+                                            <td class="pe-3">
+                                                {{ if .Entry.ResourceName }}
+                                                    <small class="text-muted">{{ .Entry.ResourceType }}/</small><span class="fw-semibold">{{ .Entry.ResourceName }}</span>
+                                                {{ else if .Entry.ResourceType }}
+                                                    <span class="text-muted">{{ .Entry.ResourceType }}</span>
+                                                {{ else }}
+                                                    <span class="text-muted">&mdash;</span>
+                                                {{ end }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer d-flex gap-2 flex-wrap">
+                                <a href="{{ .ReturnURL }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </a>
+                                {{ if $.CanUndo }}
+                                    {{ if eq .Entry.Action "record_changed" }}
+                                    <form method="post" action="/admin/activity/{{ .Entry.ID }}/undo"
+                                          onsubmit="return confirm('Undo these record changes?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Undo
+                                        </button>
+                                    </form>
+                                    {{ else if eq .Entry.Action "zone_deleted" }}
+                                    <form method="post" action="/admin/activity/{{ .Entry.ID }}/undo"
+                                          onsubmit="return confirm('Restore this deleted zone?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restore Zone
+                                        </button>
+                                    </form>
+                                    {{ end }}
+                                {{ end }}
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Left column-->
+
+                    <!--begin::Right column - Diff / Details-->
+                    <div class="col-lg-8 mb-4">
+                        <div class="card card-secondary card-outline shadow h-100">
+                            <div class="card-header">
+                                <h3 class="card-title fw-semibold">Diff / Details</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="p-3 detail-diff">
+
+                                {{- /* ── Zone settings diff ── */}}
+                                {{ if .Entry.ZoneSettings }}
+                                    {{ if .Entry.ZoneSettings.Fields }}
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <thead><tr>
+                                                <th class="text-muted ps-0" style="width:130px">Field</th>
+                                                <th class="text-muted" style="width:160px">Before</th>
+                                                <th class="text-muted" style="width:160px">After</th>
+                                            </tr></thead>
+                                            <tbody>
+                                            {{ range .Entry.ZoneSettings.Fields }}
+                                                <tr>
+                                                    <td class="text-muted ps-0"><code>{{ .Field }}</code></td>
+                                                    <td>
+                                                        {{ if .Old }}
+                                                            <span class="text-danger text-decoration-line-through">{{ .Old }}</span>
+                                                        {{ else }}
+                                                            <span class="text-muted fst-italic">unknown</span>
+                                                        {{ end }}
+                                                    </td>
+                                                    <td><span class="text-success fw-semibold">{{ .New }}</span></td>
+                                                </tr>
+                                            {{ end }}
+                                            </tbody>
+                                        </table>
+                                    {{ else }}
+                                        <span class="text-muted fst-italic">no settings changed</span>
+                                    {{ end }}
+
+                                {{- /* ── Records diff ── */}}
+                                {{ else if .Entry.RecordsDiff }}
+                                    {{ if .Entry.RecordsDiff.Records }}
+                                        {{ range .Entry.RecordsDiff.Records }}
+                                            <div class="mb-3 border-start border-2 ps-2
+                                                {{ if eq .Action "added"    }}border-success{{ end }}
+                                                {{ if eq .Action "modified" }}border-warning{{ end }}
+                                                {{ if eq .Action "deleted"  }}border-danger{{ end }}
+                                            ">
+                                                <div class="d-flex align-items-center gap-1 mb-1">
+                                                    <code class="text-body">{{ .Name }}</code>
+                                                    <span class="badge text-bg-light text-dark">{{ .Type }}</span>
+                                                    {{ if eq .Action "added"    }}<span class="badge text-bg-success">added</span>{{ end }}
+                                                    {{ if eq .Action "modified" }}<span class="badge text-bg-warning text-dark">modified</span>{{ end }}
+                                                    {{ if eq .Action "deleted"  }}<span class="badge text-bg-danger">deleted</span>{{ end }}
+                                                </div>
+
+                                                {{- /* TTL change */}}
+                                                {{ if and .OldTTL .NewTTL }}
+                                                    {{ if ne .OldTTL .NewTTL }}
+                                                        <div class="text-muted small">
+                                                            TTL:
+                                                            <span class="text-danger text-decoration-line-through">{{ .OldTTL }}</span>
+                                                            &rarr;
+                                                            <span class="text-success">{{ .NewTTL }}</span>
+                                                        </div>
+                                                    {{ end }}
+                                                {{ end }}
+
+                                                {{- /* Old records */}}
+                                                {{ if .Old }}
+                                                    <div class="text-danger small">
+                                                        {{ range .Old }}
+                                                            <div>&minus; <code>{{ . }}</code></div>
+                                                        {{ end }}
+                                                    </div>
+                                                {{ end }}
+
+                                                {{- /* New records */}}
+                                                {{ if .New }}
+                                                    <div class="text-success small">
+                                                        {{ range .New }}
+                                                            <div>&plus; <code>{{ . }}</code></div>
+                                                        {{ end }}
+                                                    </div>
+                                                {{ end }}
+                                            </div>
+                                        {{ end }}
+                                    {{ else }}
+                                        <span class="text-muted fst-italic">no records changed</span>
+                                    {{ end }}
+
+                                {{- /* ── Undo details (record_undone) ── */}}
+                                {{ else if .Entry.UndoDetails }}
+                                    <span class="text-muted">
+                                        Reverted changes from entry
+                                        <strong>#{{ .Entry.UndoDetails.OriginalID }}</strong>
+                                        {{ if .Entry.UndoDetails.OriginalUsername }}
+                                            originally made by
+                                            <strong>{{ .Entry.UndoDetails.OriginalUsername }}</strong>
+                                        {{ end }}
+                                    </span>
+
+                                {{- /* ── Zone snapshot (zone_deleted) ── */}}
+                                {{ else if .Entry.ZoneSnapshot }}
+                                    <dl class="row mb-3">
+                                        <dt class="col-sm-3 text-muted">Kind</dt>
+                                        <dd class="col-sm-9"><strong>{{ .Entry.ZoneSnapshot.Kind }}</strong></dd>
+                                        {{ if .Entry.ZoneSnapshot.SOAEditAPI }}
+                                        <dt class="col-sm-3 text-muted">SOA-EDIT-API</dt>
+                                        <dd class="col-sm-9"><strong>{{ .Entry.ZoneSnapshot.SOAEditAPI }}</strong></dd>
+                                        {{ end }}
+                                        {{ if .Entry.ZoneSnapshot.Masters }}
+                                        <dt class="col-sm-3 text-muted">Masters</dt>
+                                        <dd class="col-sm-9"><strong>{{ range $i, $m := .Entry.ZoneSnapshot.Masters }}{{ if $i }}, {{ end }}{{ $m }}{{ end }}</strong></dd>
+                                        {{ end }}
+                                    </dl>
+                                    {{ if .Entry.ZoneSnapshot.RRsets }}
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Type</th>
+                                                <th>TTL</th>
+                                                <th>Records</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {{ range .Entry.ZoneSnapshot.RRsets }}
+                                            <tr>
+                                                <td><code>{{ .Name }}</code></td>
+                                                <td><span class="badge text-bg-light text-dark">{{ .Type }}</span></td>
+                                                <td>{{ .TTL }}</td>
+                                                <td>{{ range .Records }}<div><code>{{ . }}</code></div>{{ end }}</td>
+                                            </tr>
+                                        {{ end }}
+                                        </tbody>
+                                    </table>
+                                    {{ else }}
+                                        <span class="text-muted fst-italic">No RRsets captured.</span>
+                                    {{ end }}
+
+                                {{- /* ── Zone restored (zone_deleted_undone) ── */}}
+                                {{ else if .Entry.ZoneDeletedUndoneDetails }}
+                                    <span class="text-muted">
+                                        Restored zone from entry
+                                        <strong>#{{ .Entry.ZoneDeletedUndoneDetails.OriginalID }}</strong>
+                                        {{ if .Entry.ZoneDeletedUndoneDetails.OriginalUsername }}
+                                            originally deleted by
+                                            <strong>{{ .Entry.ZoneDeletedUndoneDetails.OriginalUsername }}</strong>
+                                        {{ end }}
+                                    </span>
+
+                                {{- /* ── Other actions: raw JSON details ── */}}
+                                {{ else if .Entry.Details }}
+                                    <code>{{ .Entry.Details }}</code>
+
+                                {{ else }}
+                                    <span class="text-muted">No details available.</span>
+                                {{ end }}
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Right column-->
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+</div>
+<!--end::App Wrapper-->
+
+<style>
+.detail-diff code { word-break: break-all; white-space: normal; }
+</style>
+
+{{ end }}

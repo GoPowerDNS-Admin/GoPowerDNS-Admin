@@ -2,8 +2,10 @@ package zoneedit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"regexp"
 	"sort"
 	"strings"
@@ -21,6 +23,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
+	ttlsettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/ttl"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/navigation"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
@@ -48,6 +51,9 @@ const (
 
 	// ErrMsgZoneNameRequired is the error message when zone name is missing.
 	ErrMsgZoneNameRequired = "Zone name is required"
+
+	// DefaultRecordsPageSize is the default number of records per page on the zone edit page.
+	DefaultRecordsPageSize = 25
 
 	defaultTimeout = 30 * time.Second
 )
@@ -216,6 +222,42 @@ func (s *Service) Get(c fiber.Ctx) error {
 		return allowedRecordTypes[i].Type < allowedRecordTypes[j].Type
 	})
 
+	// Resolve records page size preference.
+	currentUser, hasUser := c.Locals("CurrentUser").(models.User)
+	recordsPageSize := DefaultRecordsPageSize
+
+	if hasUser && currentUser.ID != 0 {
+		var u models.User
+		if s.db.Select("zone_edit_page_size").First(&u, currentUser.ID).Error == nil && u.ZoneEditPageSize > 0 {
+			recordsPageSize = u.ZoneEditPageSize
+		}
+	}
+
+	if hasUser && currentUser.ID != 0 && c.Query("pageSize") != "" {
+		if ps := fiber.Query[int](c, "pageSize", 0); ps >= 1 && ps <= 100 {
+			recordsPageSize = ps
+			s.db.Model(&models.User{}).Where("id = ?", currentUser.ID).Update("zone_edit_page_size", ps)
+		}
+	}
+
+	// Load TTL presets for the record edit modal.
+	ttlPresets := ttlsettings.LoadWithDefaults(s.db)
+
+	// Serialize initialization data for Alpine component.
+	// json.Marshal escapes </>, & by default — safe to embed in a <script> tag.
+	initJSON, err := json.Marshal(map[string]interface{}{
+		"zoneName":     *zone.Name,
+		"records":      records,
+		"allowedTypes": allowedRecordTypes,
+		"pageSize":     recordsPageSize,
+		"ttlPresets":   ttlPresets,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("failed to marshal zone init data")
+
+		initJSON = []byte(`{"zoneName":"","records":[],"allowedTypes":[],"pageSize":25}`)
+	}
+
 	// Render form with existing zone data
 	return c.Render(TemplateName, fiber.Map{
 		"Navigation":         nav,
@@ -224,6 +266,8 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"Records":            records,
 		"DNSSECEnabled":      dnssecEnabled,
 		"AllowedRecordTypes": allowedRecordTypes,
+		"RecordsPageSize":    recordsPageSize,
+		"InitDataJSON":       template.JS(initJSON), //nolint:gosec // safe: json.Marshal escapes HTML chars
 	}, handler.BaseLayout)
 }
 

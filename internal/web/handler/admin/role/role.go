@@ -137,11 +137,12 @@ func (s *Service) New(c fiber.Ctx) error {
 	}
 
 	return c.Render(TemplateForm, fiber.Map{
-		"Navigation":      nav,
-		"Role":            models.Role{},
-		"IsCreate":        true,
-		"Permissions":     permissions,
-		"SelectedPermIDs": map[uint]bool{},
+		"Navigation":       nav,
+		"Role":             models.Role{},
+		"IsCreate":         true,
+		"Permissions":      permissions,
+		"PermissionGroups": groupPermissions(permissions),
+		"SelectedPermIDs":  map[uint]bool{},
 	}, handler.BaseLayout)
 }
 
@@ -170,12 +171,13 @@ func (s *Service) Create(c fiber.Ctx) error {
 		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
 
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
-			"Navigation":      nav,
-			"Error":           "Validation failed: " + err.Error(),
-			"Role":            models.Role{Name: in.Name, Description: in.Description},
-			"IsCreate":        true,
-			"Permissions":     permissions,
-			"SelectedPermIDs": s.parseSelectedPermIDs(c),
+			"Navigation":       nav,
+			"Error":            "Validation failed: " + err.Error(),
+			"Role":             models.Role{Name: in.Name, Description: in.Description},
+			"IsCreate":         true,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  s.parseSelectedPermIDs(c),
 		}, handler.BaseLayout)
 	}
 
@@ -193,12 +195,13 @@ func (s *Service) Create(c fiber.Ctx) error {
 		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
-			"Navigation":      nav,
-			"Error":           "Failed to create role (name may already be taken)",
-			"Role":            role,
-			"IsCreate":        true,
-			"Permissions":     permissions,
-			"SelectedPermIDs": s.parseSelectedPermIDs(c),
+			"Navigation":       nav,
+			"Error":            "Failed to create role (name may already be taken)",
+			"Role":             role,
+			"IsCreate":         true,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  s.parseSelectedPermIDs(c),
 		}, handler.BaseLayout)
 	}
 
@@ -263,11 +266,12 @@ func (s *Service) Edit(c fiber.Ctx) error {
 	}
 
 	return c.Render(TemplateForm, fiber.Map{
-		"Navigation":      nav,
-		"Role":            role,
-		"IsCreate":        false,
-		"Permissions":     permissions,
-		"SelectedPermIDs": selectedPermIDs,
+		"Navigation":       nav,
+		"Role":             role,
+		"IsCreate":         false,
+		"Permissions":      permissions,
+		"PermissionGroups": groupPermissions(permissions),
+		"SelectedPermIDs":  selectedPermIDs,
 	}, handler.BaseLayout)
 }
 
@@ -313,12 +317,13 @@ func (s *Service) Update(c fiber.Ctx) error {
 		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
 
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
-			"Navigation":      nav,
-			"Error":           "Validation failed: " + err.Error(),
-			"Role":            role,
-			"IsCreate":        false,
-			"Permissions":     permissions,
-			"SelectedPermIDs": s.parseSelectedPermIDs(c),
+			"Navigation":       nav,
+			"Error":            "Validation failed: " + err.Error(),
+			"Role":             role,
+			"IsCreate":         false,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  s.parseSelectedPermIDs(c),
 		}, handler.BaseLayout)
 	}
 
@@ -340,12 +345,13 @@ func (s *Service) Update(c fiber.Ctx) error {
 		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
 
 		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
-			"Navigation":      nav,
-			"Error":           "Cannot remove all permissions from the admin role",
-			"Role":            role,
-			"IsCreate":        false,
-			"Permissions":     permissions,
-			"SelectedPermIDs": selectedPerms,
+			"Navigation":       nav,
+			"Error":            "Cannot remove all permissions from the admin role",
+			"Role":             role,
+			"IsCreate":         false,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  selectedPerms,
 		}, handler.BaseLayout)
 	}
 
@@ -356,12 +362,13 @@ func (s *Service) Update(c fiber.Ctx) error {
 		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
-			"Navigation":      nav,
-			"Error":           "Failed to update role",
-			"Role":            role,
-			"IsCreate":        false,
-			"Permissions":     permissions,
-			"SelectedPermIDs": selectedPerms,
+			"Navigation":       nav,
+			"Error":            "Failed to update role",
+			"Role":             role,
+			"IsCreate":         false,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  selectedPerms,
 		}, handler.BaseLayout)
 	}
 
@@ -446,6 +453,13 @@ func (s *Service) Delete(c fiber.Ctx) error {
 	return c.Redirect().To(Path)
 }
 
+// PermissionGroup is a set of permissions sharing the same resource label.
+type PermissionGroup struct {
+	Resource    string
+	Icon        string
+	Permissions []models.Permission
+}
+
 // loadPermissions returns all permissions ordered by resource then action.
 func (s *Service) loadPermissions() ([]models.Permission, error) {
 	var permissions []models.Permission
@@ -454,6 +468,47 @@ func (s *Service) loadPermissions() ([]models.Permission, error) {
 	}
 
 	return permissions, nil
+}
+
+// groupPermissions groups a flat permission list by resource, with a Bootstrap-
+// icon class chosen per resource name.
+func groupPermissions(perms []models.Permission) []PermissionGroup {
+	icons := map[string]string{
+		"admin":     "bi-shield-lock",
+		"zone":      "bi-globe",
+		"dashboard": "bi-speedometer2",
+		"server":    "bi-server",
+	}
+
+	// Preserve insertion order using a slice of keys.
+	var keys []string
+
+	byResource := make(map[string][]models.Permission)
+
+	for _, p := range perms {
+		if _, seen := byResource[p.Resource]; !seen {
+			keys = append(keys, p.Resource)
+		}
+
+		byResource[p.Resource] = append(byResource[p.Resource], p)
+	}
+
+	groups := make([]PermissionGroup, 0, len(keys))
+
+	for _, k := range keys {
+		icon, ok := icons[k]
+		if !ok {
+			icon = "bi-key"
+		}
+
+		groups = append(groups, PermissionGroup{
+			Resource:    k,
+			Icon:        icon,
+			Permissions: byResource[k],
+		})
+	}
+
+	return groups
 }
 
 // parseSelectedPermIDs reads the perm_ids multi-value form field.

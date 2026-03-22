@@ -107,7 +107,7 @@
                     </a>
                 </li>
                 {{ end }}
-                {{ if or (call .hasPermission "admin.zone.records") (call .hasPermission "admin.pdns.server") }}
+                {{ if or (call .hasPermission "admin.zone.records") (call .hasPermission "admin.pdns.server") (call .hasPermission "admin.ttl.presets") }}
                 <li class="nav-item{{if and .Navigation (eq .Navigation.ActiveSection "settings")}} menu-open{{end}}">
                     <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActiveSection "settings")}} active{{end}}">
                         <i class="nav-icon bi bi-gear"></i>
@@ -130,6 +130,14 @@
                             <a href="/admin/settings/pdns-server" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "pdns-server")}} active{{end}}">
                                 <i class="nav-icon bi bi-server"></i>
                                 <p>PDNS Server</p>
+                            </a>
+                        </li>
+                        {{ end }}
+                        {{ if call .hasPermission "admin.ttl.presets" }}
+                        <li class="nav-item">
+                            <a href="/admin/settings/ttl-presets" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "ttl-presets")}} active{{end}}">
+                                <i class="nav-icon bi bi-clock"></i>
+                                <p>TTL Presets</p>
                             </a>
                         </li>
                         {{ end }}

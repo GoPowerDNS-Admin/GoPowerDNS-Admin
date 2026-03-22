@@ -1,5 +1,5 @@
 
-.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte docker-up docker-down docker-logs load-test-data
+.PHONY: help test test-race linter vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data
 
 # Versions
 BOOTSTRAP_VERSION := 5.3.8
@@ -9,6 +9,7 @@ DATATABLES_VERSION := 2.3.7
 OVERLAYSCROLLBARS_VERSION := 2.14.0
 BOOTSTRAP_ICONS_VERSION := 1.13.1
 SOURCE_SANS_3_VERSION := 5.2.9
+ALPINEJS_VERSION := 3.14.9
 
 # Directories
 VENDOR_DIR := internal/web/static/vendor
@@ -37,6 +38,7 @@ help:
 	@echo "  vendor-overlayscrollbars - Update only OverlayScrollbars"
 	@echo "  vendor-bootstrap-icons   - Update only Bootstrap Icons"
 	@echo "  vendor-source-sans-3     - Update only Source Sans 3 font"
+	@echo "  vendor-alpinejs          - Update only Alpine.js"
 	@echo "  vendor-clean             - Remove all vendor dependencies"
 
 test:
@@ -54,7 +56,7 @@ pre-commit: linter
 	@pre-commit run --all-files
 	@echo "✓ Pre-commit checks passed"
 
-vendor-update: vendor-bootstrap vendor-adminlte vendor-jquery vendor-datatables vendor-overlayscrollbars vendor-bootstrap-icons vendor-source-sans-3
+vendor-update: vendor-bootstrap vendor-adminlte vendor-jquery vendor-datatables vendor-overlayscrollbars vendor-bootstrap-icons vendor-source-sans-3 vendor-alpinejs
 	@echo "✓ All vendor dependencies updated"
 
 vendor-bootstrap:
@@ -128,6 +130,13 @@ vendor-source-sans-3:
 	done
 	@echo "✓ Source Sans 3 $(SOURCE_SANS_3_VERSION) installed"
 
+vendor-alpinejs:
+	@echo "Downloading Alpine.js $(ALPINEJS_VERSION)..."
+	@mkdir -p $(VENDOR_DIR)/alpinejs-$(ALPINEJS_VERSION)
+	@curl -sL "https://cdn.jsdelivr.net/npm/alpinejs@$(ALPINEJS_VERSION)/dist/cdn.min.js" \
+		-o $(VENDOR_DIR)/alpinejs-$(ALPINEJS_VERSION)/alpine.min.js
+	@echo "✓ Alpine.js $(ALPINEJS_VERSION) installed"
+
 vendor-clean:
 	@echo "Cleaning vendor dependencies..."
 	@rm -rf $(VENDOR_DIR)/bootstrap-*
@@ -137,6 +146,7 @@ vendor-clean:
 	@rm -rf $(VENDOR_DIR)/overlayscrollbars-*
 	@rm -rf $(VENDOR_DIR)/bootstrap-icons-*
 	@rm -rf $(VENDOR_DIR)/source-sans-3-*
+	@rm -rf $(VENDOR_DIR)/alpinejs-*
 	@echo "✓ Vendor dependencies cleaned"
 
 docker-up:

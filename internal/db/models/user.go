@@ -50,6 +50,10 @@ type User struct {
 	TOTPEnabled bool
 	// TOTPRequired indicates an admin has mandated TOTP for this user.
 	TOTPRequired bool
+	// DashboardPageSize is the user's preferred number of items per page on the dashboard (0 = use default).
+	DashboardPageSize int `gorm:"default:0"`
+	// ZoneEditPageSize is the user's preferred number of records per page on the zone edit page (0 = use default).
+	ZoneEditPageSize int `gorm:"default:0"`
 	// CreatedAt is the timestamp when the user was created (managed by GORM).
 	CreatedAt time.Time
 	// UpdatedAt is the timestamp when the user was last updated (managed by GORM).

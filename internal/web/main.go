@@ -22,6 +22,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
+	ttlsettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/ttl"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/role"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/tag"
@@ -196,6 +197,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	oidchandler.Handler.Init(app, cfg, db)
 	dashboard.Handler.Init(app, cfg, db, authService)
 	pdnsserver.Handler.Init(app, cfg, db, authService)
+	ttlsettings.Handler.Init(app, cfg, db, authService)
 	zone.Handler.Init(app, cfg, db, authService)
 	zoneadd.Handler.Init(app, cfg, db, authService)
 	zoneedit.Handler.Init(app, cfg, db, authService)

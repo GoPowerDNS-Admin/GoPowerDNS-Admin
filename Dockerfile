@@ -4,6 +4,8 @@ FROM golang:1.25-alpine AS builder
 # CGO is required by mattn/go-sqlite3
 RUN apk add --no-cache gcc musl-dev
 
+ARG VERSION=dev
+
 WORKDIR /build
 
 # Copy dependency manifests and vendored modules first so Docker can cache the
@@ -14,7 +16,9 @@ COPY vendor/ vendor/
 COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux \
-    go build -mod=vendor -ldflags="-s -w" -o go-pdns .
+    go build -mod=vendor \
+    -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.Version=${VERSION}" \
+    -o go-pdns .
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM alpine:3

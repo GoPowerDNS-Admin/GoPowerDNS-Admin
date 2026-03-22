@@ -14,7 +14,7 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:     "go-powerdns-admin",
-		Version: version.Version,
+		Version: version.Get(),
 		Short:   "GoPowerDNS-Admin is a web-based management tool for PowerDNS",
 		Long: `GoPowerDNS-Admin is a web-based management tool for PowerDNS
 that provides an easy-to-use interface for managing domains, records, and users.`,

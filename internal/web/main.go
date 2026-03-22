@@ -253,7 +253,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 
 	// expose version to all templates via PassLocalsToViews
 	app.Use(func(c fiber.Ctx) error {
-		c.Locals("AppVersion", version.Version)
+		c.Locals("AppVersion", version.Get())
 		return c.Next()
 	})
 

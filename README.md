@@ -28,6 +28,7 @@ This project is under active, heavy development. Interfaces and configuration ma
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
 - Go backend with server-rendered templates
 - Nightly builds for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and FreeBSD (amd64, aarch64)
+- Health check endpoint (`GET /health`) for load balancer and container probes
 
 ## Getting Started (Development)
 
@@ -146,6 +147,30 @@ All significant user actions (login, logout, zone create/update/delete, record c
 - Open a full detail page (`/admin/activity/:id`) showing the complete diff and an **Undo** button
 - **Undo record changes** — restores a zone's RRsets to their previous state
 - **Undo zone deletes** — recreates the zone including all RRsets from a full snapshot taken at delete time
+
+## Health Check
+
+`GET /health` is available without authentication and returns a JSON status object:
+
+```json
+{
+  "status": "ok",
+  "checks": {
+    "alive": "ok",
+    "database": "ok",
+    "powerdns": "ok"
+  }
+}
+```
+
+| Field      | Values                  | Notes                                                                  |
+| ---------- | ----------------------- | ---------------------------------------------------------------------- |
+| `status`   | `ok` / `degraded`       | Overall health                                                         |
+| `alive`    | `ok` / `shutting_down`  | Set to `shutting_down` during graceful shutdown                        |
+| `database` | `ok` / `error`          | DB ping with 2 s timeout                                               |
+| `powerdns` | `ok` / `not_configured` | PDNS client presence; `not_configured` does not degrade overall status |
+
+Returns **200** when healthy, **503** when `alive=shutting_down` or the database is unreachable. Suitable for Kubernetes liveness/readiness probes and load balancer health checks.
 
 ## Background & Inspiration
 

@@ -19,7 +19,7 @@ func Middleware(c fiber.Ctx) error {
 	)
 
 	originalURL := strings.ToLower(c.OriginalURL())
-	if strings.HasPrefix(originalURL, "/static") {
+	if strings.HasPrefix(originalURL, "/static") || strings.HasPrefix(originalURL, "/health") {
 		return c.Next()
 	}
 

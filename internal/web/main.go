@@ -19,6 +19,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/activity"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/health"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
@@ -190,6 +191,9 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 		db:          db,
 		authService: authService,
 	}
+
+	service.alive.Store(true)
+	health.New(db, &service.alive).Register(app)
 
 	// init handlers (they register their own routes with permission checks)
 	login.Handler.Init(app, cfg, db)

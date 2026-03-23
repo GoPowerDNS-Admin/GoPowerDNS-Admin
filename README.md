@@ -24,7 +24,7 @@ Core features are functional. Interfaces and configuration may still change betw
 - Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
 - Admin-configurable TTL presets shown as a dropdown in the record modal
 - DNSSEC-managed records automatically hidden from the zone editor and dashboard
-- Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite
+- Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
 - Go backend with server-rendered templates
 - Health check endpoint (`GET /health`) for load balancer and container probes
@@ -39,7 +39,7 @@ Core features are functional. Interfaces and configuration may still change betw
 
 Prerequisites:
 
-- Go (see `go.mod` for the required version)
+- Go (see `go.mod` for the required version) — no C toolchain required; all database drivers are pure Go
 - Docker and Docker Compose (optional, for local PowerDNS)
 
 1. Start a local PowerDNS for development (optional):
@@ -105,11 +105,11 @@ Prerequisites:
 
 GoPowerDNS-Admin supports three database backends:
 
-| Backend       | Status    |
-| ------------- | --------- |
-| MySQL/MariaDB | Supported |
-| PostgreSQL    | Supported |
-| SQLite        | Supported |
+| Backend       | Status    | Notes                           |
+| ------------- | --------- | ------------------------------- |
+| MySQL/MariaDB | Supported |                                 |
+| PostgreSQL    | Supported |                                 |
+| SQLite        | Supported | Pure Go — no CGO or C toolchain |
 
 Configure the backend in `etc/main.toml` under the `[database]` section.
 
@@ -137,6 +137,7 @@ The zone editor provides a full-featured DNS record management interface:
 - Inline zone metadata (kind, serial, DNSSEC status) in the record list header
 - Collapsible zone settings card (SOA-EDIT-API, kind, masters)
 - DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
+- SOA record is protected — it can be viewed but not deleted or overwritten via the record modal
 - Admin-configurable TTL presets available as a dropdown in the record modal (see TTL Presets below)
 
 ## TTL Presets

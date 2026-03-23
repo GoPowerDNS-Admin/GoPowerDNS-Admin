@@ -4,18 +4,6 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
-
-### Bug Fixes
-- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
-
-
-## [0.1.0-alpha-2] - 2026-03-23
-
-### Bug Fixes
-- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
-
-
 ## [0.1.0-alpha.1] - 2026-03-23
 
 ### Bug Fixes
@@ -38,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **zone:** Allow editing existing records of disallowed types and protect SOA (#38) ([922d5fb](922d5fb4ac0868dedf376a122c6931b8c51c3cd7))
 - **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
 - **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
+- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
+- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
 
 ### Dependencies

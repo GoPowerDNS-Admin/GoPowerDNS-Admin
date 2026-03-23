@@ -269,6 +269,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: dist/
+          pattern: gopowerdns-admin-*
           merge-multiple: true
 
       - name: Create release

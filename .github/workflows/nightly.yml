@@ -53,7 +53,7 @@ jobs:
             -o dist/gopowerdns-admin-linux-${{ matrix.arch }} \
             .
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: gopowerdns-admin-linux-${{ matrix.arch }}
           path: dist/
@@ -98,7 +98,7 @@ jobs:
             -o dist/gopowerdns-admin-darwin-amd64 \
             .
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: gopowerdns-admin-darwin
           path: dist/gopowerdns-admin-darwin-*
@@ -131,7 +131,7 @@ jobs:
               -o dist/gopowerdns-admin-freebsd-${{ matrix.arch }} \
               .
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: gopowerdns-admin-freebsd-${{ matrix.arch }}
           path: dist/

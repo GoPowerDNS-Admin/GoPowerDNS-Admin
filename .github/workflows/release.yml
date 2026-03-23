@@ -136,6 +136,8 @@ jobs:
           build-args: |
             VERSION=${{ env.RELEASE_TAG }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
 
   release:
     name: Create GitHub Release

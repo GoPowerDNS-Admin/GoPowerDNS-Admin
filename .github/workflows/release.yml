@@ -1,9 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -11,7 +10,7 @@ on:
         required: true
 
 env:
-  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
 
 jobs:
   prepare:
@@ -22,7 +21,7 @@ jobs:
     steps:
       - id: tag
         env:
-          RAW_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          RAW_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         run: |
           TAG="${RAW_TAG// /}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
@@ -230,6 +229,7 @@ jobs:
           fetch-depth: 0 # full history required by git-cliff
 
       - name: Generate release notes
+        if: github.event_name == 'workflow_dispatch'
         uses: orhun/git-cliff-action@v4
         id: cliff
         with:
@@ -272,6 +272,7 @@ jobs:
           merge-multiple: true
 
       - name: Create release
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -282,5 +283,9 @@ jobs:
           gh release create "${{ env.RELEASE_TAG }}" \
             --title "${{ env.RELEASE_TAG }}" \
             --notes-file RELEASE_NOTES.md \
-            $PRERELEASE \
-            dist/*
+            $PRERELEASE
+
+      - name: Upload artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ env.RELEASE_TAG }}" dist/* --clobber

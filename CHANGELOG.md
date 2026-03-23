@@ -7,7 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Bug Fixes
+- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
+
+## [0.1.0-alpha-2] - 2026-03-23
+
+### Bug Fixes
+- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
+
+
+## [0.1.0-alpha.1] - 2026-03-23
+
+### Bug Fixes
 - **workflow:** Update PR title check workflow configuration ([b5f5dc2](b5f5dc2bf40d74111e08e9990197bc0809d2c773))
 - **workflow:** Update runner configuration for PR title validation ([9529781](95297816ce7e855d35f26d42681cd3a5a1f8bb27))
 - **zone:** Replace deprecated VisitAll with All iterator (#4) ([c937cfc](c937cfc379ea1ac440347a817bc098bb23206357))
@@ -21,24 +32,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **zonetag:** Default page size to 10 ([0aedc74](0aedc748e12045f4c6f459e8f7a85130f2d96659))
 - **ui:** Use full width on TTL presets settings page ([ec99b01](ec99b01890b52aa62db5e592b072783c8f98f363))
 - **ui:** Fix favicon path in base layout ([37c801d](37c801dd21dac4dc4fc3d22fe9b6be9defb95ef6))
+- **ui:** Show only version as link in footer, remove redundant text ([d4c1469](d4c146919d4e36c3edb90d4eaa050b1f935c3022))
+- **docker:** Replace vendor copy with go mod download for CI compatibility ([fd74c8f](fd74c8f0c4c306a082472f65c03ff51779665d54))
+- **csp:** Eliminate inline scripts and event handlers to comply with CSP (#37) ([7653a52](7653a5233f5fd9a5508e99a021cba73ebf73f0ea))
+- **zone:** Allow editing existing records of disallowed types and protect SOA (#38) ([922d5fb](922d5fb4ac0868dedf376a122c6931b8c51c3cd7))
+- **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
+- **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
+
 
 ### Dependencies
-
 - **deps:** Update dependencies in go.mod and go.sum (#3) ([1673016](1673016b567e6eb01fb58c6134c9efc92ceb0cb6))
 - **deps:** Vendor CDN dependencies into static assets (#9) ([93e7990](93e799057ccaa40c067ff6b06fa9406004d50211))
 - **deps:** Bump dependencies to latest versions (#30) ([3423b03](3423b035aa8152d7b1099d082a5807089f81dac9))
 - **deps:** Bump dependencies to latest versions (#31) ([9730399](973039955a9218437a3c2c3f469b99862bf1d57d))
 
-### Documentation
 
+### Documentation
 - Update README to reflect current features and local config setup (#21) ([6f293a8](6f293a8a5e8a5aa4eac0a3a014c0e0151a42b7b6))
 - Add Buy Me a Coffee badge and FUNDING.yml ([9934746](9934746328f34f785536420e071b5de9d98ad98a))
 - Update README for zone editor, TTL presets, roles, and activity log improvements ([8d77384](8d7738409046f7e00c62b2f82bacbb1d5144988c))
 - Add Zone Tag Access Control section to README ([93ffde3](93ffde3e2274dc6cfeba520d788d6a3bec3a21fb))
 - **readme:** Update status to alpha, add security headers feature ([11acf4d](11acf4d3672210e9dba1e19d652ed1d82afd6b80))
+- **readme:** Add version flag, make build, and Docker registry info ([f67be7a](f67be7a30b276945c153f5746b3a6e1d94eb1e3e))
+
 
 ### Features
-
 - Add core web application with PowerDNS admin interface ([d4731e6](d4731e64e5986b0e37679d1e9791d8b0ed27bb67))
 - Implement zone record settings management with CRUD operations ([b80b456](b80b456bf079516cec60c11a05fa69fc2c048cc4))
 - Add server configuration management with pagination and filtering ([fe737d8](fe737d8379eb588a59862c4454f6f268b9fe45cb))
@@ -76,9 +94,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docker:** Add Dockerfile with non-root user and Makefile targets (#36) ([048a4f2](048a4f255c088d12dd2c12cf106fd35c34eab515))
 - **security:** Add security headers via helmet middleware ([ed9b68a](ed9b68a0d7b8f616e2ddaccaa7482b2bcbaf91a8))
 - **release:** Add release workflow, CHANGELOG, and wire BrowseStatic config ([455b66b](455b66b3d9759682acc26763079d19bbbe2bc577))
+- **release:** Add multi-platform Docker image build and push to ghcr.io ([9c90f7f](9c90f7fe43596ab41f26bbae1204ebb2bf2a834d))
+- **cli:** Add --version / -v flag to show application version ([ee70619](ee70619545744c68622e2f7e3c695ec68caf7814))
+- **ui:** Show app version in footer ([83fd8a7](83fd8a7dc8a90c2809d43422a303206e42e53e33))
+- **version:** Fall back to VCS commit hash when version not set via ldflags ([6049634](60496342f65ce53699946cbd92a940bf969f6671))
+- **version:** Include branch name in version string ([c3520b5](c3520b583d9618d1dbbdff972a5cef0e45e48a6e))
+
 
 ### Refactoring
-
 - **auth/oidc:** Replace if-else chain with switch for DB error handling ([9e0c473](9e0c473a18dd182a65f6ba76681d8a7260421336))
 - **zone/add:** Extract resolveZoneName and createZone helpers to reduce cyclomatic complexity ([98dbff1](98dbff1e2bdda3e427270780f71ac05f9d817fc9))
 - **zone/add:** Split add.go into types.go and create.go ([2a64a6d](2a64a6d64b06afb3a8ce6d8c6ee5d8357969ebb3))
+
+
+

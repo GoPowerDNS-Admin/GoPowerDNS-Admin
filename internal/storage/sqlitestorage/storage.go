@@ -5,9 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"time"
-
-	// modernc.org/sqlite registers the "sqlite" driver for database/sql.
-	_ "modernc.org/sqlite"
 )
 
 // Storage is a session.StorageBackend backed by a SQLite database.
@@ -23,7 +20,7 @@ func New(dbPath string) (*Storage, error) {
 	}
 
 	_, err = db.ExecContext(context.Background(), `CREATE TABLE IF NOT EXISTS sessions (
-		key     TEXT PRIMARY KEY,
+		"key"   TEXT PRIMARY KEY,
 		value   BLOB NOT NULL,
 		expiry  INTEGER NOT NULL DEFAULT 0
 	)`)
@@ -42,7 +39,7 @@ func (s *Storage) Get(key string) ([]byte, error) {
 
 	err := s.db.QueryRowContext(
 		context.Background(),
-		`SELECT value, expiry FROM sessions WHERE key = ?`, key,
+		`SELECT value, expiry FROM sessions WHERE "key" = ?`, key,
 	).Scan(&value, &expiry)
 
 	if err == sql.ErrNoRows {
@@ -72,8 +69,8 @@ func (s *Storage) Set(key string, val []byte, exp time.Duration) error {
 
 	_, err := s.db.ExecContext(
 		context.Background(),
-		`INSERT INTO sessions (key, value, expiry) VALUES (?, ?, ?)
-		 ON CONFLICT(key) DO UPDATE SET value = excluded.value, expiry = excluded.expiry`,
+		`INSERT INTO sessions ("key", value, expiry) VALUES (?, ?, ?)
+		 ON CONFLICT("key") DO UPDATE SET value = excluded.value, expiry = excluded.expiry`,
 		key, val, expiry,
 	)
 
@@ -84,7 +81,7 @@ func (s *Storage) Set(key string, val []byte, exp time.Duration) error {
 func (s *Storage) Delete(key string) error {
 	_, err := s.db.ExecContext(
 		context.Background(),
-		`DELETE FROM sessions WHERE key = ?`, key,
+		`DELETE FROM sessions WHERE "key" = ?`, key,
 	)
 
 	return err

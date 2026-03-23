@@ -131,7 +131,7 @@ jobs:
           arch: ${{ matrix.arch }}
           usesh: true
           prepare: |
-            pkg install -y go sqlite3
+            pkg install -y go sqlite3 rsync
           run: |
             mkdir -p dist
             go build -v \

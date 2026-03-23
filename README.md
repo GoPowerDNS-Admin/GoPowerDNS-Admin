@@ -2,6 +2,14 @@
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/chrisamti)
 
+## Live Demo
+
+A public demo is available at **[go-powerdns-admin.fly.dev](https://go-powerdns-admin.fly.dev)**.
+
+Login with **admin / changeme**. The demo resets automatically every 24 hours.
+
+---
+
 GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
 
 ## Status: Alpha
@@ -254,7 +262,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.1
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.2
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```
@@ -293,6 +301,39 @@ docker run -d \
 make docker-push IMAGE_NAME=ghcr.io/myorg/gopowerdns-admin IMAGE_TAG=v1.0.0
 ```
 
+### Deploy to Fly.io
+
+The `deploy/fly/` directory contains a ready-to-use Fly.io configuration. It uses ephemeral SQLite (no persistent volume) so the state resets cleanly on every machine restart.
+
+**First-time setup:**
+
+```bash
+fly auth login
+fly apps create go-powerdns-admin --config deploy/fly/fly.toml
+
+# Required secrets
+fly secrets set \
+  GPDNS_WEBSERVER_COOKIEENCRYPTIONKEY=$(openssl rand -base64 32) \
+  GPDNS_WEBSERVER_ARGON2SALT=$(openssl rand -base64 24) \
+  --config deploy/fly/fly.toml
+
+# Optional: bootstrap PowerDNS connection on every reset
+fly secrets set \
+  GPDNS_PDNS_APISERVERURL=http://your-pdns:8081 \
+  GPDNS_PDNS_APIKEY=your-api-key \
+  GPDNS_PDNS_VHOST=localhost \
+  --config deploy/fly/fly.toml
+
+fly deploy --config deploy/fly/fly.toml
+```
+
+**Automatic reset:** a GitHub Actions workflow (`.github/workflows/demo-reset.yml`) restarts the machine daily at 00:00 UTC, wiping the ephemeral database back to seed state. Add a `FLY_DEMO_API_TOKEN` secret to the repository to enable it:
+
+```bash
+fly tokens create deploy -a go-powerdns-admin
+# → paste the token into: Settings → Secrets → FLY_DEMO_API_TOKEN
+```
+
 ### Tips
 
 - **SQLite:** set `Name = "/var/lib/go-pdns/go-pdns.db"` in `main.toml` so the database lands in the persistent volume.
@@ -318,6 +359,7 @@ The idea for this Go-based version came from the PowerDNS-Admin project (https:/
 ## Configuration Highlights
 
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.
+- A `[pdns]` section in `main.toml` (or via `GPDNS_PDNS_*` env vars) can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur.
 - Authentication supports Local DB, OIDC, and LDAP; see `internal/config/structs.go` for the available fields.
 
 ## Contributing

@@ -1,0 +1,43 @@
+Title = "GO PowerDNS-Admin Demo"
+
+[webserver]
+# Secrets are injected via Fly secrets as env vars:
+#   GPDNS_WEBSERVER_COOKIEENCRYPTIONKEY
+#   GPDNS_WEBSERVER_ARGON2SALT
+CookieEncryptionKey = ""
+Argon2Salt          = ""
+Port                = 8080
+URL                 = "https://go-powerdns-admin.fly.dev"
+Domain              = "go-powerdns-admin.fly.dev"
+
+[webserver.session]
+ExpiryTime = "24h"
+
+[webserver.reverseproxy]
+enabled     = true
+trustedips  = ["0.0.0.0/0"]
+proxyheader = "X-Forwarded-For"
+
+# SQLite on ephemeral storage — wiped on every machine restart (demo reset).
+[DB]
+GormEngine = "sqlite"
+Name       = "/tmp/go-pdns.db"
+
+[log]
+Level = "info"
+
+[log.Console]
+Enable = true
+
+[auth.LocalDB]
+enabled = true
+
+# PowerDNS server bootstrap — seeded into the DB on first startup.
+# Set via Fly secrets:
+#   GPDNS_PDNS_APISERVERURL  e.g. http://powerdns:8081
+#   GPDNS_PDNS_APIKEY
+#   GPDNS_PDNS_VHOST         e.g. localhost
+[pdns]
+APIServerURL = ""
+APIKey       = ""
+VHost        = ""

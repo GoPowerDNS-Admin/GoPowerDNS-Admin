@@ -7,18 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Bug Fixes
-- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
+- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
 ## [0.1.0-alpha-2] - 2026-03-23
 
 ### Bug Fixes
-- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
 
+- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
 
 ## [0.1.0-alpha.1] - 2026-03-23
 
 ### Bug Fixes
+
 - **workflow:** Update PR title check workflow configuration ([b5f5dc2](b5f5dc2bf40d74111e08e9990197bc0809d2c773))
 - **workflow:** Update runner configuration for PR title validation ([9529781](95297816ce7e855d35f26d42681cd3a5a1f8bb27))
 - **zone:** Replace deprecated VisitAll with All iterator (#4) ([c937cfc](c937cfc379ea1ac440347a817bc098bb23206357))
@@ -39,15 +40,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
 - **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
 
-
 ### Dependencies
+
 - **deps:** Update dependencies in go.mod and go.sum (#3) ([1673016](1673016b567e6eb01fb58c6134c9efc92ceb0cb6))
 - **deps:** Vendor CDN dependencies into static assets (#9) ([93e7990](93e799057ccaa40c067ff6b06fa9406004d50211))
 - **deps:** Bump dependencies to latest versions (#30) ([3423b03](3423b035aa8152d7b1099d082a5807089f81dac9))
 - **deps:** Bump dependencies to latest versions (#31) ([9730399](973039955a9218437a3c2c3f469b99862bf1d57d))
 
-
 ### Documentation
+
 - Update README to reflect current features and local config setup (#21) ([6f293a8](6f293a8a5e8a5aa4eac0a3a014c0e0151a42b7b6))
 - Add Buy Me a Coffee badge and FUNDING.yml ([9934746](9934746328f34f785536420e071b5de9d98ad98a))
 - Update README for zone editor, TTL presets, roles, and activity log improvements ([8d77384](8d7738409046f7e00c62b2f82bacbb1d5144988c))
@@ -55,8 +56,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **readme:** Update status to alpha, add security headers feature ([11acf4d](11acf4d3672210e9dba1e19d652ed1d82afd6b80))
 - **readme:** Add version flag, make build, and Docker registry info ([f67be7a](f67be7a30b276945c153f5746b3a6e1d94eb1e3e))
 
-
 ### Features
+
 - Add core web application with PowerDNS admin interface ([d4731e6](d4731e64e5986b0e37679d1e9791d8b0ed27bb67))
 - Implement zone record settings management with CRUD operations ([b80b456](b80b456bf079516cec60c11a05fa69fc2c048cc4))
 - Add server configuration management with pagination and filtering ([fe737d8](fe737d8379eb588a59862c4454f6f268b9fe45cb))
@@ -100,11 +101,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **version:** Fall back to VCS commit hash when version not set via ldflags ([6049634](60496342f65ce53699946cbd92a940bf969f6671))
 - **version:** Include branch name in version string ([c3520b5](c3520b583d9618d1dbbdff972a5cef0e45e48a6e))
 
-
 ### Refactoring
+
 - **auth/oidc:** Replace if-else chain with switch for DB error handling ([9e0c473](9e0c473a18dd182a65f6ba76681d8a7260421336))
 - **zone/add:** Extract resolveZoneName and createZone helpers to reduce cyclomatic complexity ([98dbff1](98dbff1e2bdda3e427270780f71ac05f9d817fc9))
 - **zone/add:** Split add.go into types.go and create.go ([2a64a6d](2a64a6d64b06afb3a8ce6d8c6ee5d8357969ebb3))
-
-
-

@@ -26,8 +26,8 @@ jobs:
           TAG="${RAW_TAG// /}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-  build-linux:
-    name: Linux / ${{ matrix.arch }}
+  build:
+    name: ${{ matrix.name }}
     needs: prepare
     runs-on: ubuntu-latest
     env:
@@ -36,16 +36,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
+          - name: Linux / amd64
+            goos: linux
             goarch: amd64
-            cc: gcc
-          - arch: arm64
+            artifact: gopowerdns-admin-linux-amd64
+          - name: Linux / arm64
+            goos: linux
             goarch: arm64
-            cc: aarch64-linux-gnu-gcc
-          - arch: armv7
+            artifact: gopowerdns-admin-linux-arm64
+          - name: Linux / armv7
+            goos: linux
             goarch: arm
             goarm: "7"
-            cc: arm-linux-gnueabihf-gcc
+            artifact: gopowerdns-admin-linux-armv7
+          - name: macOS / amd64
+            goos: darwin
+            goarch: amd64
+            artifact: gopowerdns-admin-darwin-amd64
+          - name: macOS / arm64
+            goos: darwin
+            goarch: arm64
+            artifact: gopowerdns-admin-darwin-arm64
+          - name: FreeBSD / amd64
+            goos: freebsd
+            goarch: amd64
+            artifact: gopowerdns-admin-freebsd-amd64
+          - name: FreeBSD / aarch64
+            goos: freebsd
+            goarch: arm64
+            artifact: gopowerdns-admin-freebsd-aarch64
 
     steps:
       - uses: actions/checkout@v5
@@ -53,119 +72,24 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-
-      - name: Install cross-compilers
-        run: |
-          sudo apt-get update
-          case "${{ matrix.arch }}" in
-            arm64) sudo apt-get install -y gcc-aarch64-linux-gnu ;;
-            armv7) sudo apt-get install -y gcc-arm-linux-gnueabihf ;;
-          esac
 
       - name: Build
         env:
-          GOOS: linux
+          GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           GOARM: ${{ matrix.goarm }}
-          CC: ${{ matrix.cc }}
-          CGO_ENABLED: "1"
+          CGO_ENABLED: "0"
         run: |
           mkdir -p dist
           go build -v \
             -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${{ env.RELEASE_TAG }} -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ env.RELEASE_TAG }}" \
-            -o dist/gopowerdns-admin-linux-${{ matrix.arch }} \
+            -o dist/${{ matrix.artifact }} \
             .
 
       - uses: actions/upload-artifact@v7
         with:
-          name: gopowerdns-admin-linux-${{ matrix.arch }}
-          path: dist/
-          retention-days: 1
-
-  build-darwin:
-    name: macOS / amd64 + arm64
-    needs: prepare
-    runs-on: macos-latest
-    env:
-      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-    strategy:
-      fail-fast: false
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Build arm64
-        env:
-          GOOS: darwin
-          GOARCH: arm64
-          CGO_ENABLED: "1"
-        run: |
-          mkdir -p dist
-          go build -v \
-            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${{ env.RELEASE_TAG }} -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ env.RELEASE_TAG }}" \
-            -o dist/gopowerdns-admin-darwin-arm64 \
-            .
-
-      - name: Build amd64 (cross-compile via universal Clang)
-        env:
-          GOOS: darwin
-          GOARCH: amd64
-          CGO_ENABLED: "1"
-          CC: "clang -arch x86_64"
-          CGO_CFLAGS: "-arch x86_64"
-          CGO_LDFLAGS: "-arch x86_64"
-        run: |
-          go build -v \
-            -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${{ env.RELEASE_TAG }} -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ env.RELEASE_TAG }}" \
-            -o dist/gopowerdns-admin-darwin-amd64 \
-            .
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: gopowerdns-admin-darwin
-          path: dist/gopowerdns-admin-darwin-*
-          retention-days: 1
-
-  build-freebsd:
-    name: FreeBSD / ${{ matrix.arch }}
-    needs: prepare
-    runs-on: ${{ matrix.runs-on }}
-    env:
-      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: amd64
-            runs-on: ubuntu-latest
-          - arch: aarch64
-            runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Build inside FreeBSD VM
-        uses: vmactions/freebsd-vm@v1.4.3
-        with:
-          arch: ${{ matrix.arch }}
-          usesh: true
-          prepare: |
-            pkg install -y go sqlite3 rsync
-          run: |
-            mkdir -p dist
-            go build -v \
-              -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${{ env.RELEASE_TAG }} -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ env.RELEASE_TAG }}" \
-              -o dist/gopowerdns-admin-freebsd-${{ matrix.arch }} \
-              .
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: gopowerdns-admin-freebsd-${{ matrix.arch }}
-          path: dist/
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
           retention-days: 1
 
   build-docker:
@@ -216,7 +140,7 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [prepare, build-linux, build-darwin, build-freebsd]
+    needs: [prepare, build]
     env:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     permissions:

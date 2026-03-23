@@ -5,17 +5,17 @@ import (
 
 	sessionmysql "github.com/gofiber/storage/mysql/v2"
 	sessionpostgres "github.com/gofiber/storage/postgres/v3"
-	sessionsqlite "github.com/gofiber/storage/sqlite3"
 	"github.com/rs/zerolog/log"
+	gormsqlite "github.com/glebarez/sqlite"
 	gormmysql "gorm.io/driver/mysql"
 	gormpostgres "gorm.io/driver/postgres"
-	gormsqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/dsn"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/storage/sqlitestorage"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
 )
@@ -105,10 +105,10 @@ func openDB(cfg *config.Config) (*gorm.DB, session.StorageBackend) {
 			log.Fatal().Err(err).Msg("failed to connect database")
 		}
 
-		sessionStorage = sessionsqlite.New(sessionsqlite.Config{
-			Database: dsn.CreateSQLite(cfg) + "-sessions.db",
-			Table:    "sessions",
-		})
+		sessionStorage, err = sqlitestorage.New(dsn.CreateSQLite(cfg) + "-sessions.db")
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to open session storage")
+		}
 
 	case "postgres":
 		log.Info().Msg("using PostgreSQL database driver")

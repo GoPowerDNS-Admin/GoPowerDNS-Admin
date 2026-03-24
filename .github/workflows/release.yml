@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      owner: ${{ steps.tag.outputs.owner }}
     steps:
       - id: tag
         env:
@@ -25,6 +26,7 @@ jobs:
         run: |
           TAG="${RAW_TAG// /}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
   build:
     name: ${{ matrix.name }}
@@ -98,6 +100,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      REGISTRY_OWNER: ${{ needs.prepare.outputs.owner }}
     permissions:
       contents: read
       packages: write
@@ -139,7 +142,7 @@ jobs:
             VERSION=${{ env.RELEASE_TAG }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
-          outputs: type=image,name=ghcr.io/${{ github.repository_owner }}/gopowerdns-admin,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/${{ env.REGISTRY_OWNER }}/gopowerdns-admin,push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         run: |
@@ -159,6 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      REGISTRY_OWNER: ${{ needs.prepare.outputs.owner }}
     permissions:
       contents: read
       packages: write
@@ -184,7 +188,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository_owner }}/gopowerdns-admin
+          images: ghcr.io/${{ env.REGISTRY_OWNER }}/gopowerdns-admin
           tags: |
             type=raw,value=${{ env.RELEASE_TAG }}
             type=raw,value=latest,enable=${{ !contains(env.RELEASE_TAG, '-alpha') && !contains(env.RELEASE_TAG, '-beta') && !contains(env.RELEASE_TAG, '-rc') }}
@@ -194,7 +198,7 @@ jobs:
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ github.repository_owner }}/gopowerdns-admin@sha256:%s ' *)
+            $(printf 'ghcr.io/${{ env.REGISTRY_OWNER }}/gopowerdns-admin@sha256:%s ' *)
 
   release:
     name: Create GitHub Release

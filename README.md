@@ -6,6 +6,17 @@
 
 GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
 
+## Live Demo
+
+**[https://gopowerdns-admin.duckdns.org](https://gopowerdns-admin.duckdns.org)**
+
+| Field    | Value      |
+| -------- | ---------- |
+| Username | `admin`    |
+| Password | `changeme` |
+
+The demo resets automatically every day at midnight UTC. Feel free to create zones, add records, and explore the UI. A live PowerDNS instance is connected — DNS queries can be tested against `gopowerdns-admin.duckdns.org` on port 53.
+
 ## Status: Alpha
 
 Core features are functional. Interfaces and configuration may still change between releases. Bug reports and feedback are welcome — please open an issue.

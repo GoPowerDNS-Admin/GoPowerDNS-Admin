@@ -1,0 +1,17 @@
+services:
+  app:
+    image: ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.2
+    restart: unless-stopped
+    ports:
+      - "8080:8080" # HTTP — HAProxy on pfSense terminates TLS externally
+    volumes:
+      - ./config:/etc/go-pdns:ro
+      - ./data:/var/lib/go-pdns
+    environment:
+      GPDNS_WEBSERVER_URL: "https://${DOMAIN}"
+      GPDNS_WEBSERVER_DOMAIN: "${DOMAIN}"
+      GPDNS_WEBSERVER_COOKIEENCRYPTIONKEY: "${COOKIE_KEY}"
+      GPDNS_WEBSERVER_ARGON2SALT: "${ARGON2_SALT}"
+      GPDNS_PDNS_APISERVERURL: "${PDNS_URL:-}"
+      GPDNS_PDNS_APIKEY: "${PDNS_KEY:-}"
+      GPDNS_PDNS_VHOST: "${PDNS_VHOST:-}"

@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
 	ttlsettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/ttl"
@@ -31,6 +32,9 @@ func seed(cfg *config.Config, db *gorm.DB) {
 
 	// Seed TTL presets (only if not already set)
 	seedTTLPresets(db)
+
+	// Seed PowerDNS server settings from config (only if not already configured)
+	seedPDNSServer(cfg, db)
 }
 
 // seedRoles creates default roles.
@@ -573,6 +577,32 @@ func seedTTLPresets(db *gorm.DB) {
 	}
 
 	log.Info().Int("presets", len(s.Presets)).Msg("seeded TTL presets")
+}
+
+// seedPDNSServer seeds PowerDNS server settings from config if all three fields
+// are set and no server is already configured in the database.
+func seedPDNSServer(cfg *config.Config, db *gorm.DB) {
+	if cfg.PDNS.APIServerURL == "" || cfg.PDNS.APIKey == "" || cfg.PDNS.VHost == "" {
+		return
+	}
+
+	existing := &pdnsserver.Settings{}
+	if err := existing.Load(db); err == nil {
+		return // already configured via UI or a previous seed
+	}
+
+	s := &pdnsserver.Settings{
+		APIServerURL: cfg.PDNS.APIServerURL,
+		APIKey:       cfg.PDNS.APIKey,
+		VHost:        cfg.PDNS.VHost,
+	}
+
+	if err := s.Save(db); err != nil {
+		log.Error().Err(err).Msg("failed to seed PowerDNS server settings")
+		return
+	}
+
+	log.Info().Str("url", cfg.PDNS.APIServerURL).Msg("seeded PowerDNS server settings from config")
 }
 
 // seedUsers creates the default admin user.

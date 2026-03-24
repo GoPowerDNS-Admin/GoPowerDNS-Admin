@@ -2,6 +2,8 @@
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/chrisamti)
 
+---
+
 GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
 
 ## Status: Alpha
@@ -254,7 +256,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.1
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.2
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```
@@ -318,6 +320,7 @@ The idea for this Go-based version came from the PowerDNS-Admin project (https:/
 ## Configuration Highlights
 
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.
+- A `[pdns]` section in `main.toml` (or via `GPDNS_PDNS_*` env vars) can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur.
 - Authentication supports Local DB, OIDC, and LDAP; see `internal/config/structs.go` for the available fields.
 
 ## Contributing

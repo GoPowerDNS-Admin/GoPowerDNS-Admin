@@ -1,0 +1,41 @@
+Title = "GO PowerDNS-Admin Demo"
+
+[webserver]
+# Secrets injected via .env:
+#   GPDNS_WEBSERVER_COOKIEENCRYPTIONKEY
+#   GPDNS_WEBSERVER_ARGON2SALT
+CookieEncryptionKey = ""
+Argon2Salt          = ""
+Port                = 8080
+URL                 = "https://gopowerdns-admin.duckdns.org"   # overridden by GPDNS_WEBSERVER_URL
+Domain              = "gopowerdns-admin.duckdns.org"           # overridden by GPDNS_WEBSERVER_DOMAIN
+
+# TLS is terminated by HAProxy — ACME not needed inside the VM.
+ACMEEnabled = false
+
+ReverseProxy   = true
+TrustedProxies = ["192.168.21.1"]
+
+[webserver.session]
+ExpiryTime = "24h"
+
+# SQLite on a bind-mounted directory — easy to wipe for demo resets.
+[DB]
+GormEngine = "sqlite"
+Name       = "/var/lib/go-pdns/go-pdns.db"
+
+[log]
+Level = "info"
+
+[log.Console]
+Enable = true
+
+[auth.LocalDB]
+enabled = true
+
+# PowerDNS server bootstrap — seeded into the DB on first startup.
+# Set via .env: PDNS_URL, PDNS_KEY, PDNS_VHOST
+[pdns]
+APIServerURL = ""
+APIKey       = ""
+VHost        = ""

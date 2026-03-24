@@ -20,6 +20,18 @@ type Config struct {
 	Webserver Webserver  `mapstructure:"webserver"`
 	Record    Record     `mapstructure:"record"`
 	Auth      Auth       `mapstructure:"auth"`
+	PDNS      PDNS       `mapstructure:"pdns"`
+}
+
+// PDNS holds optional PowerDNS server bootstrap settings.
+// When set, these values are seeded into the database on first startup
+// (if no PowerDNS server is already configured). Useful for demo or
+// automated deployments where the admin UI cannot be used for initial setup.
+// All three fields must be non-empty for seeding to occur.
+type PDNS struct {
+	APIServerURL string `mapstructure:"apiserverurl"`
+	APIKey       string `mapstructure:"apikey"`
+	VHost        string `mapstructure:"vhost"`
 }
 
 // Webserver implement webserver settings.

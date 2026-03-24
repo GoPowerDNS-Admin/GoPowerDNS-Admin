@@ -13,8 +13,9 @@ Domain              = "gopowerdns-admin.duckdns.org"           # overridden by G
 # TLS is terminated by HAProxy — ACME not needed inside the VM.
 ACMEEnabled = false
 
-ReverseProxy   = true
-TrustedProxies = ["192.168.21.1"]
+[webserver.reverseproxy]
+enabled    = true
+trustedips = ["192.168.21.1"]
 
 [webserver.session]
 ExpiryTime = "24h"

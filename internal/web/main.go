@@ -41,6 +41,7 @@ import (
 	totphandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/totp"
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
+	accesslogmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/accesslog"
 	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
 	pdnsmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/pdns"
 )
@@ -232,6 +233,9 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			Browse: cfg.Webserver.BrowseStatic,
 		}),
 	)
+
+	// access log
+	app.Use(accesslogmiddleware.New())
 
 	// security headers
 	app.Use(helmet.New(helmet.Config{

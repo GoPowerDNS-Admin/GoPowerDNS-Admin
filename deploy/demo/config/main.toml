@@ -10,7 +10,7 @@ Port                = 8080
 URL                 = "https://gopowerdns-admin.duckdns.org"   # overridden by GPDNS_WEBSERVER_URL
 Domain              = "gopowerdns-admin.duckdns.org"           # overridden by GPDNS_WEBSERVER_DOMAIN
 
-# TLS is terminated by HAProxy — ACME not needed inside the VM.
+# HAProxy terminates TLS — ACME not needed inside the VM.
 ACMEEnabled = false
 
 [webserver.reverseproxy]
@@ -34,7 +34,7 @@ Enable = true
 [auth.LocalDB]
 enabled = true
 
-# PowerDNS server bootstrap — seeded into the DB on first startup.
+# PowerDNS server bootstrap — seeded into the DB on the first startup.
 # APIKey is injected via GPDNS_PDNS_APIKEY in the compose env.
 [pdns]
 APIServerURL = "http://pdns:8081"

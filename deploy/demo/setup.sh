@@ -53,6 +53,59 @@ echo "==> Starting the app..."
 cd "$INSTALL_DIR" && podman compose up -d
 
 echo ""
+echo "==> Enabling auto-start on reboot..."
+if [ "$(id -u)" -eq 0 ]; then
+  # Running as root — install system-wide systemd service
+  SYSTEMD_DIR=/etc/systemd/system
+  podman generate systemd --new --name --restart-policy=always -t 10 app pdns 2>/dev/null \
+    | tee "$SYSTEMD_DIR/gopowerdns-demo.service" > /dev/null || \
+  cat > "$SYSTEMD_DIR/gopowerdns-demo.service" <<UNIT
+[Unit]
+Description=GoPowerDNS-Admin Demo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$INSTALL_DIR
+ExecStart=/usr/bin/podman compose up -d
+ExecStop=/usr/bin/podman compose down
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  systemctl daemon-reload
+  systemctl enable --now gopowerdns-demo.service
+else
+  # Rootless — install per-user systemd service
+  SYSTEMD_DIR="$HOME/.config/systemd/user"
+  mkdir -p "$SYSTEMD_DIR"
+  cat > "$SYSTEMD_DIR/gopowerdns-demo.service" <<UNIT
+[Unit]
+Description=GoPowerDNS-Admin Demo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$INSTALL_DIR
+ExecStart=$(command -v podman) compose up -d
+ExecStop=$(command -v podman) compose down
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target
+UNIT
+  systemctl --user daemon-reload
+  systemctl --user enable --now gopowerdns-demo.service
+  # Enable linger so the service starts without a user session
+  loginctl enable-linger "$(id -un)"
+fi
+
+echo ""
 echo "==> Enabling daily demo reset at midnight UTC..."
 (crontab -l 2>/dev/null; echo "0 0 * * * $INSTALL_DIR/reset.sh >> $INSTALL_DIR/reset.log 2>&1") | crontab -
 

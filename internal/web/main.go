@@ -239,8 +239,11 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 
 	// security headers
 	app.Use(helmet.New(helmet.Config{
-		XFrameOptions:  "DENY",
-		ReferrerPolicy: "strict-origin-when-cross-origin",
+		// COEP is disabled — SharedArrayBuffer is not used, and frame-ancestors 'none'
+		// in the CSP already prevents cross-origin embedding attacks.
+		CrossOriginEmbedderPolicy: "unsafe-none",
+		XFrameOptions:             "DENY",
+		ReferrerPolicy:            "strict-origin-when-cross-origin",
 		// Alpine.js v3 evaluates x-data/x-on expressions via new Function(),
 		// requiring 'unsafe-eval'. Inline <style> in maincss.gohtml requires
 		// 'unsafe-inline' for styles.

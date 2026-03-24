@@ -15,9 +15,9 @@ echo "==> Installing Podman and podman-compose..."
 SUDO=""
 [ "$(id -u)" -ne 0 ] && SUDO="sudo"
 if command -v dnf &>/dev/null; then
-  $SUDO dnf install -y podman podman-compose
+  $SUDO dnf install -y podman podman-compose cronie
 elif command -v apt-get &>/dev/null; then
-  $SUDO apt-get update && $SUDO apt-get install -y podman podman-compose
+  $SUDO apt-get update && $SUDO apt-get install -y podman podman-compose cron
 else
   echo "Unsupported package manager — install Podman manually." >&2
   exit 1

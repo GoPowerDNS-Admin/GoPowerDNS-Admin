@@ -208,6 +208,7 @@ jobs:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v5

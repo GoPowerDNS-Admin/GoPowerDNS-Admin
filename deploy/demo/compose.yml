@@ -3,9 +3,10 @@ services:
     image: docker.io/powerdns/pdns-auth-49:latest
     restart: unless-stopped
     ports:
-      - "5353:53"
-      - "5353:53/udp"
+      - "5353:5353"
+      - "5353:5353/udp"
     command:
+      - "--local-port=5353"
       - "--webserver=yes"
       - "--webserver-address=0.0.0.0"
       - "--webserver-port=8081"

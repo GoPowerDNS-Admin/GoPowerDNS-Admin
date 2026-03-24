@@ -28,6 +28,8 @@ BrowseStatic = false
 # Reverse proxy support (HAProxy, nginx, Traefik, etc.)
 # Set enabled = true and list your proxy IP(s)/CIDRs to trust X-Forwarded-For.
 # Without this, c.IP() returns the real remote TCP address regardless of headers.
+# When running behind a container network (Docker/Podman), add the gateway IP or
+# subnet (e.g. 10.89.0.0/24 for Podman, 172.17.0.0/16 for Docker bridge).
 # [webserver.reverseproxy]
 # enabled     = true
 # trustedips  = ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]

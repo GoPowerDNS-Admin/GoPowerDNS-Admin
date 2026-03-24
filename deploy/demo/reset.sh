@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "[$(date)] Resetting demo..."
-docker compose stop app
+podman compose stop app
 rm -f data/go-pdns.db data/go-pdns.db-sessions.db
-docker compose start app
+podman compose start app
 echo "[$(date)] Reset complete."

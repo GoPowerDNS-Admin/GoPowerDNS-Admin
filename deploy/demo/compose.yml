@@ -3,8 +3,7 @@ services:
     image: ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.2
     restart: unless-stopped
     ports:
-      - "80:80" # ACME HTTP-01 challenge
-      - "443:8080" # HTTPS (ACME) or HTTP if TLS is disabled
+      - "8080:8080" # HTTP — HAProxy on pfSense terminates TLS externally
     volumes:
       - ./config:/etc/go-pdns:ro
       - ./data:/var/lib/go-pdns

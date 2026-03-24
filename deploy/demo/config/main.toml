@@ -7,13 +7,14 @@ Title = "GO PowerDNS-Admin Demo"
 CookieEncryptionKey = ""
 Argon2Salt          = ""
 Port                = 8080
-URL                 = "https://example.com"   # overridden by GPDNS_WEBSERVER_URL
-Domain              = "example.com"           # overridden by GPDNS_WEBSERVER_DOMAIN
+URL                 = "https://gopowerdns-admin.duckdns.org"   # overridden by GPDNS_WEBSERVER_URL
+Domain              = "gopowerdns-admin.duckdns.org"           # overridden by GPDNS_WEBSERVER_DOMAIN
 
-ACMEEnabled  = true
-ACMEDomain   = "example.com"                 # overridden by GPDNS_WEBSERVER_ACMEDOMAIN
-ACMEEmail    = "admin@example.com"           # overridden by GPDNS_WEBSERVER_ACMEEMAIL
-ACMECacheDir = "/var/lib/go-pdns/acme-cache"
+# TLS is terminated by HAProxy — ACME not needed inside the VM.
+ACMEEnabled = false
+
+ReverseProxy   = true
+TrustedProxies = ["192.168.21.1"]
 
 [webserver.session]
 ExpiryTime = "24h"

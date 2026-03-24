@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **toml:** Improve comments for clarity in main.toml ([9aea832](9aea832e7baf7cd56c9f64b7c6d5e9bd1653007e))
 - **release:** Grant write permissions for pull requests in release workflow ([ef6a01a](ef6a01a98b4aefe91a4ba60c14a266d1c2749aaa))
+- **compose:** Set pull policy to always for app service ([ad7a37f](ad7a37f7ae9ffd45a3d926f81e7f8e560ebf6b37))
+
+### Features
+
+- **demo:** Seed demo user and pre-populated test zones ([bd188da](bd188da4bab4f2574418a0200c8b4ca4a862d998))
 
 ## [0.1.0-alpha.4] - 2026-03-24
 

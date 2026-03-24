@@ -24,7 +24,7 @@ services:
       - "8080:8080" # HTTP — HAProxy on pfSense terminates TLS externally
     volumes:
       - ./config:/etc/go-pdns:ro
-      - ./data:/var/lib/go-pdns
+      - gopowerdns-data:/var/lib/go-pdns
     environment:
       GPDNS_WEBSERVER_URL: "https://${DOMAIN}"
       GPDNS_WEBSERVER_DOMAIN: "${DOMAIN}"
@@ -33,3 +33,6 @@ services:
       GPDNS_PDNS_APISERVERURL: "${PDNS_URL:-http://pdns:8081}"
       GPDNS_PDNS_APIKEY: "${PDNS_KEY:-}"
       GPDNS_PDNS_VHOST: "${PDNS_VHOST:-localhost}"
+
+volumes:
+  gopowerdns-data:

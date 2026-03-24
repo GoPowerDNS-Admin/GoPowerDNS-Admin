@@ -24,13 +24,7 @@ else
 fi
 
 echo "==> Creating directories..."
-mkdir -p "$INSTALL_DIR/config" "$INSTALL_DIR/data"
-# Rootless Podman uses user namespace remapping — the container's root (UID 0 in the
-# container namespace) maps to a sub-UID on the host. Fix ownership so the app can
-# write its SQLite database to the data volume.
-if [ "$(id -u)" -ne 0 ]; then
-  podman unshare chown -R 0:0 "$INSTALL_DIR/data"
-fi
+mkdir -p "$INSTALL_DIR/config"
 
 echo "==> Downloading demo files..."
 curl -fsSL "$RAW_BASE/compose.yml"        -o "$INSTALL_DIR/compose.yml"

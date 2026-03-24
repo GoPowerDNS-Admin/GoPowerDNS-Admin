@@ -23,7 +23,7 @@ import (
 
 const (
 	// Path is the path to the dashboard page.
-	Path = handler.RootPath + "dashboard"
+	Path = handler.DashboardPath
 
 	// TemplateName is the name of the dashboard template.
 	TemplateName = "dashboard/dashboard"
@@ -178,7 +178,13 @@ func (s *Service) Get(c fiber.Ctx) error {
 	if err != nil {
 		log.Error().Err(err).Msg("failed to fetch zones from PowerDNS")
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch zones: " + err.Error())
+		msg := "Failed to fetch zones: " + err.Error()
+		if powerdns.IsServerUnreachable(err) {
+			msg = powerdns.ErrMsgServerUnreachable
+		}
+
+		return handler.RenderError(c, fiber.StatusInternalServerError,
+			"PowerDNS Unreachable", msg, handler.PDNSServerSettingsAction)
 	}
 
 	forwardZones, reverseV4Zones, reverseV6Zones := categorizeZones(apiZones)

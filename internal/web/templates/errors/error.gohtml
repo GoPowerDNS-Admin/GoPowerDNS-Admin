@@ -1,0 +1,58 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6"><h3 class="mb-0">{{.Navigation.PageTitle}}</h3></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{range .Navigation.Breadcrumbs}}
+                                {{if .Active}}
+                                    <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                                {{else}}
+                                    <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                                {{end}}
+                            {{end}}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+            <div class="container-fluid">
+                <div class="row justify-content-center mt-4">
+                    <div class="col-lg-6 col-md-8">
+                        <div class="card card-outline card-danger shadow-sm">
+                            <div class="card-header text-center border-bottom-0 pb-0">
+                                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                                <h4 class="card-title mt-2">{{.Error.Title}}</h4>
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="text-muted mb-4">{{.Error.Message}}</p>
+                                {{if .Error.Action}}
+                                    <a href="{{.Error.Action.URL}}" class="btn btn-primary me-2">
+                                        <i class="bi {{.Error.Action.Icon}} me-1"></i>{{.Error.Action.Label}}
+                                    </a>
+                                {{end}}
+                                <a href="{{$.DashboardPath}}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-house me-1"></i>Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->

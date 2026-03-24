@@ -78,7 +78,7 @@ func (s *Service) List(c fiber.Ctx) error {
 	var tags []models.Tag
 	if err := s.db.Order(handler.OrderNameASC).Find(&tags).Error; err != nil {
 		log.Error().Err(err).Msg("failed to list tags")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tags")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load tags", nil)
 	}
 
 	return c.Render(templateList, fiber.Map{
@@ -157,7 +157,7 @@ func (s *Service) Edit(c fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).SendString(errTagNotFound)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).SendString(errFailedLoadTag)
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", errFailedLoadTag, nil)
 	}
 
 	nav := navigation.NewContext(labelEditTag, navSection, navSubsection).
@@ -183,7 +183,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).SendString(errTagNotFound)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).SendString(errFailedLoadTag)
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", errFailedLoadTag, nil)
 	}
 
 	nav := navigation.NewContext(labelEditTag, navSection, navSubsection).
@@ -242,12 +242,12 @@ func (s *Service) Delete(c fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).SendString(errTagNotFound)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).SendString(errFailedLoadTag)
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", errFailedLoadTag, nil)
 	}
 
 	if err = s.db.Delete(&tag).Error; err != nil {
 		log.Error().Err(err).Msg("failed to delete tag")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete tag")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Delete Failed", "Failed to delete tag", nil)
 	}
 
 	return c.Redirect().To(PathList)

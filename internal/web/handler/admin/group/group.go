@@ -362,7 +362,7 @@ func (s *Service) Create(c fiber.Ctx) error {
 			tx.Rollback()
 			log.Error().Err(err).Msg("failed to create group mapping")
 
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to assign role to group")
+			return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to assign role to group", nil)
 		}
 	}
 
@@ -381,13 +381,13 @@ func (s *Service) Create(c fiber.Ctx) error {
 			tx.Rollback()
 			log.Error().Err(err).Msg("failed to add user to group")
 
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to add users to group")
+			return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to add users to group", nil)
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		log.Error().Err(err).Msg("failed to commit transaction")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save group")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to save group", nil)
 	}
 
 	syncGroupTags(s.db, g.ID, parseGroupTagIDs(c))
@@ -412,28 +412,28 @@ func (s *Service) Edit(c fiber.Ctx) error {
 
 		log.Error().Err(err).Msg("load group failed")
 
-		return c.Status(fiber.StatusInternalServerError).SendString(ErrFailedLoadGroup)
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", ErrFailedLoadGroup, nil)
 	}
 
 	// Load all users
 	var users []models.User
 	if err := s.db.Order(handler.OrderUsernameASC).Find(&users).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load users")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load users")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load users", nil)
 	}
 
 	// Load all roles
 	var roles []models.Role
 	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load roles")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load roles")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load roles", nil)
 	}
 
 	// Load current group members
 	var userGroups []models.UserGroup
 	if err := s.db.Where("group_id = ?", g.ID).Find(&userGroups).Error; err != nil {
 		log.Error().Err(err).Msg("failed to load group members")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load group members")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load group members", nil)
 	}
 
 	// Load group mapping (role assignment)
@@ -497,7 +497,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 		log.Error().Err(err).Msg("load group failed")
 
-		return c.Status(fiber.StatusInternalServerError).SendString(ErrFailedLoadGroup)
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", ErrFailedLoadGroup, nil)
 	}
 
 	// Get user IDs from the form
@@ -584,7 +584,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 			tx.Rollback()
 			log.Error().Err(err).Msg("failed to remove group mapping")
 
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to remove group role")
+			return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to remove group role", nil)
 		}
 	}
 
@@ -608,7 +608,7 @@ func (s *Service) Delete(c fiber.Ctx) error {
 
 	if err := s.db.Delete(&models.Group{}, id).Error; err != nil {
 		log.Error().Err(err).Msg("failed to delete group")
-		return c.Status(fiber.StatusInternalServerError).SendString(ErrFailedDeleteGroup)
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Delete Failed", ErrFailedDeleteGroup, nil)
 	}
 
 	return c.Redirect().To(Path)

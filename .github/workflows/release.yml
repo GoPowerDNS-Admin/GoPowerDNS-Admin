@@ -229,6 +229,13 @@ jobs:
         env:
           OUTPUT: CHANGELOG.md
 
+      - name: Format CHANGELOG.md
+        run: |
+          npm install -g prettier
+          prettier --write CHANGELOG.md
+          # Ensure trailing newline
+          [ -n "$(tail -c1 CHANGELOG.md)" ] && echo "" >> CHANGELOG.md
+
       - name: Commit updated CHANGELOG.md
         env:
           GH_TOKEN: ${{ github.token }}

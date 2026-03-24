@@ -14,6 +14,7 @@ type Session struct {
 // Config overall data structure.
 type Config struct {
 	DevMode   bool       `mapstructure:"devmode"`
+	Demo      bool       `mapstructure:"demo"`
 	DB        DB         `mapstructure:"db"`
 	Log       logger.Log `mapstructure:"log"`
 	Title     string     `mapstructure:"title"`

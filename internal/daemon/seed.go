@@ -35,6 +35,11 @@ func seed(cfg *config.Config, db *gorm.DB) {
 
 	// Seed PowerDNS server settings from config (only if not already configured)
 	seedPDNSServer(cfg, db)
+
+	// Seed demo-specific data (extra user) when demo mode is enabled
+	if cfg.Demo {
+		seedDemoUser(db)
+	}
 }
 
 // seedRoles creates default roles.

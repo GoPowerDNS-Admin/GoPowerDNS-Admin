@@ -16,7 +16,7 @@ services:
       - "--default-soa-edit=INCEPTION-INCREMENT"
 
   app:
-    image: ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.3
+    image: ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.4
     restart: unless-stopped
     depends_on:
       - pdns

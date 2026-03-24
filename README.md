@@ -38,6 +38,7 @@ Core features are functional. Interfaces and configuration may still change betw
 - Admin-configurable TTL presets shown as a dropdown in the record modal
 - DNSSEC-managed records automatically hidden from the zone editor and dashboard
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
+- Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
 - Go backend with server-rendered templates
 - Health check endpoint (`GET /health`) for load balancer and container probes
@@ -267,7 +268,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.2
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.4
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```

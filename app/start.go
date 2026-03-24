@@ -30,14 +30,16 @@ var (
 	startCmd = &cobra.Command{
 		Use:   "start",
 		Short: "Start the GoPowerDNS-Admin web service",
-		PreRun: func(_ *cobra.Command, _ []string) {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if cfg, err = config.ReadConfig(configPath); err != nil {
-				panic(err)
+				return err
 			}
 
 			if devMode {
 				cfg.DevMode = true
 			}
+
+			return nil
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
 			daemon := daemon.New(&cfg)

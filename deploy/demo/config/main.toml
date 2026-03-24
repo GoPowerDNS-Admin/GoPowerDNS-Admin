@@ -35,8 +35,8 @@ Enable = true
 enabled = true
 
 # PowerDNS server bootstrap — seeded into the DB on first startup.
-# Set via .env: PDNS_URL, PDNS_KEY, PDNS_VHOST
+# APIKey is injected via GPDNS_PDNS_APIKEY in the compose env.
 [pdns]
-APIServerURL = ""
+APIServerURL = "http://pdns:8081"
 APIKey       = ""
-VHost        = ""
+VHost        = "localhost"

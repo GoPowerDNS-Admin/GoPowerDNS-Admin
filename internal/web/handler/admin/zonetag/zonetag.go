@@ -62,7 +62,8 @@ func (s *Service) List(c fiber.Ctx) error {
 		AddBreadcrumb("Zone Tags", PathList, true)
 
 	if powerdns.Engine.Client == nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(powerdns.ErrMsgClientNotInitializedDetailed)
+		return handler.RenderError(c, fiber.StatusInternalServerError,
+			"PowerDNS Not Configured", powerdns.ErrMsgClientNotInitializedDetailed, handler.PDNSServerSettingsAction)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -71,7 +72,14 @@ func (s *Service) List(c fiber.Ctx) error {
 	apiZones, err := powerdns.Engine.Zones.List(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to fetch zones for zone-tag list")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch zones: " + err.Error())
+
+		msg := "Failed to fetch zones: " + err.Error()
+		if powerdns.IsServerUnreachable(err) {
+			msg = powerdns.ErrMsgServerUnreachable
+		}
+
+		return handler.RenderError(c, fiber.StatusInternalServerError,
+			"PowerDNS Unreachable", msg, handler.PDNSServerSettingsAction)
 	}
 
 	// Load all zone-tag associations
@@ -197,7 +205,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 	})
 	if err != nil {
 		log.Error().Err(err).Str("zone", zoneName).Msg("failed to update zone tags")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to update zone tags")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to update zone tags", nil)
 	}
 
 	return c.Redirect().To(PathList)

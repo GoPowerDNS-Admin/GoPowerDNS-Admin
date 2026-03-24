@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 )
 
 // updateOrCreateGroupMapping updates or creates a group-role mapping in the database.
@@ -15,7 +16,7 @@ func (s *Service) updateOrCreateGroupMapping(c fiber.Ctx, tx *gorm.DB, groupID, 
 		tx.Rollback()
 		log.Error().Err(err).Msg("failed to delete existing group mapping")
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to update group role")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to update group role", nil)
 	}
 
 	// Create new mapping
@@ -27,7 +28,7 @@ func (s *Service) updateOrCreateGroupMapping(c fiber.Ctx, tx *gorm.DB, groupID, 
 		tx.Rollback()
 		log.Error().Err(err).Msg("failed to create group mapping")
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to assign role to group")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to assign role to group", nil)
 	}
 
 	return nil

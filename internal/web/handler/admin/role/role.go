@@ -218,7 +218,7 @@ func (s *Service) Create(c fiber.Ctx) error {
 
 	if err := tx.Commit().Error; err != nil {
 		log.Error().Err(err).Msg("failed to commit role creation")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save role")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to save role", nil)
 	}
 
 	return c.Redirect().To(Path)
@@ -386,7 +386,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 	if err := tx.Commit().Error; err != nil {
 		log.Error().Err(err).Msg("failed to commit role update")
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save role")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to save role", nil)
 	}
 
 	return c.Redirect().To(Path)

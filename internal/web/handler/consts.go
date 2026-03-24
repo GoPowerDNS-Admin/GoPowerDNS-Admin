@@ -15,4 +15,10 @@ const (
 
 	// OrderUsernameASC is the GORM order clause for sorting by username ascending.
 	OrderUsernameASC = "username ASC"
+
+	// DashboardPath is the path to the dashboard page.
+	DashboardPath = RootPath + "dashboard"
+
+	// PDNSServerSettingsPath is the path to the PowerDNS server settings page.
+	PDNSServerSettingsPath = RootPath + "admin/settings/pdns-server"
 )

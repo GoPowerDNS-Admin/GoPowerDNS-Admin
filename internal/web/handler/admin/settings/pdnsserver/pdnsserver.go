@@ -20,7 +20,7 @@ import (
 
 const (
 	// Path is the path to the pdns-server settings page.
-	Path = handler.RootPath + "admin/settings/pdns-server"
+	Path = handler.PDNSServerSettingsPath
 
 	// TemplateName is the name of the powerdns setting template.
 	TemplateName = "admin/settings/pdns-server"
@@ -83,7 +83,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 		// Log and return error for other failures
 		log.Error().Err(err).Msg("failed to load PDNS server settings")
 
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load settings")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load settings", nil)
 	}
 
 	// Render form with loaded settings

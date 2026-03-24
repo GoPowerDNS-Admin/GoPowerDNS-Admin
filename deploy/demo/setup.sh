@@ -12,10 +12,12 @@ INSTALL_DIR="${GOPOWERDNS_INSTALL_DIR:-$HOME/gopowerdns-admin}"
 RAW_BASE=https://raw.githubusercontent.com/GoPowerDNS-Admin/GoPowerDNS-Admin/main/deploy/demo
 
 echo "==> Installing Podman and podman-compose..."
+SUDO=""
+[ "$(id -u)" -ne 0 ] && SUDO="sudo"
 if command -v dnf &>/dev/null; then
-  dnf install -y podman podman-compose
+  $SUDO dnf install -y podman podman-compose
 elif command -v apt-get &>/dev/null; then
-  apt-get update && apt-get install -y podman podman-compose
+  $SUDO apt-get update && $SUDO apt-get install -y podman podman-compose
 else
   echo "Unsupported package manager — install Podman manually." >&2
   exit 1

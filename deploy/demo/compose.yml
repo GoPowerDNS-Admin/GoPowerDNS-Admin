@@ -1,6 +1,6 @@
 services:
   pdns:
-    image: powerdns/pdns-auth-49:latest
+    image: docker.io/powerdns/pdns-auth-49:latest
     restart: unless-stopped
     ports:
       - "53:53"

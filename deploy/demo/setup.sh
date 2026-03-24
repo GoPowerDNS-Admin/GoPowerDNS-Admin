@@ -2,10 +2,13 @@
 # One-time setup: install Podman, download demo files, prompt for config, and start.
 # Supports both direct execution and piped via curl:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/GoPowerDNS-Admin/GoPowerDNS-Admin/main/deploy/demo/setup.sh)
+#
+# Installs to $HOME/gopowerdns-admin by default. Override with:
+#   GOPOWERDNS_INSTALL_DIR=/custom/path bash <(curl -fsSL ...)
 
 set -e
 
-INSTALL_DIR=/opt/gopowerdns-admin
+INSTALL_DIR="${GOPOWERDNS_INSTALL_DIR:-$HOME/gopowerdns-admin}"
 RAW_BASE=https://raw.githubusercontent.com/GoPowerDNS-Admin/GoPowerDNS-Admin/main/deploy/demo
 
 echo "==> Installing Podman and podman-compose..."
@@ -57,7 +60,7 @@ cd "$INSTALL_DIR" && podman compose up -d
 
 echo ""
 echo "==> Enabling daily demo reset at midnight UTC..."
-(crontab -l 2>/dev/null; echo "0 0 * * * $INSTALL_DIR/reset.sh >> /var/log/gopowerdns-reset.log 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 0 * * * $INSTALL_DIR/reset.sh >> $INSTALL_DIR/reset.log 2>&1") | crontab -
 
 echo ""
 echo "==> Done! App is running on http://localhost:8080"

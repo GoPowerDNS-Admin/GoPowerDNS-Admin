@@ -16,7 +16,7 @@ ACMEEnabled = false
 
 [webserver.reverseproxy]
 enabled    = true
-trustedips = ["192.168.21.1"]
+trustedips = ["192.168.21.1", "10.89.0.0/24"]
 
 [webserver.session]
 ExpiryTime = "24h"

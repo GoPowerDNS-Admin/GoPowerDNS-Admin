@@ -237,7 +237,7 @@ jobs:
           npm install -g prettier
           prettier --write CHANGELOG.md
           # Ensure trailing newline
-          [ -n "$(tail -c1 CHANGELOG.md)" ] && echo "" >> CHANGELOG.md
+          if [ -n "$(tail -c1 CHANGELOG.md)" ]; then echo "" >> CHANGELOG.md; fi
 
       - name: Commit updated CHANGELOG.md
         run: |

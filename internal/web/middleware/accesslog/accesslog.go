@@ -17,13 +17,15 @@ func New() fiber.Handler {
 
 		err := c.Next()
 
-		log.Info().
-			Str("method", c.Method()).
-			Str("path", c.Path()).
-			Int("status", c.Response().StatusCode()).
-			Dur("latency", time.Since(start)).
-			Str("ip", c.IP()).
-			Msg("request")
+		if c.Path() != "/health" {
+			log.Info().
+				Str("method", c.Method()).
+				Str("path", c.Path()).
+				Int("status", c.Response().StatusCode()).
+				Dur("latency", time.Since(start)).
+				Str("ip", c.IP()).
+				Msg("request")
+		}
 
 		return err
 	}

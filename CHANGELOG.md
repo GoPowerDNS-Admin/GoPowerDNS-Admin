@@ -4,20 +4,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-alpha.3] - 2026-03-24
+
+### Bug Fixes
+- **deploy:** Use HOME-relative install dir for non-root compatibility ([c455e32](c455e32d2c71f7a411d7b177c4fa94936521eeeb))
+- **deploy:** Use sudo for package install when non-root; qualify pdns image name ([65b438f](65b438f868b3036b72ec85f520cbe04d677b909a))
+- **deploy:** Remove port 53 from pdns service; not needed for demo and fails rootless ([51d937a](51d937a14727f53680c778fb685d7c05ac0d538e))
+- **deploy:** Bind pdns DNS port to 5353 on host for rootless compatibility ([5e84f15](5e84f15ab5e6c3ff38d7080a9a6d3fcb3372ee85))
+- **deploy:** Install cron/cronie as part of setup dependencies ([61c19d4](61c19d4c3c249e0faf095981fc5b97d232ad08a1))
+- **deploy:** Correct reverseproxy config to use [webserver.reverseproxy] section ([ce56fec](ce56fec8308be95568c28016d1aae4695f0bf860))
+- **deploy:** Fix rootless podman volume permissions with podman unshare chown ([3c93211](3c932115c605e64ba9cbb9f0f81662900091627a))
+- **deploy:** Configure pdns to listen on port 5353 to avoid privileged port in rootless container ([47c80a6](47c80a615d27492b3f5a8143c221763278e25f78))
+- **deploy:** Use named volume for app data to avoid rootless podman UID remapping issues ([49aaa21](49aaa218534de015983834c71b477afa698b05e8))
+- **deploy:** Pre-configure pdns URL and vhost in demo main.toml for auto-seed on first startup ([def71d0](def71d0e18553032c02408d89cc078cef7c1b3b9))
+- **deploy:** Remove dirname cd from cleanup.sh to work when piped via curl ([99abdd3](99abdd3bf7838c8fb4d1b4fe266786625461863a))
+- **deploy:** Replace unsupported --rmi all with explicit podman rm and rmi in cleanup ([ee1e8f2](ee1e8f29d98ab78533b6eaf90ca83c79b0eedd88))
+
+
+### Features
+- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
+- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
+- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
+- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
+- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
+
+
 ## [0.1.0-alpha.2] - 2026-03-23
 
 ### Documentation
-
 - **readme:** Document pure-Go SQLite driver and SOA protection ([8661203](866120366d8e64349515e4037586b75386f68627))
 
-### Features
 
+### Features
 - Replace CGO SQLite with pure-Go driver (#42) ([0bdee0a](0bdee0a6aa90a6271df009d6d1214d718287bdea))
+
 
 ## [0.1.0-alpha.1] - 2026-03-23
 
 ### Bug Fixes
-
 - **workflow:** Update PR title check workflow configuration ([b5f5dc2](b5f5dc2bf40d74111e08e9990197bc0809d2c773))
 - **workflow:** Update runner configuration for PR title validation ([9529781](95297816ce7e855d35f26d42681cd3a5a1f8bb27))
 - **zone:** Replace deprecated VisitAll with All iterator (#4) ([c937cfc](c937cfc379ea1ac440347a817bc098bb23206357))
@@ -40,15 +64,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
 - **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
-### Dependencies
 
+### Dependencies
 - **deps:** Update dependencies in go.mod and go.sum (#3) ([1673016](1673016b567e6eb01fb58c6134c9efc92ceb0cb6))
 - **deps:** Vendor CDN dependencies into static assets (#9) ([93e7990](93e799057ccaa40c067ff6b06fa9406004d50211))
 - **deps:** Bump dependencies to latest versions (#30) ([3423b03](3423b035aa8152d7b1099d082a5807089f81dac9))
 - **deps:** Bump dependencies to latest versions (#31) ([9730399](973039955a9218437a3c2c3f469b99862bf1d57d))
 
-### Documentation
 
+### Documentation
 - Update README to reflect current features and local config setup (#21) ([6f293a8](6f293a8a5e8a5aa4eac0a3a014c0e0151a42b7b6))
 - Add Buy Me a Coffee badge and FUNDING.yml ([9934746](9934746328f34f785536420e071b5de9d98ad98a))
 - Update README for zone editor, TTL presets, roles, and activity log improvements ([8d77384](8d7738409046f7e00c62b2f82bacbb1d5144988c))
@@ -56,8 +80,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **readme:** Update status to alpha, add security headers feature ([11acf4d](11acf4d3672210e9dba1e19d652ed1d82afd6b80))
 - **readme:** Add version flag, make build, and Docker registry info ([f67be7a](f67be7a30b276945c153f5746b3a6e1d94eb1e3e))
 
-### Features
 
+### Features
 - Add core web application with PowerDNS admin interface ([d4731e6](d4731e64e5986b0e37679d1e9791d8b0ed27bb67))
 - Implement zone record settings management with CRUD operations ([b80b456](b80b456bf079516cec60c11a05fa69fc2c048cc4))
 - Add server configuration management with pagination and filtering ([fe737d8](fe737d8379eb588a59862c4454f6f268b9fe45cb))
@@ -101,8 +125,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **version:** Fall back to VCS commit hash when version not set via ldflags ([6049634](60496342f65ce53699946cbd92a940bf969f6671))
 - **version:** Include branch name in version string ([c3520b5](c3520b583d9618d1dbbdff972a5cef0e45e48a6e))
 
-### Refactoring
 
+### Refactoring
 - **auth/oidc:** Replace if-else chain with switch for DB error handling ([9e0c473](9e0c473a18dd182a65f6ba76681d8a7260421336))
 - **zone/add:** Extract resolveZoneName and createZone helpers to reduce cyclomatic complexity ([98dbff1](98dbff1e2bdda3e427270780f71ac05f9d817fc9))
 - **zone/add:** Split add.go into types.go and create.go ([2a64a6d](2a64a6d64b06afb3a8ce6d8c6ee5d8357969ebb3))
+
+
+

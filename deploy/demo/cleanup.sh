@@ -6,7 +6,13 @@ set -e
 INSTALL_DIR="${GOPOWERDNS_INSTALL_DIR:-$HOME/gopowerdns-admin}"
 
 echo "==> Stopping and removing containers and volumes..."
-cd "$INSTALL_DIR" && podman compose down -v --rmi all 2>/dev/null || true
+cd "$INSTALL_DIR"
+podman compose down -v 2>/dev/null || true
+# Fallback: remove containers by name in case compose down missed them
+podman rm -f gopowerdns-admin_app_1 gopowerdns-admin_pdns_1 2>/dev/null || true
+# Remove images
+podman rmi -f ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.2 \
+              docker.io/powerdns/pdns-auth-49:latest 2>/dev/null || true
 
 echo "==> Removing install directory..."
 rm -rf "$INSTALL_DIR"

@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **toml:** Improve comments for clarity in main.toml ([9aea832](9aea832e7baf7cd56c9f64b7c6d5e9bd1653007e))
+- **release:** Grant write permissions for pull requests in release workflow ([ef6a01a](ef6a01a98b4aefe91a4ba60c14a266d1c2749aaa))
+
+## [0.1.0-alpha.4] - 2026-03-24
+
+### Bug Fixes
+
+- **ci:** Lowercase repository owner in Docker image references ([f253ca5](f253ca5446a0541df3c1b4a54bfaa2bb5b3ee24c))
+- **logging:** Exclude health check requests from access logs ([ce86b70](ce86b70940bb263a8de0a9c8d58c9fd87d36a2f1))
+
+### Documentation
+
+- **readme:** Add live demo link with credentials and reset info ([0977cf4](0977cf45e471ad6e2a959873eae71e35b060f3e0))
+
+### Features
+
+- **web:** Add zerolog access log middleware logging method, path, status, latency, and IP ([b42b82e](b42b82eb86049085d8e1f6eba6a5a9432e7afdcb))
+- **web:** Replace plain error strings with AdminLTE error page (#46) ([f175a83](f175a8321df30f473e2fc49fa57a3ff784537d6f))
+- **web:** Replace plain error strings with AdminLTE error page ([71bd60b](71bd60b2e84256e8ab136b1ae73c8eb82f18b4b2))
+
 ## [0.1.0-alpha.3] - 2026-03-24
 
 ### Bug Fixes

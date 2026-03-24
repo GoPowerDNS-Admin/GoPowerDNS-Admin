@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "[$(date)] Resetting demo..."
-podman compose stop app
+podman compose down
 rm -f data/go-pdns.db data/go-pdns.db-sessions.db
-podman compose start app
+podman compose up -d
 echo "[$(date)] Reset complete."

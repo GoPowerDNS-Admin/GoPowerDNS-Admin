@@ -39,19 +39,13 @@ DOMAIN="${DOMAIN:-gopowerdns-admin.duckdns.org}"
 
 COOKIE_KEY=$(openssl rand -base64 32)
 ARGON2_SALT=$(openssl rand -base64 24)
-
-read -rp "    PowerDNS API URL (leave empty to configure via UI): " PDNS_URL
-read -rp "    PowerDNS API key (leave empty to configure via UI): " PDNS_KEY
-read -rp "    PowerDNS vhost [localhost]: " PDNS_VHOST
-PDNS_VHOST="${PDNS_VHOST:-localhost}"
+PDNS_KEY=$(openssl rand -hex 32)
 
 cat > "$INSTALL_DIR/.env" <<EOF
 DOMAIN=${DOMAIN}
 COOKIE_KEY=${COOKIE_KEY}
 ARGON2_SALT=${ARGON2_SALT}
-PDNS_URL=${PDNS_URL}
 PDNS_KEY=${PDNS_KEY}
-PDNS_VHOST=${PDNS_VHOST}
 EOF
 
 echo ""

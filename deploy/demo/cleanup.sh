@@ -2,7 +2,6 @@
 # Remove all demo containers, volumes, images, and install directory.
 
 set -e
-cd "$(dirname "$0")"
 
 INSTALL_DIR="${GOPOWERDNS_INSTALL_DIR:-$HOME/gopowerdns-admin}"
 

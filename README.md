@@ -10,12 +10,14 @@ GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you man
 
 **[https://gopowerdns-admin.duckdns.org](https://gopowerdns-admin.duckdns.org)**
 
-| Field    | Value      |
-| -------- | ---------- |
-| Username | `admin`    |
-| Password | `changeme` |
+| Role  | Username | Password   |
+| ----- | -------- | ---------- |
+| Admin | `admin`  | `changeme` |
+| User  | `user`   | `password` |
 
 The demo resets automatically every day at midnight UTC. Feel free to create zones, add records, and explore the UI. A live PowerDNS instance is connected — DNS queries can be tested against `gopowerdns-admin.duckdns.org` on port 53.
+
+Two sample zones (`example.com` and `example.org`) with a variety of record types, plus a reverse zone (`203.0.113.in-addr.arpa`), are pre-populated on each reset so there is something to explore immediately.
 
 ## Status: Alpha
 

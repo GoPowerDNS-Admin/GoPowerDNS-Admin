@@ -1,4 +1,5 @@
 Title = "GO PowerDNS-Admin Demo"
+Demo  = true
 
 [webserver]
 # Secrets injected via .env:

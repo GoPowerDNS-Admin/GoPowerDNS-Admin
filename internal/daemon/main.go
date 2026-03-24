@@ -74,6 +74,10 @@ func New(cfg *config.Config) *Daemon {
 		if err = powerdns.Engine.Test(); err != nil {
 			log.Warn().Err(err).Msg("PowerDNS API connection test failed - please verify server settings")
 		}
+
+		if cfg.Demo {
+			seedDemoZones()
+		}
 	}
 
 	return &Daemon{

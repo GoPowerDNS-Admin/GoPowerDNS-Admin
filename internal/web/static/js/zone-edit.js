@@ -528,11 +528,11 @@ function zoneEditor(initData) {
                 origComment:     record.comment || '',
                 mname:   soa?.mname   || '',
                 rname:   soa?.rname   || '',
-                serial:  soa?.serial  || '',
-                refresh: soa?.refresh || '',
-                retry:   soa?.retry   || '',
-                expire:  soa?.expire  || '',
-                minimum: soa?.minimum || '',
+                serial:  soa?.serial  ?? '',
+                refresh: soa?.refresh ?? '',
+                retry:   soa?.retry   ?? '',
+                expire:  soa?.expire  ?? '',
+                minimum: soa?.minimum ?? '',
             };
             this._showModal('soaModal');
         },
@@ -674,8 +674,8 @@ function zoneEditor(initData) {
             const sf = this.soaForm;
             const composed = composeSOA({
                 mname: sf.mname.trim(), rname: sf.rname.trim(),
-                serial: sf.serial.trim(), refresh: sf.refresh.trim(),
-                retry: sf.retry.trim(), expire: sf.expire.trim(), minimum: sf.minimum.trim(),
+                serial: String(sf.serial).trim(), refresh: String(sf.refresh).trim(),
+                retry: String(sf.retry).trim(), expire: String(sf.expire).trim(), minimum: String(sf.minimum).trim(),
             });
 
             if (!composed) { showToast('Please provide valid SOA values.', 'danger'); return; }

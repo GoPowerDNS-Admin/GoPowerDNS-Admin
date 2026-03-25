@@ -246,6 +246,7 @@ jobs:
           token: ${{ secrets.CHANGELOG_PAT || github.token }}
           commit-message: "chore(changelog): update for ${{ env.RELEASE_TAG }} [skip ci]"
           branch: chore/changelog-${{ env.RELEASE_TAG }}
+          base: main
           title: "chore(changelog): update for ${{ env.RELEASE_TAG }}"
           body: "Automated changelog update for release `${{ env.RELEASE_TAG }}`."
           add-paths: CHANGELOG.md

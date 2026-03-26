@@ -1,10 +1,11 @@
 module github.com/GoPowerDNS-Admin/GoPowerDNS-Admin
 
-go 1.25.7
+go 1.26
 
 require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.56.0
 	github.com/alexedwards/argon2id v1.0.0
+	github.com/chromedp/chromedp v0.15.1
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-ldap/ldap/v3 v3.4.13
@@ -37,6 +38,8 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/chromedp/cdproto v0.0.0-20260321001828-e3e3800016bc // indirect
+	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -44,10 +47,14 @@ require (
 	github.com/glebarez/go-sqlite v1.21.2 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
+	github.com/gobwas/httphead v0.1.0 // indirect
+	github.com/gobwas/pool v0.2.1 // indirect
+	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/gofiber/schema v1.7.0 // indirect
 	github.com/gofiber/template/v2 v2.1.0 // indirect

@@ -1,6 +1,7 @@
 package zonetag
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -88,7 +89,7 @@ func newTestService(t *testing.T, app *fiber.App) *Service {
 func doGet(t *testing.T, app *fiber.App, path string) *http.Response {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, http.NoBody)
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
@@ -202,7 +203,7 @@ func TestParseTagIDs_Valid(t *testing.T) {
 	})
 
 	body := "tag_ids=1&tag_ids=2&tag_ids=42"
-	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/test", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 5 * time.Second})
@@ -237,7 +238,7 @@ func TestParseTagIDs_SkipsInvalidAndZero(t *testing.T) {
 	})
 
 	body := "tag_ids=0&tag_ids=abc&tag_ids=5&tag_ids=-1"
-	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/test", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 5 * time.Second})
@@ -263,7 +264,7 @@ func TestParseTagIDs_Empty(t *testing.T) {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(""))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/test", strings.NewReader(""))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 5 * time.Second})

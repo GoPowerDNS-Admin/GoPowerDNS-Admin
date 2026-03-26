@@ -72,7 +72,7 @@ func buildRecordsDiff(currentZone *pdnsapi.Zone, changes []RecordChange) *activi
 
 		oldContents, oldTTL := extractOldRRSetData(&old, hasOld)
 
-		var newContents []string
+		newContents := make([]string, 0, len(change.Records))
 		for _, r := range change.Records {
 			newContents = append(newContents, r.Content)
 		}

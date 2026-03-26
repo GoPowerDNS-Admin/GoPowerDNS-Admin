@@ -1,6 +1,7 @@
 package health
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -35,7 +36,7 @@ func newTestApp(db *gorm.DB, alive *atomic.Bool) *fiber.App {
 func doGet(t *testing.T, app *fiber.App) *http.Response {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, Path, http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, Path, http.NoBody)
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 5 * time.Second})
 	if err != nil {

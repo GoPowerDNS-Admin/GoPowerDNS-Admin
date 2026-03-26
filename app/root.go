@@ -33,6 +33,7 @@ that provides an easy-to-use interface for managing domains, records, and users.
 				}
 
 				cmd.Println(out)
+
 				return nil
 			}
 

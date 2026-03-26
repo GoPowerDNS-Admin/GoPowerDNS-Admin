@@ -462,6 +462,10 @@ func isSelfDeactivation(c fiber.Ctx, id int, newActive bool) bool {
 		return false
 	}
 
+	if id <= 0 {
+		return false
+	}
+
 	return current.User.ID == uint64(id)
 }
 

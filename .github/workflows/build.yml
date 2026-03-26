@@ -8,6 +8,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   validate-pr-title:
     name: Validate PR Title
@@ -33,15 +36,44 @@ jobs:
     needs: validate-pr-title
     runs-on: ["self-hosted", "Linux"]
     container:
-      image: golang:1.25-bookworm
+      image: golang:1.26.1-bookworm
+      env:
+        GOPATH: /github/workspace/go
+        GOCACHE: /github/workspace/go-cache
+        PRE_COMMIT_HOME: /github/workspace/pre-commit-cache
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v5
 
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: /github/workspace/go/pkg/mod
+          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-${{ runner.os }}-
+
+      - name: Cache Go build cache
+        uses: actions/cache@v4
+        with:
+          path: /github/workspace/go-cache
+          key: go-build-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-build-${{ runner.os }}-
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: /github/workspace/pre-commit-cache
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: pre-commit-${{ runner.os }}-
+
       - name: Install dependencies
-        run: apt-get update && apt-get install -y gcc libsqlite3-dev git nodejs python3-pip && pip3 install pre-commit --break-system-packages
+        run: |
+          apt-get update && apt-get install -y gcc libsqlite3-dev git nodejs python3-pip
+          pip3 install pre-commit --break-system-packages
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+          echo "/github/workspace/go/bin" >> $GITHUB_PATH
 
       - name: Configure git safe directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -58,3 +90,44 @@ jobs:
         run: go test ./...
         env:
           CGO_ENABLED: "1"
+
+  browser-tests:
+    name: Browser Tests
+    needs: validate-pr-title
+    runs-on: ["self-hosted", "Linux"]
+    container:
+      image: golang:1.26.1-bookworm
+      env:
+        GOPATH: /github/workspace/go
+        GOCACHE: /github/workspace/go-cache
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: /github/workspace/go/pkg/mod
+          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-${{ runner.os }}-
+
+      - name: Cache Go build cache
+        uses: actions/cache@v4
+        with:
+          path: /github/workspace/go-cache
+          key: go-build-browser-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-build-browser-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y gcc libsqlite3-dev chromium
+
+      - name: Configure git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Run browser tests
+        run: go test -tags browser -v ./internal/web/
+        env:
+          CGO_ENABLED: "1"
+          CI: "true"

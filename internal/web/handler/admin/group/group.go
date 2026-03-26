@@ -454,7 +454,7 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
 		AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
 		AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
-		AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.Itoa(int(g.ID))+"/edit", true)
+		AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(g.ID), 10)+"/edit", true)
 
 	var allTags []models.Tag
 	s.db.Order("name asc").Find(&allTags)
@@ -532,7 +532,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 			AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
 			AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
 			AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
-			AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.Itoa(int(g.ID))+"/edit", true)
+			AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(g.ID), 10)+"/edit", true)
 
 		// keep old values mixed with submitted
 		g.Name = input.Name
@@ -564,7 +564,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 			AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
 			AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
 			AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
-			AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.Itoa(int(g.ID))+"/edit", true)
+			AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(g.ID), 10)+"/edit", true)
 
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
 			"Navigation": nav,

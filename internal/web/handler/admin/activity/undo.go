@@ -67,7 +67,7 @@ func (s *Service) undoRecordChanged(c fiber.Ctx, id int, entry *models.ActivityL
 	}
 
 	// Build the reverse RRsets.
-	var rrSets []pdnsapi.RRset //nolint:prealloc // prealloc not possible due to dynamic length
+	var rrSets []pdnsapi.RRset
 
 	for _, rec := range diff.Records {
 		rrSet := buildReverseRRSet(&rec)

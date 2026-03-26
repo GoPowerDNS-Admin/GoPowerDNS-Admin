@@ -1,6 +1,7 @@
 package zoneadd
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -85,7 +86,7 @@ func newTestService(t *testing.T, app *fiber.App) {
 func doGet(t *testing.T, app *fiber.App, path string) *http.Response {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, http.NoBody)
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
@@ -98,7 +99,7 @@ func doGet(t *testing.T, app *fiber.App, path string) *http.Response {
 func doPost(t *testing.T, app *fiber.App, form url.Values) *http.Response {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodPost, Path, strings.NewReader(form.Encode()))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, Path, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})

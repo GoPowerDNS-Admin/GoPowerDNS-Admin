@@ -37,7 +37,7 @@ func (p *Settings) Load(db *gorm.DB) error {
 // Save saves the PDNS server settings to the database.
 func (p *Settings) Save(db *gorm.DB) error {
 	// Marshal the struct to JSON
-	data, err := json.Marshal(p)
+	data, err := json.Marshal(p) //nolint:gosec // APIKey is intentionally persisted to the DB
 	if err != nil {
 		return err
 	}

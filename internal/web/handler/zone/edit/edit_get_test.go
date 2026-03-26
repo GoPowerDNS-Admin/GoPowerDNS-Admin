@@ -1,6 +1,7 @@
 package zoneedit
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +37,7 @@ func TestGet_ReturnsEarlyWhenPDNSClientNil(t *testing.T) {
 	})
 	app.Get("/zones/:name/edit", svc.Get)
 
-	req := httptest.NewRequest(fiber.MethodGet, "/zones/example.com/edit", http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), fiber.MethodGet, "/zones/example.com/edit", http.NoBody)
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: 30 * time.Second})
 	if err != nil {

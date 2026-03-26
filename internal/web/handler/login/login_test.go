@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -218,7 +219,7 @@ func TestAuthenticate_Local(t *testing.T) {
 func performPost(t *testing.T, app *fiber.App, target string, form url.Values) *http.Response {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodPost, target, strings.NewReader(form.Encode()))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, target, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := app.Test(req)
@@ -328,7 +329,7 @@ func TestPost_InvalidForm_RendersError(t *testing.T) {
 	s.Init(app, cfg, db)
 
 	// Malformed JSON to force BodyParser error
-	req := httptest.NewRequest(http.MethodPost, Path+"/", strings.NewReader("{"))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, Path+"/", strings.NewReader("{"))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)

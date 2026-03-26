@@ -2,6 +2,7 @@ package fiber_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net"
@@ -269,7 +270,7 @@ func testMiddlewareHelper(t *testing.T, targetPath string, adapterConfig *adapte
 		return ctx.SendString("hello test")
 	})
 
-	resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, targetPath, http.NoBody), fiber.TestConfig{Timeout: 100 * time.Second})
+	resp, err := app.Test(httptest.NewRequestWithContext(context.Background(), fiber.MethodGet, targetPath, http.NoBody), fiber.TestConfig{Timeout: 100 * time.Second})
 	if err != nil {
 		_ = w.Close()
 		return "", err

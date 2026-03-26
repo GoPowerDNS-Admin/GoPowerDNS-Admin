@@ -632,7 +632,7 @@ func buildRRSetsFromChanges(changes []RecordChange) []pdnsapi.RRset {
 			continue
 		}
 
-		var records []pdnsapi.Record
+		records := make([]pdnsapi.Record, 0, len(change.Records))
 
 		for _, rec := range change.Records {
 			content := ensureQuotedContent(change.Type, rec.Content)

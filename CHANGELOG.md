@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.1.0-alpha.6] - 2026-03-25
 
 ### Bug Fixes
 
 - **security:** Disable COEP header — not needed, frame-ancestors none covers embedding attacks ([591e95b](591e95b89a864baf31ebcfb157ffb1b594995051))
+- **config:** Return error instead of panic when config file is missing ([109ced7](109ced77b809b6ad1c176682efd3cb9750a46ca0))
+- **config:** Trust Podman container subnet in reverse proxy config ([2f06254](2f062544783c06f0ed945f2b6bbfe38272f407d8))
+- **zone:** SOA save fails when serial is 0 and incremented to 1 ([683f537](683f53729d082a6d05205133bb5f17b4e06e6081))
+- **ci:** Supply base branch for changelog PR when checked out at tag ([880c70a](880c70a46ec39d85e61088a660e5917a05290196))
 
 ## [0.1.0-alpha.5] - 2026-03-24
 

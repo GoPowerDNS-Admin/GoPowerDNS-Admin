@@ -91,7 +91,7 @@ func createZoneNative(ctx context.Context, name string, have map[string]bool, rr
 	}
 
 	if _, err := powerdns.Engine.Zones.AddNative(
-		ctx, name, false, "", false, "", "INCEPTION-INCREMENT", false, nil,
+		ctx, name, false, "", false, "", "DEFAULT", false, nil,
 	); err != nil {
 		log.Error().Err(err).Str("zone", name).Msg("Failed to create demo zone")
 		return

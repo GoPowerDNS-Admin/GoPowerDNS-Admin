@@ -38,6 +38,13 @@
                 </div>
                 {{ end }}
 
+                {{ if and .IsDemo .IsAdminRole }}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Admin role permissions cannot be changed in demo mode.
+                </div>
+                {{ end }}
+
                 <form method="post" action="{{ if .IsCreate }}/admin/role{{ else }}/admin/role/{{ .Role.ID }}{{ end }}" id="role-form">
 
                     <!--begin::Row-->
@@ -79,7 +86,7 @@
                                     {{ end }}
                                 </div>
                                 <div class="card-footer d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary" {{ if and .IsDemo .IsAdminRole }}disabled{{ end }}>
                                         <i class="bi {{ if .IsCreate }}bi-plus-circle{{ else }}bi-save{{ end }} me-1"></i>
                                         {{ if .IsCreate }}Create Role{{ else }}Save Changes{{ end }}
                                     </button>
@@ -98,10 +105,10 @@
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fw-semibold text-muted small text-uppercase">Permissions</span>
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="select-all-btn">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="select-all-btn" {{ if and .IsDemo .IsAdminRole }}disabled{{ end }}>
                                         <i class="bi bi-check2-all me-1"></i>Select All
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-btn">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-btn" {{ if and .IsDemo .IsAdminRole }}disabled{{ end }}>
                                         <i class="bi bi-x-lg me-1"></i>Deselect All
                                     </button>
                                 </div>
@@ -118,7 +125,8 @@
                                     </span>
                                     <div class="ms-auto form-check mb-0">
                                         <input type="checkbox" class="form-check-input group-toggle" id="toggle-{{ .Resource }}"
-                                               title="Select / deselect all {{ .Resource }} permissions">
+                                               title="Select / deselect all {{ .Resource }} permissions"
+                                               {{ if and $.IsDemo $.IsAdminRole }}disabled{{ end }}>
                                         <label class="form-check-label small text-muted" for="toggle-{{ .Resource }}">All</label>
                                     </div>
                                 </div>
@@ -130,7 +138,8 @@
                                                 <input class="form-check-input perm-check" type="checkbox"
                                                        name="perm_ids" id="perm_{{ .ID }}" value="{{ .ID }}"
                                                        data-group="{{ .Resource }}"
-                                                       {{ if index $.SelectedPermIDs .ID }}checked{{ end }}>
+                                                       {{ if index $.SelectedPermIDs .ID }}checked{{ end }}
+                                                       {{ if and $.IsDemo $.IsAdminRole }}disabled{{ end }}>
                                                 <label class="form-check-label" for="perm_{{ .ID }}">
                                                     <span class="fw-medium">{{ .Action }}</span>
                                                     {{ if .Description }}

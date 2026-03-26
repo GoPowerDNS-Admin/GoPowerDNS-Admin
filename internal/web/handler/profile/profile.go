@@ -27,6 +27,7 @@ const (
 // Service handles profile view and password change.
 type Service struct {
 	handler.Service
+	cfg       *config.Config
 	db        *gorm.DB
 	validator *validator.Validate
 }
@@ -41,6 +42,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, _ *auth.
 		return
 	}
 
+	s.cfg = cfg
 	s.db = db
 	s.validator = validator.New()
 
@@ -60,6 +62,7 @@ func (s *Service) View(c fiber.Ctx) error {
 		"Navigation": profileNav(),
 		"User":       user,
 		"Groups":     s.loadGroupMemberships(user.ID),
+		"IsDemo":     s.cfg.Demo,
 	}, handler.BaseLayout)
 }
 
@@ -75,6 +78,11 @@ func (s *Service) ChangePassword(c fiber.Ctx) error {
 		return c.Redirect().To(Path)
 	}
 
+	// Password change is disabled in demo mode.
+	if s.cfg.Demo {
+		return c.Redirect().To(Path)
+	}
+
 	groups := s.loadGroupMemberships(user.ID)
 
 	renderErr := func(msg string) error {
@@ -82,6 +90,7 @@ func (s *Service) ChangePassword(c fiber.Ctx) error {
 			"Navigation": profileNav(),
 			"User":       user,
 			"Groups":     groups,
+			"IsDemo":     s.cfg.Demo,
 			"Error":      msg,
 		}, handler.BaseLayout)
 	}
@@ -118,6 +127,7 @@ func (s *Service) ChangePassword(c fiber.Ctx) error {
 		"Navigation": profileNav(),
 		"User":       user,
 		"Groups":     groups,
+		"IsDemo":     s.cfg.Demo,
 		"Success":    "Password updated successfully",
 	}, handler.BaseLayout)
 }

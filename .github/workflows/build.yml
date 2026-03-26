@@ -34,6 +34,10 @@ jobs:
     runs-on: ["self-hosted", "Linux"]
     container:
       image: golang:1.26.1-bookworm
+      env:
+        GOPATH: /github/workspace/go
+        GOCACHE: /github/workspace/go-cache
+        PRE_COMMIT_HOME: /github/workspace/pre-commit-cache
     permissions:
       contents: read
 
@@ -43,21 +47,21 @@ jobs:
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
-          path: /root/go/pkg/mod
+          path: /github/workspace/go/pkg/mod
           key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
           restore-keys: go-mod-${{ runner.os }}-
 
       - name: Cache Go build cache
         uses: actions/cache@v4
         with:
-          path: /root/.cache/go-build
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/*.go') }}
+          path: /github/workspace/go-cache
+          key: go-build-${{ runner.os }}-${{ hashFiles('go.sum') }}
           restore-keys: go-build-${{ runner.os }}-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v4
         with:
-          path: /root/.cache/pre-commit
+          path: /github/workspace/pre-commit-cache
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: pre-commit-${{ runner.os }}-
 
@@ -89,6 +93,9 @@ jobs:
     runs-on: ["self-hosted", "Linux"]
     container:
       image: golang:1.26.1-bookworm
+      env:
+        GOPATH: /github/workspace/go
+        GOCACHE: /github/workspace/go-cache
     permissions:
       contents: read
 
@@ -98,15 +105,15 @@ jobs:
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
-          path: /root/go/pkg/mod
+          path: /github/workspace/go/pkg/mod
           key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
           restore-keys: go-mod-${{ runner.os }}-
 
       - name: Cache Go build cache
         uses: actions/cache@v4
         with:
-          path: /root/.cache/go-build
-          key: go-build-browser-${{ runner.os }}-${{ hashFiles('**/*.go') }}
+          path: /github/workspace/go-cache
+          key: go-build-browser-${{ runner.os }}-${{ hashFiles('go.sum') }}
           restore-keys: go-build-browser-${{ runner.os }}-
 
       - name: Install dependencies

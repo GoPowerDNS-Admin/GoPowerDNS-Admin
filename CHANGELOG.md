@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.1.0-alpha.7] - 2026-03-26
 
 ### Bug Fixes
 
 - **demo:** Use DEFAULT SOA-EDIT-API for demo zones ([1fd4f08](1fd4f08665ee54ac38f397e1bfb204740cfbd9d7))
+- **zone:** Fix SOA modal x-model.number coercion + browser tests + Go 1.26 ([fe3265e](fe3265ecbeae6ec0f2d1ce6dad0aa90a90d06a35))
 
 ## [0.1.0-alpha.6] - 2026-03-25
 

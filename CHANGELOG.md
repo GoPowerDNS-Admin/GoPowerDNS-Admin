@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-alpha.8] - 2026-03-26
+
+### Features
+
+- **demo:** Disable password, TOTP, and admin role permission changes in demo mode ([7c2f4de](7c2f4deebe1cf4ffe031c23f4d61d99675afa0a0))
+
 ## [0.1.0-alpha.7] - 2026-03-26
 
 ### Bug Fixes

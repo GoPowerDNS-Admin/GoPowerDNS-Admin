@@ -70,6 +70,7 @@ jobs:
           apt-get update && apt-get install -y gcc libsqlite3-dev git nodejs python3-pip
           pip3 install pre-commit --break-system-packages
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+          echo "/github/workspace/go/bin" >> $GITHUB_PATH
 
       - name: Configure git safe directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **demo:** Use DEFAULT SOA-EDIT-API for demo zones ([1fd4f08](1fd4f08665ee54ac38f397e1bfb204740cfbd9d7))
+
 ## [0.1.0-alpha.6] - 2026-03-25
 
 ### Bug Fixes

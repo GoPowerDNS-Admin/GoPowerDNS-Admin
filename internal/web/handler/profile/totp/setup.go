@@ -63,6 +63,10 @@ func (s *Service) SetupGet(c fiber.Ctx) error {
 		return c.Redirect().To("/profile")
 	}
 
+	if s.cfg.Demo {
+		return c.Redirect().To("/profile")
+	}
+
 	// Generate a fresh temp secret if not already in the session
 	tempSecret := sessData.TOTPTempSecret
 	if tempSecret == "" {
@@ -104,6 +108,10 @@ func (s *Service) SetupPost(c fiber.Ctx) error {
 	}
 
 	if sessData.User.AuthSource != models.AuthSourceLocal {
+		return c.Redirect().To("/profile")
+	}
+
+	if s.cfg.Demo {
 		return c.Redirect().To("/profile")
 	}
 
@@ -171,6 +179,10 @@ func (s *Service) Disable(c fiber.Ctx) error {
 	}
 
 	if sessData.User.AuthSource != models.AuthSourceLocal {
+		return c.Redirect().To("/profile")
+	}
+
+	if s.cfg.Demo {
 		return c.Redirect().To("/profile")
 	}
 

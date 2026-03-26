@@ -29,6 +29,9 @@ const (
 
 	// DefaultPageSize for pagination.
 	DefaultPageSize = 25
+
+	// adminRoleName is the name of the built-in admin system role.
+	adminRoleName = "admin"
 )
 
 // Service provides CRUD operations for roles.
@@ -269,6 +272,8 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		"Navigation":       nav,
 		"Role":             role,
 		"IsCreate":         false,
+		"IsDemo":           s.cfg.Demo,
+		"IsAdminRole":      role.IsSystem && role.Name == adminRoleName,
 		"Permissions":      permissions,
 		"PermissionGroups": groupPermissions(permissions),
 		"SelectedPermIDs":  selectedPermIDs,
@@ -298,6 +303,11 @@ func (s *Service) Update(c fiber.Ctx) error {
 		AddBreadcrumb("Admin", "#", false).
 		AddBreadcrumb("Roles", Path, false).
 		AddBreadcrumb("Edit", Path+"/"+strconv.Itoa(id)+"/edit", true)
+
+	// In demo mode, the admin role's permissions cannot be changed.
+	if s.cfg.Demo && role.IsSystem && role.Name == adminRoleName {
+		return s.renderDemoAdminBlock(c, nav, &role)
+	}
 
 	var in struct {
 		Name        string `form:"name"        validate:"required,min=1,max=100"`
@@ -334,62 +344,9 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 	role.Description = in.Description
 
-	tx := s.db.Begin()
-
 	selectedPerms := s.parseSelectedPermIDs(c)
 
-	// Protection: prevent stripping all permissions from the admin role.
-	if role.IsSystem && role.Name == "admin" && len(selectedPerms) == 0 {
-		tx.Rollback()
-
-		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
-
-		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
-			"Navigation":       nav,
-			"Error":            "Cannot remove all permissions from the admin role",
-			"Role":             role,
-			"IsCreate":         false,
-			"Permissions":      permissions,
-			"PermissionGroups": groupPermissions(permissions),
-			"SelectedPermIDs":  selectedPerms,
-		}, handler.BaseLayout)
-	}
-
-	if err := tx.Save(&role).Error; err != nil {
-		tx.Rollback()
-		log.Error().Err(err).Msg("failed to update role")
-
-		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
-
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
-			"Navigation":       nav,
-			"Error":            "Failed to update role",
-			"Role":             role,
-			"IsCreate":         false,
-			"Permissions":      permissions,
-			"PermissionGroups": groupPermissions(permissions),
-			"SelectedPermIDs":  selectedPerms,
-		}, handler.BaseLayout)
-	}
-
-	if err := s.syncPermissions(tx, role.ID, selectedPerms); err != nil {
-		tx.Rollback()
-		log.Error().Err(err).Msg("failed to sync permissions")
-
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
-			"Navigation": nav,
-			"Error":      "Failed to update permissions",
-			"Role":       role,
-			"IsCreate":   false,
-		}, handler.BaseLayout)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		log.Error().Err(err).Msg("failed to commit role update")
-		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to save role", nil)
-	}
-
-	return c.Redirect().To(Path)
+	return s.commitRoleUpdate(c, nav, &role, selectedPerms)
 }
 
 // Delete removes a role.
@@ -451,6 +408,91 @@ func (s *Service) Delete(c fiber.Ctx) error {
 	}
 
 	return c.Redirect().To(Path)
+}
+
+// commitRoleUpdate saves the role and syncs its permissions within a transaction.
+func (s *Service) commitRoleUpdate(
+	c fiber.Ctx, nav *navigation.Context, role *models.Role, selectedPerms map[uint]bool,
+) error {
+	tx := s.db.Begin()
+
+	// Protection: prevent stripping all permissions from the admin role.
+	if role.IsSystem && role.Name == adminRoleName && len(selectedPerms) == 0 {
+		tx.Rollback()
+
+		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
+
+		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
+			"Navigation":       nav,
+			"Error":            "Cannot remove all permissions from the admin role",
+			"Role":             role,
+			"IsCreate":         false,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  selectedPerms,
+		}, handler.BaseLayout)
+	}
+
+	if err := tx.Save(role).Error; err != nil {
+		tx.Rollback()
+		log.Error().Err(err).Msg("failed to update role")
+
+		permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort; permissions may be empty on DB error
+
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
+			"Navigation":       nav,
+			"Error":            "Failed to update role",
+			"Role":             role,
+			"IsCreate":         false,
+			"Permissions":      permissions,
+			"PermissionGroups": groupPermissions(permissions),
+			"SelectedPermIDs":  selectedPerms,
+		}, handler.BaseLayout)
+	}
+
+	if err := s.syncPermissions(tx, role.ID, selectedPerms); err != nil {
+		tx.Rollback()
+		log.Error().Err(err).Msg("failed to sync permissions")
+
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
+			"Navigation": nav,
+			"Error":      "Failed to update permissions",
+			"Role":       role,
+			"IsCreate":   false,
+		}, handler.BaseLayout)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		log.Error().Err(err).Msg("failed to commit role update")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to save role", nil)
+	}
+
+	return c.Redirect().To(Path)
+}
+
+// renderDemoAdminBlock renders the admin-role edit form in read-only mode with a demo notice.
+func (s *Service) renderDemoAdminBlock(c fiber.Ctx, nav *navigation.Context, role *models.Role) error {
+	permissions, _ := s.loadPermissions() //nolint:errcheck // best-effort
+
+	var assigned []models.RolePermission
+	s.db.Where("role_id = ?", role.ID).Find(&assigned)
+
+	selectedPermIDs := make(map[uint]bool, len(assigned))
+	for i := range assigned {
+		selectedPermIDs[assigned[i].PermissionID] = true
+	}
+
+	return c.Status(fiber.StatusForbidden).Render(TemplateForm, fiber.Map{
+		"Navigation":       nav,
+		"Role":             role,
+		"IsCreate":         false,
+		"IsDemo":           true,
+		"IsAdminRole":      true,
+		"Permissions":      permissions,
+		"PermissionGroups": groupPermissions(permissions),
+		"SelectedPermIDs":  selectedPermIDs,
+		"Error":            "Admin role permissions cannot be changed in demo mode",
+	}, handler.BaseLayout)
 }
 
 // PermissionGroup is a set of permissions sharing the same resource label.

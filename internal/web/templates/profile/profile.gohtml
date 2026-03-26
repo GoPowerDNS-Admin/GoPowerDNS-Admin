@@ -76,7 +76,14 @@
 
                     <!-- Password / IdP notice -->
                     <div class="col-md-7">
-                        {{ if eq .User.AuthSource "local" }}
+                        {{ if .IsDemo }}
+                        <div class="card card-outline card-secondary shadow">
+                            <div class="card-body text-muted">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Password and two-factor authentication changes are disabled in demo mode.
+                            </div>
+                        </div>
+                        {{ else if eq .User.AuthSource "local" }}
                         <div class="card card-outline card-primary shadow">
                             <div class="card-header">
                                 <h3 class="card-title">Change Password</h3>
@@ -157,7 +164,7 @@
                 </div>
 
                 <!-- Two-Factor Authentication (local accounts only) -->
-                {{ if eq .User.AuthSource "local" }}
+                {{ if and (eq .User.AuthSource "local") (not .IsDemo) }}
                 <div class="card card-outline card-primary shadow mt-4">
                     <div class="card-header d-flex align-items-center">
                         <h3 class="card-title mb-0">Two-Factor Authentication (TOTP)</h3>

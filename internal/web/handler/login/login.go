@@ -11,6 +11,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/dashboard"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/session"
@@ -114,6 +115,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"local_db_enabled": s.cfg.Auth.LocalDB.Enabled,
 		"ldap_enabled":     s.cfg.Auth.LDAP.Enabled,
 		"oidc_enabled":     s.cfg.Auth.OIDC.Enabled,
+		"version":          version.Get(),
 	})
 }
 
@@ -202,6 +204,7 @@ func (s *Service) renderError(c fiber.Ctx, username, authType, errorMsg string) 
 		"error":            errorMsg,
 		"username":         username,
 		"auth_type":        authType,
+		"version":          version.Get(),
 	})
 }
 

@@ -17,6 +17,8 @@ GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you man
 
 The demo resets automatically every day at midnight UTC. Feel free to create zones, add records, and explore the UI. A live PowerDNS instance is connected — DNS queries can be tested against `demo.gopowerdnsadmin.org` on port 53.
 
+> **Note:** To keep the demo accessible, changing the admin password and editing your profile are disabled in demo mode.
+
 Two sample zones (`example.com` and `example.org`) with a variety of record types, plus a reverse zone (`203.0.113.in-addr.arpa`), are pre-populated on each reset so there is something to explore immediately.
 
 ## Status: Alpha

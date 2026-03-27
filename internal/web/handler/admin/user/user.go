@@ -30,6 +30,9 @@ const (
 
 	// DefaultPageSize for pagination.
 	DefaultPageSize = 25
+
+	// adminUsername is the reserved admin account username.
+	adminUsername = "admin"
 )
 
 // Service provides CRUD operations for users.
@@ -317,12 +320,13 @@ func (s *Service) Edit(c fiber.Ctx) error {
 	}
 
 	return c.Render(TemplateForm, fiber.Map{
-		"Navigation":  nav,
-		"User":        user,
-		"IsCreate":    false,
-		"Roles":       roles,
-		"AllTags":     allTags,
-		"AssignedSet": assignedSet,
+		"Navigation":      nav,
+		"User":            user,
+		"IsCreate":        false,
+		"Roles":           roles,
+		"AllTags":         allTags,
+		"AssignedSet":     assignedSet,
+		"DemoAdminLocked": s.cfg.Demo && user.Username == adminUsername,
 	}, handler.BaseLayout)
 }
 
@@ -389,6 +393,16 @@ func (s *Service) Update(c fiber.Ctx) error {
 			"User":       user,
 			"IsCreate":   false,
 			"Roles":      roles,
+		}, handler.BaseLayout)
+	}
+
+	if s.cfg.Demo && user.Username == adminUsername {
+		return c.Status(fiber.StatusForbidden).Render(TemplateForm, fiber.Map{
+			"Navigation":      editNav,
+			"User":            user,
+			"IsCreate":        false,
+			"Roles":           roles,
+			"DemoAdminLocked": true,
 		}, handler.BaseLayout)
 	}
 

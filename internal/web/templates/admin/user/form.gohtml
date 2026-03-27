@@ -33,6 +33,12 @@
         <!--begin::App Content-->
         <div class="app-content">
             <div class="container-fluid">
+                {{ if .DemoAdminLocked }}
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    The <strong>admin</strong> account cannot be modified in demo mode.
+                </div>
+                {{ end }}
                 {{ if .Error }}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{ .Error }}
@@ -160,7 +166,7 @@
                             {{ end }}
 
                             <div class="d-flex gap-2 mt-4">
-                                <button type="submit" class="btn btn-primary">{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>
+                                <button type="submit" class="btn btn-primary" {{ if .DemoAdminLocked }}disabled{{ end }}>{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>
                                 <a href="/admin/user" class="btn btn-secondary">Cancel</a>
                             </div>
                         </form>

@@ -16,6 +16,8 @@ jobs:
   prepare:
     name: Prepare
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       owner: ${{ steps.tag.outputs.owner }}
@@ -32,6 +34,8 @@ jobs:
     name: ${{ matrix.name }}
     needs: prepare
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     strategy:

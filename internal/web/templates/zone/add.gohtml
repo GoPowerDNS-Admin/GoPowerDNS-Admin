@@ -145,7 +145,8 @@
                                     <!-- SOA-EDIT-API -->
                                     <div class="mb-3">
                                         <label for="soa-edit-api" class="form-label">SOA-EDIT-API <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="soa-edit-api" name="soa_edit_api" required>
+                                        <select class="form-select" id="soa-edit-api" name="soa_edit_api" required
+                                                onchange="document.getElementById('soa-edit-api-off-warn').style.display = this.value === 'OFF' ? '' : 'none'">
                                             <option value="DEFAULT" {{if eq .Form.SOAEditAPI "DEFAULT"}}selected{{end}}>DEFAULT</option>
                                             <option value="INCREASE" {{if eq .Form.SOAEditAPI "INCREASE"}}selected{{end}}>INCREASE</option>
                                             <option value="EPOCH" {{if eq .Form.SOAEditAPI "EPOCH"}}selected{{end}}>EPOCH</option>
@@ -156,6 +157,13 @@
                                             <strong>INCREASE:</strong> Increment the serial number on each change.<br>
                                             <strong>EPOCH:</strong> Set serial to current Unix timestamp.<br>
                                             <strong>OFF:</strong> Do not automatically update the SOA serial.
+                                        </div>
+                                        <div id="soa-edit-api-off-warn" class="callout callout-warning mt-2 small"
+                                             style="{{ if ne .Form.SOAEditAPI "OFF" }}display:none{{ end }}">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            <strong>OFF</strong> disables automatic serial updates via the API.
+                                            Secondary servers may not detect zone changes and fail to sync.
+                                            Only use this if serial management is handled at the server level via <code>default-soa-edit</code>.
                                         </div>
                                     </div>
                                 </div>

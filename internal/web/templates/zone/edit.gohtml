@@ -107,13 +107,21 @@
                                 <!--begin::SOA-EDIT-API-->
                                 <div class="mb-3">
                                     <label for="soa-edit-api" class="form-label">SOA-EDIT-API <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="soa-edit-api" name="soa_edit_api" required>
+                                    <select class="form-select" id="soa-edit-api" name="soa_edit_api" required
+                                            onchange="document.getElementById('soa-edit-api-off-warn').style.display = this.value === 'OFF' ? '' : 'none'">
                                         <option value="DEFAULT" {{if eq .Form.SOAEditAPI "DEFAULT"}}selected{{end}}>DEFAULT — Use server default</option>
                                         <option value="INCREASE" {{if eq .Form.SOAEditAPI "INCREASE"}}selected{{end}}>INCREASE — Increment serial on update</option>
                                         <option value="EPOCH" {{if eq .Form.SOAEditAPI "EPOCH"}}selected{{end}}>EPOCH — Set serial to current timestamp</option>
                                         <option value="OFF" {{if eq .Form.SOAEditAPI "OFF"}}selected{{end}}>OFF — Do not auto-update serial</option>
                                     </select>
                                     <div class="form-text">Controls how the SOA serial number is updated when records change.</div>
+                                    <div id="soa-edit-api-off-warn" class="callout callout-warning mt-2 small"
+                                         style="{{ if ne .Form.SOAEditAPI "OFF" }}display:none{{ end }}">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        <strong>OFF</strong> disables automatic serial updates via the API.
+                                        Secondary servers may not detect zone changes and fail to sync.
+                                        Only use this if serial management is handled at the server level via <code>default-soa-edit</code>.
+                                    </div>
                                 </div>
                                 <!--end::SOA-EDIT-API-->
                             </form>

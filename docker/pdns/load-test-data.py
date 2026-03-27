@@ -160,7 +160,8 @@ def main():
     print("  dig @localhost www.example.com")
 
     print(f"\n{YELLOW}To view zones via API:{NC}")
-    print(f"  curl -H 'X-API-Key: {API_KEY}' {API_URL}/zones | python3 -m json.tool")
+    masked_key = API_KEY[:4] + "***" if len(API_KEY) > 4 else "***"
+    print(f"  curl -H 'X-API-Key: {masked_key}' {API_URL}/zones | python3 -m json.tool")
 
     print(f"\n{YELLOW}To delete all test zones:{NC}")
     print("  Run this script with --delete flag (not implemented yet)")

@@ -4,7 +4,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Log In | PowerDNS-Admin {{- /*gotype: models.Users*/}}</title>
+    <title>Log In | GoPowerDNS-Admin {{- /*gotype: models.Users*/}}</title>
     <!--begin::Accessibility Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="color-scheme" content="light dark" />
@@ -15,7 +15,8 @@
     <meta name="title" content="PowerDNS-Admin | Login Page" />
     <meta name="description" content="PowerDNS-Admin Login Page" />
     <!--end::Primary Meta Tags-->
-    <link rel="icon" href="/static/img/favicon.png">
+    <link rel="icon" href="/static/img/powerdns_logo_icon.svg" type="image/svg+xml">
+    <link rel="icon" href="/static/img/favicon.png" type="image/png">
     <!--begin::Fonts-->
     <link rel="stylesheet" href="/static/vendor/source-sans-3-5.2.9/index.css"/>
     <!--end::Fonts-->
@@ -31,7 +32,7 @@
   <body class="login-page bg-body-secondary">
     <div class="login-box">
       <div class="login-logo">
-        <a href="#"><b>PowerDNS</b>-Admin</a>
+        <a href="#"><b>Go</b>PowerDNS-Admin</a>
       </div>
       <!-- /.login-logo -->
       <div class="card">
@@ -117,7 +118,10 @@
     </div>
     <!-- /.login-box -->
     <div class="text-center pt-3">
-      <p>Powered by <a href="https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin" target="_blank">PowerDNS-Admin</a></p>
+      <a href="https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin" target="_blank" class="text-decoration-none text-muted d-inline-flex align-items-center gap-2">
+        <img src="/static/img/gopher.svg" alt="Go Gopher" height="32">
+        <span><small>{{ .version }}</small></span>
+      </a>
     </div>
     <!--begin::Required Plugin(Bootstrap 5)-->
     <script

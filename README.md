@@ -30,6 +30,8 @@ Core features are functional. Interfaces and configuration may still change betw
 - Zone and record management (create, edit, and manage DNS records)
 - Forward and reverse zone creation with automatic CIDR-to-zone-name conversion for IPv4 and IPv6
 - Duplicate zone detection with a direct link to the existing zone
+- Auto-PTR: automatically create, update, and delete PTR records in the matching reverse zone when A/AAAA records change (per-zone opt-in, disabled automatically on reverse and Slave zones)
+- Cross-zone hint badges in the record list: A/AAAA records link to their PTR entry; PTR records link back to the forward record — clicking navigates to and highlights the target row
 - PowerDNS server settings stored in the application database
 - Multiple authentication methods:
   - Local database (with optional TOTP two-factor authentication)
@@ -153,10 +155,20 @@ The zone editor provides a full-featured DNS record management interface:
 - Live search and per-type filter pills to quickly find records
 - Apex (`@`) records sorted first within each name group
 - Inline zone metadata (kind, serial, DNSSEC status) in the record list header
-- Collapsible zone settings card (SOA-EDIT-API, kind, masters)
+- Collapsible zone settings card (SOA-EDIT-API, kind, masters, Auto-PTR toggle)
 - DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
 - SOA record is protected — it can be viewed but not deleted or overwritten via the record modal
 - Admin-configurable TTL presets available as a dropdown in the record modal (see TTL Presets below)
+
+### Auto-PTR
+
+When **Auto-PTR** is enabled for a forward zone (toggle in the Zone Settings card), saving A or AAAA records automatically manages the corresponding PTR record in the appropriate reverse zone:
+
+- **Create / update** — when a new IP is added, a PTR record pointing to the record's FQDN is created (or replaced) in the most-specific matching reverse zone.
+- **Delete** — when an IP is removed, its PTR record is deleted. If the PTR was manually changed to point to a different name, it is left untouched.
+- **No reverse zone** — if no reverse zone exists in PowerDNS for the IP, a warning toast is shown after saving so the issue is visible.
+- Auto-PTR is silently disabled for reverse zones and Slave zones where it does not apply.
+- All PTR changes are recorded in the activity log.
 
 ## TTL Presets
 

@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-alpha.9] - 2026-03-27
+
+### Bug Fixes
+
+- **script:** Mask API key in curl example output ([8daf52e](8daf52e22901c80d9b5df4196bf4e99c28b499af))
+
+### Documentation
+
+- Add SECURITY.md with vulnerability reporting policy ([945c934](945c934eeec5f2302351af1c3689398a0e0203fc))
+- Update demo site URL to demo.gopowerdnsadmin.org ([aa105cb](aa105cb4c2ae949157fe33457727833521ba1dee))
+- Note demo mode restrictions on password and profile changes ([2ae9def](2ae9defa95531fc62a6184b9646b117aff135cac))
+
+### Features
+
+- **zone:** Warn when SOA-EDIT-API is set to OFF ([a56ebe7](a56ebe7fd3e665e6a62b4181f5f3e145d339f242))
+- **login:** Display version on login page ([94bea8b](94bea8baebd1ad2141aa675d83a733c8f1714d1d))
+- **login:** Add Go gopher to login page footer ([753bc37](753bc37f5b1b4acbdf71eeb1af43984612f11994))
+- **login:** Replace hand-drawn gopher with official go.dev favicon gopher (CC BY 4.0) ([e0d11ef](e0d11ef4118c31ff9aa0e1786705d646d9936ecf))
+- **ui:** Update page titles and login logo to GoPowerDNS-Admin ([1a16ec8](1a16ec8cd8aee0d46bd237621851a1197f7aff21))
+- **ui:** Replace top-left PowerDNS logo circle with Go gopher face ([8420d8b](8420d8b5fbb1401a2824bde525a8e3aa2790d6c6))
+- **ui:** Use SVG favicon with gopher logo, keep PNG as fallback ([51b1ae0](51b1ae0535d9156cac8fee38ca4c4f02a951c4cc))
+- **ui:** Recolor top-left favicon circle to Go gopher blue ([eb03bfb](eb03bfb6db5c8d398f256977cf097f531e3f3f45))
+- **ui:** Recolor top-left favicon circle to Go gopher blue ([4101c47](4101c47a12fbb5717c1787fb6ecd5df0a2786024))
+- **ui:** Recolor top-left favicon circle to Go gopher blue (#76e1fe) ([3b36fed](3b36fed5cab4f19951a360367bb657432c88cf53))
+
 ## [0.1.0-alpha.8] - 2026-03-26
 
 ### Features

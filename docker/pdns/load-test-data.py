@@ -160,7 +160,7 @@ def main():
     print("  dig @localhost www.example.com")
 
     print(f"\n{YELLOW}To view zones via API:{NC}")
-    masked_key = API_KEY[:4] + "***" if len(API_KEY) > 4 else "***"
+    masked_key = "<API_KEY>"
     print(f"  curl -H 'X-API-Key: {masked_key}' {API_URL}/zones | python3 -m json.tool")
 
     print(f"\n{YELLOW}To delete all test zones:{NC}")

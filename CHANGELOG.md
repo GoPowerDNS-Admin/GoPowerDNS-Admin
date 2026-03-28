@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-alpha.10] - 2026-03-28
+
+### Bug Fixes
+
+- **uniuri:** Widen TestBias tolerance from 5% to 10% to prevent flaky failures ([55529ef](55529ef2d927fe7ff7dd38cab363444188f64b52))
+
+### Features
+
+- **zone:** Auto-create PTR records for A/AAAA changes ([99fc1e0](99fc1e0524ced5655e539c1c83ee240cde23b100))
+
 ## [0.1.0-alpha.9] - 2026-03-27
 
 ### Bug Fixes
@@ -21,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **zone:** Warn when SOA-EDIT-API is set to OFF ([a56ebe7](a56ebe7fd3e665e6a62b4181f5f3e145d339f242))
 - **login:** Display version on login page ([94bea8b](94bea8baebd1ad2141aa675d83a733c8f1714d1d))
 - **login:** Add Go gopher to login page footer ([753bc37](753bc37f5b1b4acbdf71eeb1af43984612f11994))
+- **demo:** Block admin user modifications in demo mode ([3b6907a](3b6907a92ddd03578b602aa03e0c832eee93ccd4))
 - **login:** Replace hand-drawn gopher with official go.dev favicon gopher (CC BY 4.0) ([e0d11ef](e0d11ef4118c31ff9aa0e1786705d646d9936ecf))
 - **ui:** Update page titles and login logo to GoPowerDNS-Admin ([1a16ec8](1a16ec8cd8aee0d46bd237621851a1197f7aff21))
 - **ui:** Replace top-left PowerDNS logo circle with Go gopher face ([8420d8b](8420d8b5fbb1401a2824bde525a8e3aa2790d6c6))

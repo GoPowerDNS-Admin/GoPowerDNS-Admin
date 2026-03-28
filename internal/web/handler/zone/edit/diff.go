@@ -1,6 +1,7 @@
 package zoneedit
 
 import (
+	"strconv"
 	"strings"
 
 	pdnsapi "github.com/joeig/go-powerdns/v3"
@@ -12,7 +13,11 @@ import (
 // and the values submitted in the form. Only fields that actually differ are
 // included. When the currentZone is nil (e.g., the pre-fetch failed), every field is
 // included with an empty Old value, so the new values are at least recorded.
-func buildZoneSettingsDiff(currentZone *pdnsapi.Zone, form *ZoneForm) *activitylog.ZoneSettingsDiff {
+func buildZoneSettingsDiff(
+	currentZone *pdnsapi.Zone,
+	form *ZoneForm,
+	oldSettings ZoneSettings,
+) *activitylog.ZoneSettingsDiff {
 	diff := &activitylog.ZoneSettingsDiff{}
 
 	if currentZone == nil {
@@ -44,6 +49,14 @@ func buildZoneSettingsDiff(currentZone *pdnsapi.Zone, form *ZoneForm) *activityl
 	if oldMasters != form.Masters {
 		diff.Fields = append(diff.Fields, activitylog.FieldDiff{
 			Field: "masters", Old: oldMasters, New: form.Masters,
+		})
+	}
+
+	if oldSettings.AutoPTR != form.AutoPTR {
+		diff.Fields = append(diff.Fields, activitylog.FieldDiff{
+			Field: "auto_ptr",
+			Old:   strconv.FormatBool(oldSettings.AutoPTR),
+			New:   strconv.FormatBool(form.AutoPTR),
 		})
 	}
 

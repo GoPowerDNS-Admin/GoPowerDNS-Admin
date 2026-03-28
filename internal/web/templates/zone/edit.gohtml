@@ -38,8 +38,12 @@
             <div class="row">
                 <div class="col-12">
 
-                    <!--begin::Zone Settings Card (collapsed by default)-->
-                    <div class="card card-primary card-outline mb-4 collapsed-card">
+                    <!-- Page-level toast container (used by zone-settings.js and zone-edit.js) -->
+                    <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"
+                         {{if .Success}}data-flash-success="{{.Success}}"{{end}}></div>
+
+                    <!--begin::Zone Settings Card (collapsed by default, open after form submit)-->
+                    <div class="card card-primary card-outline mb-4 {{if not (or .Success .Error)}}collapsed-card{{end}}">
                         <!--begin::Header-->
                         <div class="card-header">
                             <div class="card-title">
@@ -54,7 +58,7 @@
                         </div>
                         <!--end::Header-->
                         <!--begin::Body-->
-                        <div class="card-body" style="display: none;">
+                        <div class="card-body" {{if not (or .Success .Error)}}style="display: none;"{{end}}>
                             <!--begin::Form-->
                             <form id="zone-settings-form" method="POST" action="/zone/edit/{{.Form.Name}}">
                                 {{if .Error}}
@@ -104,6 +108,33 @@
                                 </div>
                                 <!--end::Masters-->
 
+                                <!--begin::Auto-PTR (forward non-slave zones only)-->
+                                {{if and (not .IsReverse) (ne .Form.Kind "Slave")}}
+                                <div class="mb-3">
+                                    <label class="form-label">Reverse DNS</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="auto-ptr" name="auto_ptr" value="true"
+                                               {{if .Form.AutoPTR}}checked{{end}}>
+                                        <label class="form-check-label" for="auto-ptr">
+                                            Auto-create PTR records for A / AAAA changes
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        When enabled, saving A or AAAA records automatically creates or updates the
+                                        matching PTR record in the appropriate reverse zone (if one exists in PowerDNS).
+                                        PTR records for removed IPs are deleted automatically.
+                                    </div>
+                                    {{if not .ReverseZoneNames}}
+                                    <div class="callout callout-warning mt-2 small">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        No reverse zones found in PowerDNS. PTR records cannot be created until a
+                                        reverse zone (e.g. <code>1.168.192.in-addr.arpa.</code>) is added.
+                                    </div>
+                                    {{end}}
+                                </div>
+                                {{end}}
+                                <!--end::Auto-PTR-->
+
                                 <!--begin::SOA-EDIT-API-->
                                 <div class="mb-3">
                                     <label for="soa-edit-api" class="form-label">SOA-EDIT-API <span class="text-danger">*</span></label>
@@ -129,7 +160,7 @@
                         </div>
                         <!--end::Body-->
                         <!--begin::Footer-->
-                        <div class="card-footer" style="display: none;">
+                        <div class="card-footer" {{if not (or .Success .Error)}}style="display: none;"{{end}}>
                             <button type="button" class="btn btn-outline-danger btn-sm float-end" id="delete-zone-btn" data-zone-name="{{.Form.Name}}">
                                 <i class="bi bi-trash me-1"></i> Delete Zone
                             </button>
@@ -149,8 +180,6 @@
                     <script type="application/json" id="zone-data">{{.InitDataJSON}}</script>
                     <div x-data="zoneEditor()" id="zone-editor">
 
-                        <!-- Toast container -->
-                        <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
 
                         <!--begin::DNS Records Card-->
                         <div class="card card-success card-outline mb-4">
@@ -222,7 +251,7 @@
                                         </thead>
                                         <tbody>
                                             <template x-for="record in paginatedRecords" :key="recordId(record)">
-                                                <tr :class="recordRowClass(record)">
+                                                <tr :id="'rec-' + CSS.escape(record.name)" :class="recordRowClass(record)">
                                                     <td class="record-name" x-text="record.display_name"></td>
                                                     <td class="record-type">
                                                         <span class="badge bg-light text-dark border" x-text="record.type"></span>
@@ -232,8 +261,21 @@
                                                         <span :class="record.disabled ? 'badge bg-danger' : 'badge bg-success'"
                                                               x-text="record.disabled ? 'Disabled' : 'Active'"></span>
                                                     </td>
-                                                    <td class="record-content text-truncate" style="max-width:200px;"
-                                                        :title="record.content" x-text="record.content"></td>
+                                                    <td class="record-content" style="max-width:220px;">
+                                                        <span class="d-inline text-truncate" :title="record.content" x-text="record.content"></span>
+                                                        <template x-if="ptrZoneLink(record)">
+                                                            <a :href="ptrZoneLink(record)" class="badge bg-light text-secondary border text-decoration-none ms-1 small"
+                                                               title="Open PTR record in reverse zone">
+                                                                <i class="bi bi-arrow-left-right me-1"></i>PTR
+                                                            </a>
+                                                        </template>
+                                                        <template x-if="forwardZoneLink(record)">
+                                                            <a :href="forwardZoneLink(record)" class="badge bg-light text-secondary border text-decoration-none ms-1 small"
+                                                               title="Open forward zone">
+                                                                <i class="bi bi-arrow-left-right me-1"></i>fwd
+                                                            </a>
+                                                        </template>
+                                                    </td>
                                                     <td class="record-comment text-truncate text-muted" style="max-width:150px;"
                                                         :title="record.comment" x-text="record.comment"></td>
                                                     <td class="text-end">

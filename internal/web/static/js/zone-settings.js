@@ -1,4 +1,40 @@
+// ── Toast helper (shared with zone-edit.js) ───────────────────────────────────
+
+function showToast(message, type = 'info', delay = 5000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const configs = {
+        success: { icon: 'bi-check-circle-fill',         bg: 'bg-success', title: 'Success' },
+        danger:  { icon: 'bi-exclamation-triangle-fill',  bg: 'bg-danger',  title: 'Error'   },
+        warning: { icon: 'bi-exclamation-circle-fill',    bg: 'bg-warning', title: 'Warning' },
+        info:    { icon: 'bi-info-circle-fill',            bg: 'bg-info',    title: 'Info'    },
+    };
+    const cfg = configs[type] || configs.info;
+    const id = `toast-${Date.now()}`;
+
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header ${cfg.bg} text-white">
+                <i class="bi ${cfg.icon} me-2"></i>
+                <strong class="me-auto">${cfg.title}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        </div>`);
+
+    const el = document.getElementById(id);
+    new bootstrap.Toast(el, { autohide: true, delay }).show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Show flash toast if the server passed a success or error message.
+    const container = document.getElementById('toast-container');
+    if (container) {
+        const flash = container.dataset.flashSuccess;
+        if (flash) showToast(flash, 'success');
+    }
     // Zone kind select — show/hide Masters field
     const zoneKindSelect = document.getElementById('zone-kind');
     const mastersField   = document.getElementById('masters-field');

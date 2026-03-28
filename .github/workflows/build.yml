@@ -41,32 +41,15 @@ jobs:
         GOPATH: /github/workspace/go
         GOCACHE: /github/workspace/go-cache
         PRE_COMMIT_HOME: /github/workspace/pre-commit-cache
+      volumes:
+        - /var/cache/go-mod:/github/workspace/go/pkg/mod
+        - /var/cache/go-build:/github/workspace/go-cache
+        - /var/cache/pre-commit:/github/workspace/pre-commit-cache
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v5
-
-      - name: Cache Go modules
-        uses: actions/cache@v5
-        with:
-          path: /github/workspace/go/pkg/mod
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-
-      - name: Cache Go build cache
-        uses: actions/cache@v5
-        with:
-          path: /github/workspace/go-cache
-          key: go-build-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-build-${{ runner.os }}-
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v5
-        with:
-          path: /github/workspace/pre-commit-cache
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: pre-commit-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -100,25 +83,14 @@ jobs:
       env:
         GOPATH: /github/workspace/go
         GOCACHE: /github/workspace/go-cache
+      volumes:
+        - /var/cache/go-mod:/github/workspace/go/pkg/mod
+        - /var/cache/go-build:/github/workspace/go-cache
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v5
-
-      - name: Cache Go modules
-        uses: actions/cache@v5
-        with:
-          path: /github/workspace/go/pkg/mod
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-
-      - name: Cache Go build cache
-        uses: actions/cache@v5
-        with:
-          path: /github/workspace/go-cache
-          key: go-build-browser-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-build-browser-${{ runner.os }}-
 
       - name: Install dependencies
         run: apt-get update && apt-get install -y gcc libsqlite3-dev chromium

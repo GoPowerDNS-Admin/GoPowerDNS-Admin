@@ -15,6 +15,7 @@ require (
 	github.com/gofiber/storage/postgres/v3 v3.3.2
 	github.com/gofiber/template/html/v3 v3.0.2
 	github.com/joeig/go-powerdns/v3 v3.21.0
+	github.com/onsi/gomega v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.5.0
 	github.com/prometheus/client_golang v1.23.2
@@ -59,6 +60,7 @@ require (
 	github.com/gofiber/schema v1.7.0 // indirect
 	github.com/gofiber/template/v2 v2.1.0 // indirect
 	github.com/gofiber/utils/v2 v2.0.2 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

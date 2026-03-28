@@ -16,6 +16,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/glebarez/sqlite"
 	"github.com/gofiber/fiber/v3"
+	"github.com/onsi/gomega"
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
@@ -124,7 +125,7 @@ func newTestConfig() *config.Config {
 	}
 }
 
-// newTestApp builds a Fiber app with the Service routes registered directly,
+// newTestApp builds a Fiber app with Service routes registered directly,
 // without the permission middleware, so tests don't need a valid session.
 func newTestApp(t *testing.T, db *gorm.DB) *fiber.App {
 	t.Helper()
@@ -258,6 +259,7 @@ func roleID(r *models.Role) string {
 // --- List ---
 
 func TestList_ReturnsOK(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -268,14 +270,13 @@ func TestList_ReturnsOK(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
 }
 
 // --- New ---
 
 func TestNew_ReturnsOK(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -286,14 +287,13 @@ func TestNew_ReturnsOK(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
 }
 
 // --- Create ---
 
 func TestCreate_Success(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -314,17 +314,14 @@ func TestCreate_Success(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 
 	var u models.User
-	if err := db.Where("username = ?", "alice").First(&u).Error; err != nil {
-		t.Fatalf("user alice not found in db: %v", err)
-	}
+	g.Expect(db.Where("username = ?", "alice").First(&u).Error).To(gomega.Succeed())
 }
 
 func TestCreate_MissingRequiredFields_ReturnsBadRequest(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -341,12 +338,11 @@ func TestCreate_MissingRequiredFields_ReturnsBadRequest(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
 }
 
 func TestCreate_OIDCUser_Succeeds(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -365,19 +361,16 @@ func TestCreate_OIDCUser_Succeeds(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 
 	var u models.User
-	if err := db.Where("username = ?", "oidcuser").First(&u).Error; err != nil {
-		t.Fatalf("oidcuser not found in db: %v", err)
-	}
+	g.Expect(db.Where("username = ?", "oidcuser").First(&u).Error).To(gomega.Succeed())
 }
 
 // --- Edit ---
 
 func TestEdit_ExistingUser_ReturnsOK(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -390,12 +383,11 @@ func TestEdit_ExistingUser_ReturnsOK(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
 }
 
 func TestEdit_NonExistentUser_Redirects(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -406,12 +398,11 @@ func TestEdit_NonExistentUser_Redirects(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 }
 
 func TestEdit_InvalidID_Redirects(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -422,14 +413,13 @@ func TestEdit_InvalidID_Redirects(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 }
 
 // --- Update ---
 
 func TestUpdate_Success_StaysOnEditPage(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -451,26 +441,17 @@ func TestUpdate_Success_StaysOnEditPage(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
-
-	loc := resp.Header.Get("Location")
-	expected := fmt.Sprintf("%s/%d/edit", Path, u.ID)
-
-	if loc != expected {
-		t.Fatalf("expected redirect to %s, got %s", expected, loc)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
+	g.Expect(resp.Header.Get("Location")).To(gomega.Equal(fmt.Sprintf("%s/%d/edit", Path, u.ID)))
 
 	var updated models.User
 	db.First(&updated, u.ID)
 
-	if updated.Username != "carol-updated" {
-		t.Fatalf("expected username carol-updated, got %s", updated.Username)
-	}
+	g.Expect(updated.Username).To(gomega.Equal("carol-updated"))
 }
 
 func TestUpdate_PreventsSelfDeactivation(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -492,17 +473,14 @@ func TestUpdate_PreventsSelfDeactivation(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
 
 	body, _ := io.ReadAll(resp.Body)
-	if !strings.Contains(string(body), "deactivate") {
-		t.Fatalf("expected deactivation error in body, got %q", string(body))
-	}
+	g.Expect(string(body)).To(gomega.ContainSubstring("deactivate"))
 }
 
 func TestUpdate_PreventsLastAdminDemotion(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -524,12 +502,11 @@ func TestUpdate_PreventsLastAdminDemotion(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
 }
 
 func TestUpdate_SecondAdminAllowsDemotion(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -552,14 +529,13 @@ func TestUpdate_SecondAdminAllowsDemotion(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 (demotion allowed with 2 admins), got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 }
 
 // --- Delete ---
 
 func TestDelete_Success(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -572,19 +548,16 @@ func TestDelete_Success(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 
 	var count int64
 	db.Model(&models.User{}).Where("id = ?", u.ID).Count(&count)
 
-	if count != 0 {
-		t.Fatal("expected user to be gone from normal queries after delete")
-	}
+	g.Expect(count).To(gomega.BeZero())
 }
 
 func TestDelete_PreventsSelfDelete(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -598,12 +571,11 @@ func TestDelete_PreventsSelfDelete(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
 }
 
 func TestDelete_PreventsAdminRoleDelete(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -616,14 +588,13 @@ func TestDelete_PreventsAdminRoleDelete(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("expected 403, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusForbidden))
 }
 
 // --- DisableTOTP ---
 
 func TestDisableTOTP_Success(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -639,30 +610,18 @@ func TestDisableTOTP_Success(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
-
-	loc := resp.Header.Get("Location")
-	expected := fmt.Sprintf("%s/%d/edit", Path, u.ID)
-
-	if loc != expected {
-		t.Fatalf("expected redirect to edit page %s, got %s", expected, loc)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
+	g.Expect(resp.Header.Get("Location")).To(gomega.Equal(fmt.Sprintf("%s/%d/edit", Path, u.ID)))
 
 	var updated models.User
 	db.First(&updated, u.ID)
 
-	if updated.TOTPEnabled {
-		t.Fatal("expected TOTPEnabled=false after disable")
-	}
-
-	if updated.TOTPSecret != "" {
-		t.Fatal("expected TOTPSecret cleared after disable")
-	}
+	g.Expect(updated.TOTPEnabled).To(gomega.BeFalse())
+	g.Expect(updated.TOTPSecret).To(gomega.BeEmpty())
 }
 
 func TestDisableTOTP_BlockedWhenRequired(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -680,23 +639,17 @@ func TestDisableTOTP_BlockedWhenRequired(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	// Handler redirects back to edit page — TOTP must not have been cleared.
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 
 	var updated models.User
 	db.First(&updated, u.ID)
 
-	if !updated.TOTPEnabled {
-		t.Fatal("TOTPEnabled must remain true when TOTP is required")
-	}
-
-	if updated.TOTPSecret == "" {
-		t.Fatal("TOTPSecret must not be cleared when TOTP is required")
-	}
+	g.Expect(updated.TOTPEnabled).To(gomega.BeTrue())
+	g.Expect(updated.TOTPSecret).NotTo(gomega.BeEmpty())
 }
 
 func TestDisableTOTP_NoopForNonLocalUser(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -712,12 +665,11 @@ func TestDisableTOTP_NoopForNonLocalUser(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 }
 
 func TestDisableTOTP_NoopWhenNotEnabled(t *testing.T) {
+	g := gomega.NewWithT(t)
 	db := newTestDB(t)
 
 	initSessionStore()
@@ -730,7 +682,5 @@ func TestDisableTOTP_NoopWhenNotEnabled(t *testing.T) {
 
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected 303 redirect, got %d", resp.StatusCode)
-	}
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
 }

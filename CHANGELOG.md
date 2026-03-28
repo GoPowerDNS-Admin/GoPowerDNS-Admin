@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-alpha.11] - 2026-03-28
+
+### Bug Fixes
+
+- **docs:** Remove unsupported br shortcode from homepage ([271ec53](271ec53e288094919ef6f0952e8569b5b7e8cdce))
+- **docs:** Ignore docs/content in prettier, fix homepage shortcodes ([1569b4d](1569b4d988130c015bb01108524f97b08fb8bff7))
+- **docs:** Replace unavailable code-bracket icon with command-line ([0e95425](0e95425ef296ea5c8ac14ff6583d019afbe67dca))
+- **docs:** Remove icon attributes from feature cards to avoid missing icon errors ([34d5b00](34d5b0099533942f57150fa76f0d1eb58f9828c1))
+- **docs:** Build with custom domain baseURL instead of GitHub Pages subpath ([f1bcf9d](f1bcf9d8851bf4bba6e19167f26f9151efa50176))
+- **docs:** Trigger workflow on changes to docs.yaml itself ([94a5b69](94a5b695bbe9c5bcda353896475b69b75faa9dcd))
+- **ui:** Use absolute path for sidebar logo to fix 404 on nested routes ([8adbf9a](8adbf9ae802a8e46077a7f243d767aac0607cbe3))
+- **admin:** Move disable-TOTP form out of nested form into separate card ([b9f6bcc](b9f6bcc76457f090eb2e24c4d314e7602f197051))
+- **admin:** Stay on edit page after updating a user ([58e206f](58e206f3420cd1851ba3f6c7bf493e7c1988afbb))
+- **admin:** Label secondary button Cancel on create, Back to list on edit ([577e9fc](577e9fc1578e7b79d305816751f6c5132e3df67e))
+
+### Documentation
+
+- Scaffold Hugo documentation site with Hextra theme ([40bcdc9](40bcdc9c1b881b0c72b174d7f98d823dac20cd1a))
+- Document auto-PTR feature and cross-zone hint badges ([3992a0b](3992a0beffa543491f1f4dd6f096a6b82814f9cb))
+
+### Features
+
+- **admin:** Allow admin to disable TOTP for local users not under forced TOTP ([be141a1](be141a1d75aac97f16ecd4061cfb061689b2a552))
+
 ## [0.1.0-alpha.10] - 2026-03-28
 
 ### Bug Fixes

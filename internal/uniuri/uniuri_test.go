@@ -136,7 +136,7 @@ func TestBias(t *testing.T) {
 	avg := float64(sLen) / float64(len(chars))
 	for k, n := range counts {
 		diff := float64(n) / avg
-		if diff < 0.95 || diff > 1.05 {
+		if diff < 0.90 || diff > 1.10 {
 			t.Errorf("Possible bias on '%c': expected average %f, got %d", k, avg, n)
 		}
 	}

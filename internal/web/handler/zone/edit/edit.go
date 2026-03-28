@@ -80,7 +80,8 @@ type ZoneForm struct {
 	Name       string     `form:"name"`
 	Kind       string     `form:"kind"         validate:"required,oneof=Native Master Slave"`
 	SOAEditAPI SOAEditAPI `form:"soa_edit_api" validate:"required,oneof=DEFAULT INCREASE EPOCH OFF"`
-	Masters    string     `form:"masters"` // Comma-separated list for Slave zones
+	Masters    string     `form:"masters"`  // Comma-separated list for Slave zones
+	AutoPTR    bool       `form:"auto_ptr"` // Automatically create PTR records for A/AAAA changes
 }
 
 // RecordData represents a single DNS record for display.
@@ -200,12 +201,23 @@ func (s *Service) Get(c fiber.Ctx) error {
 	soaEditAPI := getSOAEditAPIFromZone(zone)
 	masters := strings.Join(zone.Masters, ", ")
 
+	// Load per-zone application settings.
+	zoneSettings := loadZoneSettings(s.db, zoneName)
+
+	// Collect reverse and forward zone names for cross-zone hints and the
+	// Auto-PTR checkbox warning. A single zone list call serves both purposes.
+	listCtx, listCancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer listCancel()
+
+	reverseZoneNames, forwardZoneNames := buildZoneLists(listCtx)
+
 	// Populate form with zone data
 	form := &ZoneForm{
 		Name:       *zone.Name,
 		Kind:       string(*zone.Kind),
 		SOAEditAPI: soaEditAPI,
 		Masters:    masters,
+		AutoPTR:    zoneSettings.AutoPTR,
 	}
 
 	// Extract records from RRsets
@@ -245,12 +257,19 @@ func (s *Service) Get(c fiber.Ctx) error {
 
 	// Serialize initialization data for Alpine component.
 	// json.Marshal escapes </>, & by default — safe to embed in a <script> tag.
+	// Build a map of PTR name → reverse zone name for A/AAAA records that
+	// already have a matching PTR record, so the UI can show a hint badge.
+	existingPTRs := buildExistingPTRsMap(listCtx, records, reverseZoneNames)
+
 	initJSON, err := json.Marshal(map[string]interface{}{
 		"zoneName":     *zone.Name,
 		"records":      records,
 		"allowedTypes": allowedRecordTypes,
 		"pageSize":     recordsPageSize,
 		"ttlPresets":   ttlPresets,
+		"reverseZones": reverseZoneNames,
+		"forwardZones": forwardZoneNames,
+		"existingPTRs": existingPTRs,
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to marshal zone init data")
@@ -268,6 +287,9 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"AllowedRecordTypes": allowedRecordTypes,
 		"RecordsPageSize":    recordsPageSize,
 		"InitDataJSON":       template.JS(initJSON), //nolint:gosec // safe: json.Marshal escapes HTML chars
+		"Success":            c.Query("success"),
+		"IsReverse":          zoneIsReverse(zoneName),
+		"ReverseZoneNames":   reverseZoneNames,
 	}, handler.BaseLayout)
 }
 
@@ -358,28 +380,12 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	// Add masters if a zone type is Slave
 	if form.Kind == "Slave" {
-		if form.Masters == "" {
+		masters, mastersErr := parseMasters(form.Masters)
+		if mastersErr != nil {
 			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
 				"Navigation": nav,
 				"Form":       form,
-				"Error":      "Master servers are required for Slave zones",
-			}, handler.BaseLayout)
-		}
-
-		var masters []string
-
-		for _, master := range strings.Split(form.Masters, ",") {
-			trimmed := strings.TrimSpace(master)
-			if trimmed != "" {
-				masters = append(masters, trimmed)
-			}
-		}
-
-		if len(masters) == 0 {
-			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
-				"Navigation": nav,
-				"Form":       form,
-				"Error":      "At least one master server is required for Slave zones",
+				"Error":      mastersErr.Error(),
 			}, handler.BaseLayout)
 		}
 
@@ -406,6 +412,20 @@ func (s *Service) Post(c fiber.Ctx) error {
 		Str("soa_edit_api", string(form.SOAEditAPI)).
 		Msg("Zone updated successfully")
 
+	// Load old per-zone settings before overwriting (needed for diff).
+	oldZoneSettings := loadZoneSettings(s.db, zoneName)
+
+	// Auto-PTR is meaningless on reverse zones — strip it server-side regardless
+	// of what was submitted.
+	autoPTR := form.AutoPTR && !zoneIsReverse(zoneName) && form.Kind != "Slave"
+
+	// Persist per-zone application settings.
+	if saveErr := saveZoneSettings(s.db, zoneName, ZoneSettings{AutoPTR: autoPTR}); saveErr != nil {
+		log.Warn().Err(saveErr).Str("zone_name", zoneName).Msg("failed to save zone settings")
+	}
+
+	form.AutoPTR = autoPTR // keep form consistent for diff
+
 	// Record activity: zone updated (include before/after diff)
 	userID, username := currentUserFromSession(c)
 	activitylog.Record(
@@ -415,13 +435,13 @@ func (s *Service) Post(c fiber.Ctx) error {
 			Username:     username,
 			Action:       activitylog.ActionZoneUpdated,
 			ResourceType: activitylog.ResourceTypeZone, ResourceName: zoneName,
-			Details:   buildZoneSettingsDiff(currentZone, form),
+			Details:   buildZoneSettingsDiff(currentZone, form, oldZoneSettings),
 			IPAddress: c.IP(),
 		},
 	)
 
-	// Redirect to dashboard with success message
-	return c.Redirect().To(dashboard.Path + "?success=Zone updated successfully")
+	// Redirect back to the zone edit page with success message
+	return c.Redirect().To("/zone/edit/" + zoneName + "?success=Zone updated successfully")
 }
 
 // PostRecords handles the record updates for a zone.
@@ -512,8 +532,18 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 		Int("changes_count", len(request.Changes)).
 		Msg("Zone records updated successfully")
 
-	// Record activity: record changed (include per-RRset before/after diff)
 	userID, username := currentUserFromSession(c)
+
+	// Auto-create PTR records if enabled for this zone (forward zones only).
+	var ptrNoReverseZone []string
+
+	if !zoneIsReverse(zoneName) {
+		if zs := loadZoneSettings(s.db, zoneName); zs.AutoPTR {
+			ptrNoReverseZone = s.applyAutoPTR(ctx, currentZone, request.Changes, userID, username, c.IP())
+		}
+	}
+
+	// Record activity: record changed (include per-RRset before/after diff)
 	activitylog.Record(
 		&activitylog.Entry{
 			DB:           s.db,
@@ -528,8 +558,9 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 	)
 
 	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "Records updated successfully",
+		"success":               true,
+		"message":               "Records updated successfully",
+		"ptr_no_reverse_zone":   ptrNoReverseZone,
 	})
 }
 
@@ -724,6 +755,47 @@ func (s *Service) canAccessZone(c fiber.Ctx, zoneName string) bool {
 	}
 
 	return accessible[zoneName]
+}
+
+// buildZoneLists queries the PowerDNS zone list and splits the results into
+// reverse (in-addr.arpa / ip6.arpa) and forward zone name slices.
+func buildZoneLists(ctx context.Context) (reverseZones, forwardZones []string) {
+	zones, err := powerdns.Engine.Zones.List(ctx)
+	if err != nil {
+		return
+	}
+
+	for i := range zones {
+		if zones[i].Name == nil {
+			continue
+		}
+
+		if zoneIsReverse(*zones[i].Name) {
+			reverseZones = append(reverseZones, *zones[i].Name)
+		} else {
+			forwardZones = append(forwardZones, *zones[i].Name)
+		}
+	}
+
+	return
+}
+
+// parseMasters splits a comma-separated master server string into a validated
+// slice. Returns an error when no valid entries are found.
+func parseMasters(mastersStr string) ([]string, error) {
+	var masters []string
+
+	for _, master := range strings.Split(mastersStr, ",") {
+		if trimmed := strings.TrimSpace(master); trimmed != "" {
+			masters = append(masters, trimmed)
+		}
+	}
+
+	if len(masters) == 0 {
+		return nil, errors.New("master servers are required for Slave zones")
+	}
+
+	return masters, nil
 }
 
 // currentUserFromSession extracts the current user's ID and username from the

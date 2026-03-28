@@ -9,33 +9,38 @@
  */
 
 // ── Toast helper ──────────────────────────────────────────────────────────────
+// Defined in zone-settings.js (always loaded). Guard here for pages that load
+// zone-edit.js without zone-settings.js.
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+if (typeof showToast === 'undefined') {
+    // eslint-disable-next-line no-unused-vars
+    function showToast(message, type = 'info', delay = 5000) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
 
-    const configs = {
-        success: { icon: 'bi-check-circle-fill',        bg: 'bg-success', title: 'Success' },
-        danger:  { icon: 'bi-exclamation-triangle-fill', bg: 'bg-danger',  title: 'Error'   },
-        warning: { icon: 'bi-exclamation-circle-fill',   bg: 'bg-warning', title: 'Warning' },
-        info:    { icon: 'bi-info-circle-fill',           bg: 'bg-info',    title: 'Info'    },
-    };
-    const cfg = configs[type] || configs.info;
-    const id = `toast-${Date.now()}`;
+        const configs = {
+            success: { icon: 'bi-check-circle-fill',        bg: 'bg-success', title: 'Success' },
+            danger:  { icon: 'bi-exclamation-triangle-fill', bg: 'bg-danger',  title: 'Error'   },
+            warning: { icon: 'bi-exclamation-circle-fill',   bg: 'bg-warning', title: 'Warning' },
+            info:    { icon: 'bi-info-circle-fill',           bg: 'bg-info',    title: 'Info'    },
+        };
+        const cfg = configs[type] || configs.info;
+        const id = `toast-${Date.now()}`;
 
-    container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header ${cfg.bg} text-white">
-                <i class="bi ${cfg.icon} me-2"></i>
-                <strong class="me-auto">${cfg.title}</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body">${message}</div>
-        </div>`);
+        container.insertAdjacentHTML('beforeend', `
+            <div id="${id}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header ${cfg.bg} text-white">
+                    <i class="bi ${cfg.icon} me-2"></i>
+                    <strong class="me-auto">${cfg.title}</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">${message}</div>
+            </div>`);
 
-    const el = document.getElementById(id);
-    new bootstrap.Toast(el, { autohide: true, delay: 5000 }).show();
-    el.addEventListener('hidden.bs.toast', () => el.remove());
+        const el = document.getElementById(id);
+        new bootstrap.Toast(el, { autohide: true, delay }).show();
+        el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
 }
 
 // ── Confirm dialog ────────────────────────────────────────────────────────────
@@ -209,6 +214,73 @@ function canonicalizeContent(type, content) {
     return content;
 }
 
+// ── Cross-zone hint helpers ───────────────────────────────────────────────────
+
+/**
+ * Convert an IPv4 address string to its PTR record name.
+ * "192.0.2.1" → "1.2.0.192.in-addr.arpa."
+ */
+function ipv4PTRName(ip) {
+    const parts = ip.trim().split('.');
+    if (parts.length !== 4) return null;
+    return parts.slice().reverse().join('.') + '.in-addr.arpa.';
+}
+
+/**
+ * Expand a possibly-abbreviated IPv6 address to its full nibble-reversed PTR
+ * name.  "2001:db8::1" → "1.0.0.0…8.b.d.0.1.0.0.2.ip6.arpa."
+ */
+function ipv6PTRName(ip) {
+    try {
+        const halves = ip.split('::');
+        let left  = halves[0] ? halves[0].split(':') : [];
+        let right = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
+        const fill = 8 - left.length - right.length;
+        if (fill < 0) return null;
+        const groups = [...left, ...Array(fill).fill('0'), ...right];
+        if (groups.length !== 8) return null;
+        const nibbles = groups.map(g => g.padStart(4, '0')).join('');
+        return nibbles.split('').reverse().join('.') + '.ip6.arpa.';
+    } catch { return null; }
+}
+
+/**
+ * Return the PTR record name for an IP, or null if the type is unsupported.
+ */
+function ptrNameForIP(ip, rrType) {
+    if (rrType === 'A')    return ipv4PTRName(ip);
+    if (rrType === 'AAAA') return ipv6PTRName(ip);
+    return null;
+}
+
+/**
+ * Return the most-specific reverse zone from `reverseZones` that owns
+ * `ptrName`, or null if none match.
+ */
+function findReverseZone(ptrName, reverseZones) {
+    let best = null;
+    for (const zn of reverseZones) {
+        if (ptrName === zn || ptrName.endsWith('.' + zn)) {
+            if (!best || zn.length > best.length) best = zn;
+        }
+    }
+    return best;
+}
+
+/**
+ * Return the most-specific forward zone from `forwardZones` that owns
+ * `hostname`, or null if none match.
+ */
+function findForwardZone(hostname, forwardZones) {
+    let best = null;
+    for (const zn of forwardZones) {
+        if (hostname === zn || hostname.endsWith('.' + zn)) {
+            if (!best || zn.length > best.length) best = zn;
+        }
+    }
+    return best;
+}
+
 // ── Alpine component factory ──────────────────────────────────────────────────
 
 function zoneEditor(initData) {
@@ -222,6 +294,9 @@ function zoneEditor(initData) {
         allowedTypes: initData.allowedTypes || [],
         records:      (initData.records || []).map(r => ({ ...r })),
         ttlPresets:   initData.ttlPresets   || [],
+        reverseZones: initData.reverseZones || [],
+        forwardZones: initData.forwardZones || [],
+        existingPTRs: initData.existingPTRs || {},
 
         // Set once in init() from the server-provided snapshot — never mutated.
         _originalKeys: {},  // { 'name|type': true }
@@ -241,6 +316,9 @@ function zoneEditor(initData) {
 
         // ── Save state ────────────────────────────────────────────────────────
         isSaving: false,
+
+        // ── Hash-navigation highlight ─────────────────────────────────────────
+        _highlightEl: null,
 
         // ── Record modal ──────────────────────────────────────────────────────
         recordForm: {
@@ -290,6 +368,27 @@ function zoneEditor(initData) {
             // Reset page to 1 whenever search or type filter changes.
             this.$watch('searchQuery',      () => { this.currentPage = 1; });
             this.$watch('activeTypeFilter', () => { this.currentPage = 1; });
+
+            // If the URL contains a hash, navigate to and highlight that record.
+            const hash = window.location.hash;
+            if (hash) {
+                const targetName = decodeURIComponent(hash.slice(1));
+                const idx = this.records.findIndex(r => r.name === targetName);
+                if (idx >= 0) {
+                    // Clear filters so the record is visible, then jump to its page.
+                    this.activeTypeFilter = 'all';
+                    this.searchQuery = '';
+                    this.currentPage = Math.floor(idx / this.pageSize) + 1;
+                    this.$nextTick(() => {
+                        const el = document.getElementById('rec-' + CSS.escape(targetName));
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el.classList.add('table-info');
+                            this._highlightEl = el;
+                        }
+                    });
+                }
+            }
 
             // Fix Bootstrap aria-hidden focus-trap warning: blur any focused descendant on hide.
             ['recordModal', 'soaModal'].forEach(id => {
@@ -383,6 +482,28 @@ function zoneEditor(initData) {
             return r.name + '|' + r.type + '|' + r.content;
         },
 
+        /**
+         * For A/AAAA records: return the reverse zone edit URL with a hash
+         * pointing to the PTR record line, or null if no PTR exists.
+         */
+        ptrZoneLink(record) {
+            if (record.type !== 'A' && record.type !== 'AAAA') return null;
+            const ptr = ptrNameForIP(record.content, record.type);
+            if (!ptr) return null;
+            const zone = this.existingPTRs[ptr];
+            return zone ? '/zone/edit/' + zone + '#' + encodeURIComponent(ptr) : null;
+        },
+
+        /**
+         * For PTR records: return the forward zone edit URL with a hash
+         * pointing to the A/AAAA record line, or null if no matching zone.
+         */
+        forwardZoneLink(record) {
+            if (record.type !== 'PTR') return null;
+            const zone = findForwardZone(record.content, this.forwardZones);
+            return zone ? '/zone/edit/' + zone + '#' + encodeURIComponent(record.content) : null;
+        },
+
         recordRowClass(r) {
             const key = r.name + '|' + r.type;
             if (!(key in this.pendingChanges)) return '';
@@ -472,9 +593,19 @@ function zoneEditor(initData) {
             }
         },
 
+        // ── Highlight helpers ─────────────────────────────────────────────────
+
+        clearHighlight() {
+            if (this._highlightEl) {
+                this._highlightEl.classList.remove('table-info');
+                this._highlightEl = null;
+            }
+        },
+
         // ── Open record modal (add) ───────────────────────────────────────────
 
         openAddRecord() {
+            this.clearHighlight();
             const defaultType = this.allowedTypes.length > 0 ? this.allowedTypes[0].type : 'A';
             const defaultTTL  = this.ttlPresets.length > 0 ? this.ttlPresets[0].seconds : 3600;
             this.recordForm = {
@@ -491,6 +622,7 @@ function zoneEditor(initData) {
         // ── Open record modal (edit) ──────────────────────────────────────────
 
         openEditRecord(record) {
+            this.clearHighlight();
             if (record.type === 'SOA') { this.openSOAModal(record); return; }
             const mx  = record.type === 'MX'  ? parseMX(record.content)  : null;
             const txt = record.type === 'TXT' ? parseTXT(record.content) : '';
@@ -727,6 +859,7 @@ function zoneEditor(initData) {
         // ── Delete record ─────────────────────────────────────────────────────
 
         async deleteRecord(record) {
+            this.clearHighlight();
             const confirmed = await showConfirm('Are you sure you want to delete this record?', {
                 confirmText: 'Delete', confirmBtnClass: 'btn-danger',
             });
@@ -784,7 +917,13 @@ function zoneEditor(initData) {
 
                 if (res.ok && data.success) {
                     showToast('Records saved successfully!', 'success');
-                    setTimeout(() => location.reload(), 1000);
+                    let reloadDelay = 1000;
+                    if (data.ptr_no_reverse_zone && data.ptr_no_reverse_zone.length > 0) {
+                        const ips = data.ptr_no_reverse_zone.join(', ');
+                        showToast('Auto-PTR: no reverse zone found for ' + ips, 'warning', 10000);
+                        reloadDelay = 5000;
+                    }
+                    setTimeout(() => location.reload(), reloadDelay);
                 } else {
                     showToast('Error: ' + (data.message || `HTTP ${res.status}`), 'danger');
                     this.isSaving = false;

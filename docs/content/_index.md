@@ -12,13 +12,13 @@ layout: hextra-home
 
 <div class="hx-mt-6 hx-mb-6">
 {{< hextra/hero-headline >}}
-  Modern DNS management&nbsp;{{< br >}}for PowerDNS
+  Modern DNS management for PowerDNS
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  GoPowerDNS-Admin is a web-based administration UI for PowerDNS.&nbsp;{{< br >}}
+  GoPowerDNS-Admin is a web-based administration UI for PowerDNS.
   Manage zones, records, and users from a clean Go-powered interface.
 {{< /hextra/hero-subtitle >}}
 </div>

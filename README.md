@@ -6,6 +6,10 @@
 
 GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
 
+## Documentation
+
+**[https://docs.gopowerdnsadmin.org](https://docs.gopowerdnsadmin.org)**
+
 ## Live Demo
 
 **[https://demo.gopowerdnsadmin.org/login](https://demo.gopowerdnsadmin.org/login)**
@@ -37,7 +41,7 @@ Core features are functional. Interfaces and configuration may still change betw
   - Local database (with optional TOTP two-factor authentication)
   - OpenID Connect (OIDC)
   - LDAP
-- TOTP two-factor authentication for local accounts (per-user opt-in or admin-enforced)
+- TOTP two-factor authentication for local accounts (per-user opt-in, admin-enforced, or admin-disabled)
 - RBAC (Role-Based Access Control) with grouped permission cards and tri-state toggles
 - Zone tag-based access control
 - Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
@@ -141,7 +145,7 @@ Three authentication methods are supported and can be enabled independently:
 - **OIDC** — OpenID Connect (e.g. Keycloak, Authentik, Okta)
 - **LDAP** — bind-based LDAP authentication
 
-TOTP is only available for local accounts. OIDC and LDAP users rely on their identity provider for MFA.
+TOTP is only available for local accounts. OIDC and LDAP users rely on their identity provider for MFA. Admins can enforce TOTP per user; they can also disable it on behalf of a user (e.g. when a user loses their authenticator), unless TOTP is currently required for that account.
 
 See `internal/config/structs.go` for available configuration fields.
 
@@ -284,7 +288,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.4
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.11
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```

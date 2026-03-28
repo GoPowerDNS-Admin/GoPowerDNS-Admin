@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/glebarez/sqlite"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"github.com/onsi/gomega"
 	"gorm.io/gorm"

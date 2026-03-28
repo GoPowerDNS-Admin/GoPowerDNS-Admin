@@ -169,7 +169,7 @@
 
                             <div class="d-flex gap-2 mt-4">
                                 <button type="submit" class="btn btn-primary" {{ if .DemoAdminLocked }}disabled{{ end }}>{{ if .IsCreate }}Create{{ else }}Update{{ end }}</button>
-                                <a href="/admin/user" class="btn btn-secondary">Cancel</a>
+                                <a href="/admin/user" class="btn btn-secondary">{{ if .IsCreate }}Cancel{{ else }}Back to list{{ end }}</a>
                             </div>
                         </form>
                     </div>

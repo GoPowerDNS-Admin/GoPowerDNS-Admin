@@ -35,5 +35,5 @@ Manage zones, records, and users from a clean Go-powered interface.
 {{< hextra/feature-card title="Multi-Auth" subtitle="Local accounts with TOTP, OpenID Connect, and LDAP — enable any combination." icon="lock-closed" >}}
 {{< hextra/feature-card title="RBAC" subtitle="Fine-grained role-based access control with zone tag restrictions per user or group." icon="user-group" >}}
 {{< hextra/feature-card title="Activity Log & Undo" subtitle="Every change is recorded with a before/after diff. Undo record changes and zone deletes." icon="clock" >}}
-{{< hextra/feature-card title="Pure Go" subtitle="No CGO, no C toolchain required. SQLite, MySQL/MariaDB, and PostgreSQL supported." icon="code-bracket" >}}
+{{< hextra/feature-card title="Pure Go" subtitle="No CGO, no C toolchain required. SQLite, MySQL/MariaDB, and PostgreSQL supported." icon="command-line" >}}
 {{< /hextra/feature-grid >}}

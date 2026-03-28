@@ -49,3 +49,7 @@ __pycache__/
 .claude
 vendor/**
 /GoPowerDNS-Admin
+
+# Hugo build output
+docs/public/
+docs/resources/

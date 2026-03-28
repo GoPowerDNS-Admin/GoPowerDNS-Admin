@@ -64,6 +64,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	app.Get(Path+"/:id/edit", auth.RequirePermission(authService, auth.PermAdminUsers), s.Edit)
 	app.Post(Path+"/:id", auth.RequirePermission(authService, auth.PermAdminUsers), s.Update)
 	app.Post(Path+"/:id/delete", auth.RequirePermission(authService, auth.PermAdminUsers), s.Delete)
+	app.Post(Path+"/:id/disable-totp", auth.RequirePermission(authService, auth.PermAdminUsers), s.DisableTOTP)
 }
 
 // listViewData and formViewData were initially planned as typed data holders, but this project uses
@@ -553,6 +554,46 @@ func (s *Service) Delete(c fiber.Ctx) error {
 	}
 
 	return c.Redirect().To(Path)
+}
+
+// DisableTOTP clears TOTP for a local user, provided TOTP was not admin-enforced.
+func (s *Service) DisableTOTP(c fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return c.Redirect().To(Path)
+	}
+
+	var user models.User
+	if err = s.db.First(&user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Redirect().To(Path)
+		}
+
+		return c.Status(fiber.StatusInternalServerError).Redirect().To(Path)
+	}
+
+	editPath := Path + "/" + strconv.Itoa(id) + "/edit"
+
+	if user.AuthSource != models.AuthSourceLocal {
+		return c.Redirect().To(editPath)
+	}
+
+	if !user.TOTPEnabled {
+		return c.Redirect().To(editPath)
+	}
+
+	if user.TOTPRequired {
+		return c.Status(fiber.StatusForbidden).Redirect().To(editPath)
+	}
+
+	if err = s.db.Model(&user).Updates(map[string]any{
+		"totp_enabled": false,
+		"totp_secret":  "",
+	}).Error; err != nil {
+		log.Error().Err(err).Uint64("user_id", user.ID).Msg("failed to disable TOTP")
+	}
+
+	return c.Redirect().To(editPath)
 }
 
 // parseUintIDs reads a multi-value form field and returns a slice of uint values.

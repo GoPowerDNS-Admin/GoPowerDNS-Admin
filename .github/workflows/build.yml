@@ -1,5 +1,5 @@
-name: Build
-
+name: Build and Test
+run-name: Build and Test - ${{ github.event.pull_request.title }} by ${{ github.event.pull_request.user.login }}
 on:
   pull_request:
     branches: [main]

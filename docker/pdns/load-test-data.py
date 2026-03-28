@@ -8,12 +8,13 @@ import json
 import time
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Optional
 import urllib.request
 import urllib.error
+import os
 
 # Configuration
-API_KEY = "my_dev_api_key"
+API_KEY = os.getenv("PDNS_API_KEY", "my_dev_api_key")
 API_URL = "http://localhost:8081/api/v1/servers/localhost"
 SCRIPT_DIR = Path(__file__).parent
 TEST_DATA_FILE = SCRIPT_DIR / "test-data.json"
@@ -25,7 +26,7 @@ RED = '\033[0;31m'
 NC = '\033[0m'
 
 
-def make_request(url: str, method: str = "GET", data: Dict[Any, Any] = None) -> tuple:
+def make_request(url: str, method: str = "GET", data: Dict[str, Any] | None = None) -> Tuple[Optional[int], Optional[str]]:
     """Make HTTP request to PowerDNS API."""
     headers = {
         "X-API-Key": API_KEY,
@@ -112,7 +113,7 @@ def create_zone(zone_data: Dict[str, Any]) -> bool:
         try:
             error_data = json.loads(body)
             print(json.dumps(error_data, indent=2))
-        except Exception:
+        except json.JSONDecodeError:
             print(body)
         return False
 

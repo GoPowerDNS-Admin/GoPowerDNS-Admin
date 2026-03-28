@@ -435,7 +435,7 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 	syncUserTags(s.db, user.ID, parseUintIDs(c, "tag_ids"))
 
-	return c.Redirect().To(Path)
+	return c.Redirect().To(Path + "/" + strconv.Itoa(id) + "/edit")
 }
 
 // isLastActiveAdmin reports whether the proposed update would remove the last active admin.

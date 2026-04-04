@@ -47,7 +47,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/glebarez/go-sqlite v1.21.2 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

@@ -153,6 +153,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deploy:** Remove dirname cd from cleanup.sh to work when piped via curl ([99abdd3](99abdd3bf7838c8fb4d1b4fe266786625461863a))
 - **deploy:** Replace unsupported --rmi all with explicit podman rm and rmi in cleanup ([ee1e8f2](ee1e8f29d98ab78533b6eaf90ca83c79b0eedd88))
 
+### Features
+
+- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
+- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
+- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
+- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
+- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
+
+## [0.1.0-alpha.2] - 2026-03-23
+
 ### Documentation
 
 - **readme:** Document pure-Go SQLite driver and SOA protection ([8661203](866120366d8e64349515e4037586b75386f68627))
@@ -160,11 +170,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Features
 
 - Replace CGO SQLite with pure-Go driver (#42) ([0bdee0a](0bdee0a6aa90a6271df009d6d1214d718287bdea))
-- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
-- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
-- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
-- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
-- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
 
 ## [0.1.0-alpha.1] - 2026-03-23
 

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-beta.1] - 2026-04-28
+
+### Dependencies
+
+- **deps:** Bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 ([3736a81](3736a816a59684f203ab6cd8cc17aa3f94ea9789))
+- **deps:** Bump github.com/jackc/pgx/v5 from 5.9.1 to 5.9.2 ([42bdf16](42bdf169da638da64294dcb517823b904e0a1919))
+- **deps:** Bump github.com/Azure/go-ntlmssp from 0.1.0 to 0.1.1 ([33d912a](33d912a89e7b4f105c646aa182650af859a0daf3))
+
+### Documentation
+
+- Add docs site link, update Docker tag, document admin TOTP disable ([0337d61](0337d6101b6f984624b1ce8991bfafbedba3e33a))
+
 ## [0.1.0-alpha.11] - 2026-03-28
 
 ### Bug Fixes
@@ -133,16 +145,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deploy:** Remove dirname cd from cleanup.sh to work when piped via curl ([99abdd3](99abdd3bf7838c8fb4d1b4fe266786625461863a))
 - **deploy:** Replace unsupported --rmi all with explicit podman rm and rmi in cleanup ([ee1e8f2](ee1e8f29d98ab78533b6eaf90ca83c79b0eedd88))
 
-### Features
-
-- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
-- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
-- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
-- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
-- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
-
-## [0.1.0-alpha.2] - 2026-03-23
-
 ### Documentation
 
 - **readme:** Document pure-Go SQLite driver and SOA protection ([8661203](866120366d8e64349515e4037586b75386f68627))
@@ -150,6 +152,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Features
 
 - Replace CGO SQLite with pure-Go driver (#42) ([0bdee0a](0bdee0a6aa90a6271df009d6d1214d718287bdea))
+- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
+- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
+- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
+- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
+- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
 
 ## [0.1.0-alpha.1] - 2026-03-23
 

@@ -25,9 +25,9 @@ The demo resets automatically every day at midnight UTC. Feel free to create zon
 
 Two sample zones (`example.com` and `example.org`) with a variety of record types, plus a reverse zone (`203.0.113.in-addr.arpa`), are pre-populated on each reset so there is something to explore immediately.
 
-## Status: Alpha
+## Status: Beta
 
-Core features are functional. Interfaces and configuration may still change between releases. Bug reports and feedback are welcome — please open an issue.
+Core features are functional and stable. Minor interfaces or configuration details may still change before v0.1.0. Bug reports and feedback are welcome — please open an issue.
 
 ## Key Features
 
@@ -112,7 +112,7 @@ Prerequisites:
 
    ```bash
    ./gopowerdns-admin --version
-   # gopowerdns-admin version v0.1.0-alpha.1-5-gabc1234-dirty (main)
+   # gopowerdns-admin version v0.1.0-beta.1-5-gabc1234-dirty (main)
    ```
 
 ## Project Structure (high level)
@@ -288,7 +288,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.11
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-beta.1
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```

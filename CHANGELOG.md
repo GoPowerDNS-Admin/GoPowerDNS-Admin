@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-beta.1] - 2026-04-28
+
+### Bug Fixes
+
+- **script:** Mask API key in load-test-data.py, improve type hints, narrow exception handling ([872ca37](872ca37))
+
+### CI
+
+- Replace actions/cache with host volume mounts for self-hosted runner ([1f44bad](1f44bad))
+
+### Dependencies
+
+- Bump github.com/Azure/go-ntlmssp from 0.1.0 to 0.1.1 ([33d912a](33d912a))
+- Bump github.com/jackc/pgx/v5 from 5.9.1 to 5.9.2 ([42bdf16](42bdf16))
+- Bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 ([3736a81](3736a81))
+
+### Documentation
+
+- Add docs site link, update Docker tag, document admin TOTP disable ([0337d61](0337d61))
+
 ## [0.1.0-alpha.11] - 2026-03-28
 
 ### Bug Fixes

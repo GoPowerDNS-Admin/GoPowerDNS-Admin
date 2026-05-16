@@ -3,6 +3,8 @@ package activity
 
 import (
 	"encoding/json"
+	"html/template"
+	"net/url"
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
@@ -52,8 +54,16 @@ type EntryView struct {
 type activityFilters struct {
 	User   string
 	Action string
+	Zone   string
 	From   string
 	To     string
+}
+
+// pageLink is one entry in the rendered pager — either a page number or an ellipsis gap.
+type pageLink struct {
+	Number   int
+	Active   bool
+	Ellipsis bool
 }
 
 // Service provides the read-only activity log view.
@@ -107,13 +117,28 @@ func (s *Service) List(c fiber.Ctx) error {
 		page = 1
 	}
 
-	pageSize := fiber.Query[int](c, "pageSize", DefaultPageSize)
-	if pageSize < 1 || pageSize > 200 {
-		pageSize = DefaultPageSize
+	// Page size precedence: URL query → user preference → default.
+	pageSize := DefaultPageSize
+	currentUser, hasUser := c.Locals("CurrentUser").(models.User)
+
+	if hasUser && currentUser.ID != 0 {
+		var u models.User
+		if s.db.Select("activity_log_page_size").First(&u, currentUser.ID).Error == nil && u.ActivityLogPageSize > 0 {
+			pageSize = u.ActivityLogPageSize
+		}
+	}
+
+	if c.Query("pageSize") != "" {
+		if ps := fiber.Query[int](c, "pageSize", 0); ps >= 1 && ps <= 200 {
+			pageSize = ps
+			if hasUser && currentUser.ID != 0 {
+				s.db.Model(&models.User{}).Where("id = ?", currentUser.ID).Update("activity_log_page_size", ps)
+			}
+		}
 	}
 
 	filters := parseActivityFilters(c)
-	tx := buildActivityQuery(s.db, filters)
+	tx := buildActivityQuery(s.db, &filters)
 
 	var totalCount int64
 	if err := tx.Count(&totalCount).Error; err != nil {
@@ -148,19 +173,26 @@ func (s *Service) List(c fiber.Ctx) error {
 
 	views := getActivityViews(entries)
 	actions := getDistinctActions(s.db)
+	zones := getDistinctZones(s.db)
 
 	return c.Render(TemplateList, fiber.Map{
 		"Navigation":   nav,
 		"Entries":      views,
 		"Actions":      actions,
+		"Zones":        zones,
 		"FilterUser":   filters.User,
 		"FilterAction": filters.Action,
+		"FilterZone":   filters.Zone,
 		"FilterFrom":   filters.From,
 		"FilterTo":     filters.To,
 		"Page":         page,
 		"PageSize":     pageSize,
 		"TotalItems":   totalCount,
 		"TotalPages":   totalPages,
+		"PageLinks": buildPageLinks(page, totalPages),
+		"ListQuery": template.URL( //nolint:gosec // server-built via url.Values.Encode()
+			buildListQuery(&filters, page, pageSize),
+		),
 		"HasPrev":      page > 1,
 		"HasNext":      page < totalPages,
 		"PrevPage":     page - 1,
@@ -184,6 +216,16 @@ func (s *Service) Get(c fiber.Ctx) error {
 	}
 
 	views := getActivityViews([]models.ActivityLog{entry})
+
+	filters := parseActivityFilters(c)
+	page := fiber.Query[int](c, "page", 0)
+	pageSize := fiber.Query[int](c, "pageSize", 0)
+	returnURL := Path
+
+	if q := buildListQuery(&filters, page, pageSize); q != "" {
+		returnURL = Path + "?" + q
+	}
+
 	nav := navigation.NewContext("Activity Entry", "admin", "activity").
 		AddBreadcrumb("Home", dashboard.Path, false).
 		AddBreadcrumb("Admin", "#", false).
@@ -194,20 +236,57 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"Navigation": nav,
 		"Entry":      views[0],
 		"CanUndo":    auth.HasPermissionInContext(c, s.authService, auth.PermAdminActivityLogUndo),
-		"ReturnURL":  Path,
+		"ReturnURL":  template.URL(returnURL), //nolint:gosec // server-built from validated params via url.Values.Encode()
 	}, handler.BaseLayout)
+}
+
+// buildListQuery returns a URL-encoded query string capturing the current
+// filter + paging state, used to round-trip back to the list view from a detail page.
+func buildListQuery(filters *activityFilters, page, pageSize int) string {
+	v := url.Values{}
+
+	if filters.User != "" {
+		v.Set("user", filters.User)
+	}
+
+	if filters.Action != "" {
+		v.Set("action", filters.Action)
+	}
+
+	if filters.Zone != "" {
+		v.Set("zone", filters.Zone)
+	}
+
+	if filters.From != "" {
+		v.Set("from", filters.From)
+	}
+
+	if filters.To != "" {
+		v.Set("to", filters.To)
+	}
+
+	if page > 1 {
+		v.Set("page", strconv.Itoa(page))
+	}
+
+	if pageSize > 0 {
+		v.Set("pageSize", strconv.Itoa(pageSize))
+	}
+
+	return v.Encode()
 }
 
 func parseActivityFilters(c fiber.Ctx) activityFilters {
 	return activityFilters{
 		User:   c.Query("user", ""),
 		Action: c.Query("action", ""),
+		Zone:   c.Query("zone", ""),
 		From:   c.Query("from", ""),
 		To:     c.Query("to", ""),
 	}
 }
 
-func buildActivityQuery(db *gorm.DB, filters activityFilters) *gorm.DB {
+func buildActivityQuery(db *gorm.DB, filters *activityFilters) *gorm.DB {
 	tx := db.Model(&models.ActivityLog{})
 
 	if filters.User != "" {
@@ -216,6 +295,10 @@ func buildActivityQuery(db *gorm.DB, filters activityFilters) *gorm.DB {
 
 	if filters.Action != "" {
 		tx = tx.Where("action = ?", filters.Action)
+	}
+
+	if filters.Zone != "" {
+		tx = tx.Where("resource_type = ? AND resource_name LIKE ?", "zone", "%"+filters.Zone+"%")
 	}
 
 	if filters.From != "" {
@@ -270,9 +353,58 @@ func getActivityViews(entries []models.ActivityLog) []EntryView {
 	return views
 }
 
+// buildPageLinks produces a windowed pager: first page, current ± window, last page,
+// with ellipsis placeholders in the gaps.
+func buildPageLinks(current, total int) []pageLink {
+	if total <= 1 {
+		return []pageLink{{Number: 1, Active: true}}
+	}
+
+	const window = 2
+
+	start := current - window
+	if start < 2 {
+		start = 2
+	}
+
+	end := current + window
+	if end > total-1 {
+		end = total - 1
+	}
+
+	links := []pageLink{{Number: 1, Active: current == 1}}
+
+	if start > 2 {
+		links = append(links, pageLink{Ellipsis: true})
+	}
+
+	for p := start; p <= end; p++ {
+		links = append(links, pageLink{Number: p, Active: p == current})
+	}
+
+	if end < total-1 {
+		links = append(links, pageLink{Ellipsis: true})
+	}
+
+	links = append(links, pageLink{Number: total, Active: current == total})
+
+	return links
+}
+
 func getDistinctActions(db *gorm.DB) []string {
 	var actions []string
 	db.Model(&models.ActivityLog{}).Distinct("action").Order("action ASC").Pluck("action", &actions)
 
 	return actions
+}
+
+func getDistinctZones(db *gorm.DB) []string {
+	var zones []string
+	db.Model(&models.ActivityLog{}).
+		Where("resource_type = ? AND resource_name <> ?", "zone", "").
+		Distinct("resource_name").
+		Order("resource_name ASC").
+		Pluck("resource_name", &zones)
+
+	return zones
 }

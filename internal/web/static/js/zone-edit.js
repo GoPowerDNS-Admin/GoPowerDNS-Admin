@@ -13,7 +13,7 @@
 // zone-edit.js without zone-settings.js.
 
 if (typeof showToast === 'undefined') {
-    // eslint-disable-next-line no-unused-vars
+    // biome-ignore lint/correctness/noUnusedVariables: defines a global fallback when zone-settings.js is not loaded
     function showToast(message, type = 'info', delay = 5000) {
         const container = document.getElementById('toast-container');
         if (!container) return;
@@ -169,9 +169,10 @@ function parseTXT(content) {
     const trimmed = content.trim();
     const parts = [];
     const re = /"((?:[^"\\]|\\.)*)"/g;
-    let match;
-    while ((match = re.exec(trimmed)) !== null) {
+    let match = re.exec(trimmed);
+    while (match !== null) {
         parts.push(match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+        match = re.exec(trimmed);
     }
     if (parts.length > 0) return parts.join('');
     // Not in quoted format — return as-is (best-effort).
@@ -233,8 +234,8 @@ function ipv4PTRName(ip) {
 function ipv6PTRName(ip) {
     try {
         const halves = ip.split('::');
-        let left  = halves[0] ? halves[0].split(':') : [];
-        let right = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
+        const left  = halves[0] ? halves[0].split(':') : [];
+        const right = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
         const fill = 8 - left.length - right.length;
         if (fill < 0) return null;
         const groups = [...left, ...Array(fill).fill('0'), ...right];
@@ -251,20 +252,6 @@ function ptrNameForIP(ip, rrType) {
     if (rrType === 'A')    return ipv4PTRName(ip);
     if (rrType === 'AAAA') return ipv6PTRName(ip);
     return null;
-}
-
-/**
- * Return the most-specific reverse zone from `reverseZones` that owns
- * `ptrName`, or null if none match.
- */
-function findReverseZone(ptrName, reverseZones) {
-    let best = null;
-    for (const zn of reverseZones) {
-        if (ptrName === zn || ptrName.endsWith('.' + zn)) {
-            if (!best || zn.length > best.length) best = zn;
-        }
-    }
-    return best;
 }
 
 /**

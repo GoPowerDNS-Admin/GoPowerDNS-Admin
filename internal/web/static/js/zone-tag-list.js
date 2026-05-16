@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUnusedVariables: used by Alpine x-data="zoneTagList()" in templates/admin/zonetag/list.gohtml
 function zoneTagList() {
     const el = document.getElementById('zone-tags-data');
     const zones = el ? JSON.parse(el.textContent) : [];

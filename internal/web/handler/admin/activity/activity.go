@@ -31,7 +31,7 @@ const (
 	TemplateDetail = "admin/activity/detail"
 
 	// DefaultPageSize is the default number of entries per page.
-	DefaultPageSize = 50
+	DefaultPageSize = 10
 )
 
 // EntryView wraps an ActivityLog row with its decoded diff so the template

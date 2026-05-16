@@ -4,25 +4,35 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.0-beta.1] - 2026-04-28
+## [Unreleased]
 
 ### Bug Fixes
 
-- **script:** Mask API key in load-test-data.py, improve type hints, narrow exception handling ([872ca37](872ca37))
-
-### CI
-
-- Replace actions/cache with host volume mounts for self-hosted runner ([1f44bad](1f44bad))
+- **activity-log:** Default page size to 10 rows ([79e84ff](79e84ffe0e63d3a311bf8ae81eb3f9d1db94650f))
 
 ### Dependencies
 
-- Bump github.com/Azure/go-ntlmssp from 0.1.0 to 0.1.1 ([33d912a](33d912a))
-- Bump github.com/jackc/pgx/v5 from 5.9.1 to 5.9.2 ([42bdf16](42bdf16))
-- Bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 ([3736a81](3736a81))
+- **deps:** Bump github.com/gofiber/fiber/v3 from 3.1.0 to 3.2.0 ([98a187a](98a187a51115d21095fec538118faa75b1b5e94b))
 
 ### Documentation
 
-- Add docs site link, update Docker tag, document admin TOTP disable ([0337d61](0337d61))
+- **readme:** Document contributor tooling and activity-log enhancements ([2045e5c](2045e5c5949a77784d496e91ed41bb9a4ecf4e11))
+
+### Features
+
+- **activity-log:** Zone filter, windowed pager, persisted page size ([8532f8e](8532f8e1171dfce9936e67615378d7307f283612))
+
+## [0.1.0-beta.1] - 2026-04-28
+
+### Dependencies
+
+- **deps:** Bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 ([3736a81](3736a816a59684f203ab6cd8cc17aa3f94ea9789))
+- **deps:** Bump github.com/jackc/pgx/v5 from 5.9.1 to 5.9.2 ([42bdf16](42bdf169da638da64294dcb517823b904e0a1919))
+- **deps:** Bump github.com/Azure/go-ntlmssp from 0.1.0 to 0.1.1 ([33d912a](33d912a89e7b4f105c646aa182650af859a0daf3))
+
+### Documentation
+
+- Add docs site link, update Docker tag, document admin TOTP disable ([0337d61](0337d6101b6f984624b1ce8991bfafbedba3e33a))
 
 ## [0.1.0-alpha.11] - 2026-03-28
 
@@ -94,6 +104,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Bug Fixes
 
+- **ci:** Supply base branch for changelog PR when checked out at tag ([880c70a](880c70a46ec39d85e61088a660e5917a05290196))
 - **demo:** Use DEFAULT SOA-EDIT-API for demo zones ([1fd4f08](1fd4f08665ee54ac38f397e1bfb204740cfbd9d7))
 - **zone:** Fix SOA modal x-model.number coercion + browser tests + Go 1.26 ([fe3265e](fe3265ecbeae6ec0f2d1ce6dad0aa90a90d06a35))
 
@@ -105,26 +116,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **config:** Return error instead of panic when config file is missing ([109ced7](109ced77b809b6ad1c176682efd3cb9750a46ca0))
 - **config:** Trust Podman container subnet in reverse proxy config ([2f06254](2f062544783c06f0ed945f2b6bbfe38272f407d8))
 - **zone:** SOA save fails when serial is 0 and incremented to 1 ([683f537](683f53729d082a6d05205133bb5f17b4e06e6081))
-- **ci:** Supply base branch for changelog PR when checked out at tag ([880c70a](880c70a46ec39d85e61088a660e5917a05290196))
 
 ## [0.1.0-alpha.5] - 2026-03-24
 
 ### Bug Fixes
 
+- **ci:** Lowercase repository owner in Docker image references ([f253ca5](f253ca5446a0541df3c1b4a54bfaa2bb5b3ee24c))
+- **logging:** Exclude health check requests from access logs ([ce86b70](ce86b70940bb263a8de0a9c8d58c9fd87d36a2f1))
 - **toml:** Improve comments for clarity in main.toml ([9aea832](9aea832e7baf7cd56c9f64b7c6d5e9bd1653007e))
 - **release:** Grant write permissions for pull requests in release workflow ([ef6a01a](ef6a01a98b4aefe91a4ba60c14a266d1c2749aaa))
 - **compose:** Set pull policy to always for app service ([ad7a37f](ad7a37f7ae9ffd45a3d926f81e7f8e560ebf6b37))
-
-### Features
-
-- **demo:** Seed demo user and pre-populated test zones ([bd188da](bd188da4bab4f2574418a0200c8b4ca4a862d998))
-
-## [0.1.0-alpha.4] - 2026-03-24
-
-### Bug Fixes
-
-- **ci:** Lowercase repository owner in Docker image references ([f253ca5](f253ca5446a0541df3c1b4a54bfaa2bb5b3ee24c))
-- **logging:** Exclude health check requests from access logs ([ce86b70](ce86b70940bb263a8de0a9c8d58c9fd87d36a2f1))
 
 ### Documentation
 
@@ -135,6 +136,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **web:** Add zerolog access log middleware logging method, path, status, latency, and IP ([b42b82e](b42b82eb86049085d8e1f6eba6a5a9432e7afdcb))
 - **web:** Replace plain error strings with AdminLTE error page (#46) ([f175a83](f175a8321df30f473e2fc49fa57a3ff784537d6f))
 - **web:** Replace plain error strings with AdminLTE error page ([71bd60b](71bd60b2e84256e8ab136b1ae73c8eb82f18b4b2))
+- **demo:** Seed demo user and pre-populated test zones ([bd188da](bd188da4bab4f2574418a0200c8b4ca4a862d998))
 
 ## [0.1.0-alpha.3] - 2026-03-24
 
@@ -175,6 +177,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Bug Fixes
 
+- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
+
+## [0.1.0-alpha-2] - 2026-03-23
+
+### Bug Fixes
+
+- **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
+- **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
+- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
+
+## [0.1.0-alpha.4] - 2026-03-22
+
+### Bug Fixes
+
 - **workflow:** Update PR title check workflow configuration ([b5f5dc2](b5f5dc2bf40d74111e08e9990197bc0809d2c773))
 - **workflow:** Update runner configuration for PR title validation ([9529781](95297816ce7e855d35f26d42681cd3a5a1f8bb27))
 - **zone:** Replace deprecated VisitAll with All iterator (#4) ([c937cfc](c937cfc379ea1ac440347a817bc098bb23206357))
@@ -192,10 +208,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docker:** Replace vendor copy with go mod download for CI compatibility ([fd74c8f](fd74c8f0c4c306a082472f65c03ff51779665d54))
 - **csp:** Eliminate inline scripts and event handlers to comply with CSP (#37) ([7653a52](7653a5233f5fd9a5508e99a021cba73ebf73f0ea))
 - **zone:** Allow editing existing records of disallowed types and protect SOA (#38) ([922d5fb](922d5fb4ac0868dedf376a122c6931b8c51c3cd7))
-- **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
-- **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
-- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
-- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
 ### Dependencies
 

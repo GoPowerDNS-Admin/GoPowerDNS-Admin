@@ -66,6 +66,12 @@ Prerequisites:
 - Go (see `go.mod` for the required version) — no C toolchain required; all database drivers are pure Go
 - Docker and Docker Compose (optional, for local PowerDNS)
 
+Optional contributor tooling (required only for `make linter*` / `make pre-commit`):
+
+- [`golangci-lint`](https://golangci-lint.run/) — Go linting (`make linter`)
+- [Biome](https://biomejs.dev/) — JavaScript linting for `internal/web/static/js/` (`make linter-js`); `brew install biome` or via npm
+- [`pre-commit`](https://pre-commit.com/) — runs golangci-lint, biome, prettier, secret scan, go mod tidy and the conventional-commit check (`make pre-commit`)
+
 1. Start a local PowerDNS for development (optional):
 
    If you want a local PDNS instance, you can use the provided compose setup:
@@ -197,7 +203,10 @@ The role editor groups permissions by resource with icon badges and tri-state to
 
 All significant user actions (login, logout, zone create/update/delete, record changes) are recorded in the activity log, accessible at `/admin/activity`. Each entry stores a before/after diff. Admins can:
 
-- Browse the paginated list with filters; long diffs are truncated with a fade and a link to the detail page
+- Filter the list by action, username, zone (with autocomplete of seen zone names), and date range; filters and pagination state are preserved when opening an entry's detail view and clicking **Back**
+- Configurable rows per page (10 / 25 / 50 / 100); the choice is persisted in the user's profile (`users.activity_log_page_size`)
+- Windowed pager that scales to large logs — shows first, last, and a window around the current page with ellipses for the gaps; pagers appear above and below the table
+- Long diffs are truncated with a fade and a link to the detail page
 - Open a full detail page (`/admin/activity/:id`) showing the complete diff and an **Undo** button
 - **Undo record changes** — restores a zone's RRsets to their previous state
 - **Undo zone deletes** — recreates the zone including all RRsets from a full snapshot taken at delete time

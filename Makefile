@@ -1,5 +1,5 @@
 
-.PHONY: help build test test-race linter changelog vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
+.PHONY: help build test test-race linter linter-js changelog vendor-update vendor-clean vendor-bootstrap vendor-adminlte vendor-alpinejs docker-up docker-down docker-logs load-test-data docker-build docker-run docker-push
 
 # Docker image
 IMAGE_NAME ?= gopowerdns-admin
@@ -37,6 +37,7 @@ help:
 	@echo "  build             - Build binary with version and branch baked in"
 	@echo "  test              - Run all tests"
 	@echo "  linter            - Run golangci-lint"
+	@echo "  linter-js         - Run biome on internal/web/static/js"
 	@echo "  pre-commit        - Run pre-commit checks"
 	@echo "  changelog         - Regenerate CHANGELOG.md via git-cliff"
 	@echo ""
@@ -71,7 +72,12 @@ linter:
 	@golangci-lint run ./...
 	@echo "✓ Linter passed"
 
-pre-commit: linter
+linter-js:
+	@echo "Running JS linter..."
+	@biome lint internal/web/static/js
+	@echo "✓ JS linter passed"
+
+pre-commit: linter linter-js
 	@echo "Running Pre-commit checks..."
 	@pre-commit run --all-files
 	@echo "✓ Pre-commit checks passed"

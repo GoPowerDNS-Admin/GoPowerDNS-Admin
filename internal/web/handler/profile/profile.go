@@ -186,7 +186,8 @@ func (s *Service) SavePreferences(c fiber.Ctx) error {
 	}
 
 	var body struct {
-		ZoneEditPageSize *int `json:"zone_edit_page_size"`
+		ZoneEditPageSize    *int `json:"zone_edit_page_size"`
+		ActivityLogPageSize *int `json:"activity_log_page_size"`
 	}
 	if err := c.Bind().Body(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid body"})
@@ -196,6 +197,13 @@ func (s *Service) SavePreferences(c fiber.Ctx) error {
 		ps := *body.ZoneEditPageSize
 		if ps >= 1 && ps <= 100 {
 			s.db.Model(&models.User{}).Where("id = ?", user.ID).Update("zone_edit_page_size", ps)
+		}
+	}
+
+	if body.ActivityLogPageSize != nil {
+		ps := *body.ActivityLogPageSize
+		if ps >= 1 && ps <= 200 {
+			s.db.Model(&models.User{}).Where("id = ?", user.ID).Update("activity_log_page_size", ps)
 		}
 	}
 

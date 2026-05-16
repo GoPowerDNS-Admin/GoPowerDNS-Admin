@@ -47,9 +47,7 @@
 
                 <!-- Filters -->
                 <form class="row g-2 mb-3" method="get" action="/admin/activity">
-                    <div class="col-sm-3">
-                        <input class="form-control" type="text" name="user" placeholder="Filter by username" value="{{ .FilterUser }}">
-                    </div>
+                    <input type="hidden" name="pageSize" value="{{ .PageSize }}">
                     <div class="col-sm-2">
                         <select class="form-select" name="action">
                             <option value="">All actions</option>
@@ -57,6 +55,17 @@
                                 <option value="{{ . }}" {{ if eq . $.FilterAction }}selected{{ end }}>{{ . }}</option>
                             {{ end }}
                         </select>
+                    </div>
+                    <div class="col-sm-2">
+                        <input class="form-control" type="text" name="user" placeholder="Filter by username" value="{{ .FilterUser }}">
+                    </div>
+                    <div class="col-sm-3">
+                        <input class="form-control" type="text" name="zone" list="activity-zones" placeholder="Filter by zone" value="{{ .FilterZone }}">
+                        <datalist id="activity-zones">
+                            {{ range .Zones }}
+                                <option value="{{ . }}"></option>
+                            {{ end }}
+                        </datalist>
                     </div>
                     <div class="col-sm-2">
                         <input class="form-control" type="date" name="from" value="{{ .FilterFrom }}">
@@ -71,8 +80,36 @@
                 </form>
 
                 <div class="card card-outline card-primary shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <span class="fw-semibold">{{ .TotalItems }} entries found</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <label class="small text-muted mb-0">Rows:</label>
+                            <select id="activity-page-size" class="form-select form-select-sm" style="width:auto">
+                                <option value="10" {{ if eq .PageSize 10 }}selected{{ end }}>10</option>
+                                <option value="25" {{ if eq .PageSize 25 }}selected{{ end }}>25</option>
+                                <option value="50" {{ if eq .PageSize 50 }}selected{{ end }}>50</option>
+                                <option value="100" {{ if eq .PageSize 100 }}selected{{ end }}>100</option>
+                            </select>
+                            <nav aria-label="Activity log pagination (top)">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
+                                        <a class="page-link" href="?page={{ .PrevPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&zone={{ .FilterZone }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Previous</a>
+                                    </li>
+                                    {{ range .PageLinks }}
+                                        {{ if .Ellipsis }}
+                                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                        {{ else }}
+                                            <li class="page-item {{ if .Active }}active{{ end }}">
+                                                <a class="page-link" href="?page={{ .Number }}&pageSize={{ $.PageSize }}&user={{ $.FilterUser }}&action={{ $.FilterAction }}&zone={{ $.FilterZone }}&from={{ $.FilterFrom }}&to={{ $.FilterTo }}">{{ .Number }}</a>
+                                            </li>
+                                        {{ end }}
+                                    {{ end }}
+                                    <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
+                                        <a class="page-link" href="?page={{ .NextPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&zone={{ .FilterZone }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -136,7 +173,7 @@
                                                 {{ end }}
                                             </td>
                                             <td>
-                                                <a href="/admin/activity/{{ .ID }}" class="btn btn-sm btn-outline-primary mb-1">
+                                                <a href="/admin/activity/{{ .ID }}{{ if $.ListQuery }}?{{ $.ListQuery }}{{ end }}" class="btn btn-sm btn-outline-primary mb-1">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                                 {{ if $.CanUndo }}
@@ -290,23 +327,36 @@
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer">
-                        <nav aria-label="Activity log pagination">
-                            <ul class="pagination mb-0">
-                                <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
-                                    <a class="page-link" href="?page={{ .PrevPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Previous</a>
-                                </li>
-                                {{ range $i := iterate .TotalPages }}
-                                    {{ $idx := add $i 1 }}
-                                    <li class="page-item {{ if eq $.Page $idx }}active{{ end }}">
-                                        <a class="page-link" href="?page={{ $idx }}&pageSize={{ $.PageSize }}&user={{ $.FilterUser }}&action={{ $.FilterAction }}&from={{ $.FilterFrom }}&to={{ $.FilterTo }}">{{ $idx }}</a>
+                    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="fw-semibold">{{ .TotalItems }} entries found</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <label class="small text-muted mb-0">Rows:</label>
+                            <select id="activity-page-size-bottom" class="form-select form-select-sm" style="width:auto">
+                                <option value="10" {{ if eq .PageSize 10 }}selected{{ end }}>10</option>
+                                <option value="25" {{ if eq .PageSize 25 }}selected{{ end }}>25</option>
+                                <option value="50" {{ if eq .PageSize 50 }}selected{{ end }}>50</option>
+                                <option value="100" {{ if eq .PageSize 100 }}selected{{ end }}>100</option>
+                            </select>
+                            <nav aria-label="Activity log pagination (bottom)">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
+                                        <a class="page-link" href="?page={{ .PrevPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&zone={{ .FilterZone }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Previous</a>
                                     </li>
-                                {{ end }}
-                                <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
-                                    <a class="page-link" href="?page={{ .NextPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
+                                    {{ range .PageLinks }}
+                                        {{ if .Ellipsis }}
+                                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                        {{ else }}
+                                            <li class="page-item {{ if .Active }}active{{ end }}">
+                                                <a class="page-link" href="?page={{ .Number }}&pageSize={{ $.PageSize }}&user={{ $.FilterUser }}&action={{ $.FilterAction }}&zone={{ $.FilterZone }}&from={{ $.FilterFrom }}&to={{ $.FilterTo }}">{{ .Number }}</a>
+                                            </li>
+                                        {{ end }}
+                                    {{ end }}
+                                    <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
+                                        <a class="page-link" href="?page={{ .NextPage }}&pageSize={{ .PageSize }}&user={{ .FilterUser }}&action={{ .FilterAction }}&zone={{ .FilterZone }}&from={{ .FilterFrom }}&to={{ .FilterTo }}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -329,3 +379,5 @@
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
 </style>
+
+<script src="/static/js/activity-log.js"></script>

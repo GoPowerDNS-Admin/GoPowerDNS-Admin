@@ -54,6 +54,8 @@ type User struct {
 	DashboardPageSize int `gorm:"default:0"`
 	// ZoneEditPageSize is the user's preferred number of records per page on the zone edit page (0 = use default).
 	ZoneEditPageSize int `gorm:"default:0"`
+	// ActivityLogPageSize is the user's preferred number of entries per page on the admin activity log (0 = use default).
+	ActivityLogPageSize int `gorm:"default:0"`
 	// CreatedAt is the timestamp when the user was created (managed by GORM).
 	CreatedAt time.Time
 	// UpdatedAt is the timestamp when the user was last updated (managed by GORM).

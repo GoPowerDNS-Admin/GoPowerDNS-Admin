@@ -58,10 +58,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const p = input.split('/');
             ipStr = p[0];
             prefix = parseInt(p[1], 10);
-            if (isNaN(prefix) || prefix < 0 || prefix > 32) return null;
+            if (Number.isNaN(prefix) || prefix < 0 || prefix > 32) return null;
         }
         const octs = ipStr.split('.');
-        if (octs.length !== 4 || octs.some(o => isNaN(+o) || +o < 0 || +o > 255)) return null;
+        if (octs.length !== 4 || octs.some(o => Number.isNaN(+o) || +o < 0 || +o > 255)) return null;
         const n = Math.max(1, Math.ceil(prefix / 8));
         return octs.slice(0, n).reverse().join('.') + '.in-addr.arpa.';
     }
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const p = input.split('/');
             ipStr = p[0];
             prefix = parseInt(p[1], 10);
-            if (isNaN(prefix) || prefix < 0 || prefix > 128) return null;
+            if (Number.isNaN(prefix) || prefix < 0 || prefix > 128) return null;
         }
         const expanded = expandIPv6(ipStr);
         if (!expanded) return null;

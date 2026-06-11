@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-GoPowerDNS-Admin is currently in pre-1.0 development. Only the latest release receives security fixes.
+Only the latest release receives security fixes.
 
 | Version | Supported |
 | ------- | --------- |

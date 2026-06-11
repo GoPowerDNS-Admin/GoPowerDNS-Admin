@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-GoPowerDNS-Admin is currently in alpha. Only the latest release receives security fixes.
+Only the latest release receives security fixes.
 
 | Version | Supported |
 | ------- | --------- |

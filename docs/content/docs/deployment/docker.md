@@ -11,7 +11,7 @@ Release images are published to the GitHub Container Registry on every tagged re
 ```bash
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 # or pin to a specific release:
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.1.0-alpha.10
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.2.0
 ```
 
 Supported platforms: `linux/amd64`, `linux/arm64`, `linux/arm/v7`.

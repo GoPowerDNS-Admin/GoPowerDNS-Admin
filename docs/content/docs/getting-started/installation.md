@@ -29,7 +29,7 @@ The version string, branch, and commit hash are baked in at build time:
 
 ```bash
 ./gopowerdns-admin --version
-# gopowerdns-admin version v0.1.0-alpha.10-5-gabc1234 (main)
+# gopowerdns-admin version v0.2.0-5-gabc1234 (main)
 ```
 
 ## Option C — Docker

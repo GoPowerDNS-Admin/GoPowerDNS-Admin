@@ -20,11 +20,13 @@ import (
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
+	brandingctrl "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/branding"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/activity"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/role"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/server/configuration"
+	brandinghandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/branding"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/pdnsserver"
 	ttlsettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/ttl"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
@@ -258,12 +260,17 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			"form-action 'self'",
 	}))
 
-	// expose version and branding to all templates via PassLocalsToViews
-	branding := cfg.Branding.Resolve(cfg.Title)
+	// expose version and branding to all templates via PassLocalsToViews.
+	// The branding store resolves DB overrides (set via the admin GUI) on top of
+	// the TOML config and bundled defaults, cached in memory and reloaded on save.
+	brandingStore, err := brandingctrl.NewStore(db, cfg.Branding, cfg.Title)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load branding settings; using configured defaults")
+	}
 
 	app.Use(func(c fiber.Ctx) error {
 		c.Locals("AppVersion", version.Get())
-		c.Locals("Brand", branding)
+		c.Locals("Brand", brandingStore.Brand())
 
 		return c.Next()
 	})
@@ -300,6 +307,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	oidchandler.Handler.Init(app, cfg, db)
 	dashboard.Handler.Init(app, cfg, db, authService)
 	pdnsserver.Handler.Init(app, cfg, db, authService)
+	brandinghandler.Handler.Init(app, cfg, db, authService, brandingStore)
 	ttlsettings.Handler.Init(app, cfg, db, authService)
 	zone.Handler.Init(app, cfg, db, authService)
 	zoneadd.Handler.Init(app, cfg, db, authService)

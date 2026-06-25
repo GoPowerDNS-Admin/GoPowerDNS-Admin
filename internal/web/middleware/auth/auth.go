@@ -19,7 +19,9 @@ func Middleware(c fiber.Ctx) error {
 	)
 
 	originalURL := strings.ToLower(c.OriginalURL())
-	if strings.HasPrefix(originalURL, "/static") || strings.HasPrefix(originalURL, "/health") {
+	if strings.HasPrefix(originalURL, "/static") ||
+		strings.HasPrefix(originalURL, "/branding") ||
+		strings.HasPrefix(originalURL, "/health") {
 		return c.Next()
 	}
 
@@ -79,7 +81,8 @@ func isTOTPAllowedPage(c fiber.Ctx) bool {
 	return strings.HasPrefix(url, "/auth/totp") ||
 		strings.HasPrefix(url, "/profile/totp/setup") ||
 		strings.HasPrefix(url, "/logout") ||
-		strings.HasPrefix(url, "/static")
+		strings.HasPrefix(url, "/static") ||
+		strings.HasPrefix(url, "/branding")
 }
 
 // IsLoginPage checks if the current request is for the login page.

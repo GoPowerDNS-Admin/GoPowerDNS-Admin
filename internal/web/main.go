@@ -258,9 +258,13 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 			"form-action 'self'",
 	}))
 
-	// expose version to all templates via PassLocalsToViews
+	// expose version and branding to all templates via PassLocalsToViews
+	branding := cfg.Branding.Resolve(cfg.Title)
+
 	app.Use(func(c fiber.Ctx) error {
 		c.Locals("AppVersion", version.Get())
+		c.Locals("Brand", branding)
+
 		return c.Next()
 	})
 

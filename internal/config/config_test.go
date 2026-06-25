@@ -411,11 +411,16 @@ func TestBrandingResolve(t *testing.T) {
 		t.Errorf("FaviconURL = %q, want %q", got.FaviconURL, DefaultLogoURL)
 	}
 
+	if got.FaviconPNGURL != DefaultFaviconPNGURL {
+		t.Errorf("FaviconPNGURL = %q, want %q", got.FaviconPNGURL, DefaultFaviconPNGURL)
+	}
+
 	// Explicit values are preserved and the title fallback is not applied.
 	custom := Branding{
-		Name:       "Acme DNS",
-		LogoURL:    "/static/img/acme.svg",
-		FaviconURL: "/static/img/acme-icon.svg",
+		Name:          "Acme DNS",
+		LogoURL:       "/static/img/acme.svg",
+		FaviconURL:    "/static/img/acme-icon.svg",
+		FaviconPNGURL: "/static/img/acme-icon.png",
 	}
 
 	got = custom.Resolve("My Title")

@@ -8,10 +8,13 @@ DevMode = false
 # data: URIs, so custom logos must be served from /static (e.g. drop a file into
 # the mounted static/img directory) or supplied as a data: URI — external URLs
 # are blocked.
+# FaviconURL is the primary (SVG) favicon; FaviconPNGURL is the PNG fallback for
+# browsers that do not support SVG favicons.
 # [branding]
 # Name = "Acme DNS"
 # LogoURL = "/static/img/your-logo.svg"
 # FaviconURL = "/static/img/your-favicon.svg"
+# FaviconPNGURL = "/static/img/your-favicon.png"
 
 [webserver]
 # REQUIRED: replace it with a random string of at least 32 characters before production use.

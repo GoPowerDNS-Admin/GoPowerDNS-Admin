@@ -184,47 +184,80 @@
                         <!--begin::DNS Records Card-->
                         <div class="card card-success card-outline mb-4">
                             <!--begin::Header-->
-                            <div class="card-header d-flex align-items-center flex-wrap gap-2">
-                                <div class="card-title mb-0 me-2">
-                                    <i class="bi bi-list-ul me-1"></i> DNS Records
+                            <div class="card-header records-card-header d-flex flex-column gap-2">
+                                <!--begin::Title row-->
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    <div class="card-title mb-0 me-1">
+                                        <i class="bi bi-list-ul me-1"></i> DNS Records
+                                    </div>
+                                    <span class="badge bg-secondary" x-text="filteredRecords.length"></span>
+                                    {{if .Zone}}
+                                    <span class="text-muted small ms-1">
+                                        {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}{{if .DNSSECEnabled}} · <span class="text-success"><i class="bi bi-shield-check"></i> DNSSEC</span>{{end}}
+                                    </span>
+                                    {{end}}
                                 </div>
-                                <span class="badge bg-secondary" x-text="filteredRecords.length"></span>
-                                {{if .Zone}}
-                                <span class="text-muted small ms-2">
-                                    {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}{{if .DNSSECEnabled}} · <span class="text-success"><i class="bi bi-shield-check"></i> DNSSEC</span>{{end}}
-                                </span>
-                                {{end}}
-                                <div class="card-tools ms-auto d-flex align-items-center gap-2">
+                                <!--end::Title row-->
+
+                                <!--begin::Toolbar row (filters left, actions right)-->
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    <!--begin::Type Filter Dropdown-->
+                                    <div class="dropdown">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            Type: <span class="fw-semibold" x-text="activeTypeFilter === 'all' ? 'All' : activeTypeFilter"></span>
+                                        </button>
+                                        <ul class="dropdown-menu" style="max-height: 60vh; overflow-y: auto;">
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center justify-content-between"
+                                                   :class="{ active: activeTypeFilter === 'all' }" href="#" @click.prevent="setTypeFilter('all')">
+                                                    <span>All types</span>
+                                                    <i class="bi bi-check2 ms-3" x-show="activeTypeFilter === 'all'"></i>
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <template x-for="t in availableTypes" :key="t">
+                                                <li>
+                                                    <a class="dropdown-item d-flex align-items-center justify-content-between"
+                                                       :class="{ active: activeTypeFilter === t }" href="#" @click.prevent="setTypeFilter(t)">
+                                                        <span>
+                                                            <span x-text="t"></span>
+                                                            <span x-show="isNewType(t)" class="badge bg-warning text-dark ms-1">new</span>
+                                                        </span>
+                                                        <i class="bi bi-check2 ms-3" x-show="activeTypeFilter === t"></i>
+                                                    </a>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                    <!--end::Type Filter Dropdown-->
                                     <div class="input-group input-group-sm" style="width: 200px;">
                                         <input type="text" x-model="searchQuery" class="form-control" placeholder="Search name or data…">
                                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-success" @click="openAddRecord()">
-                                        <i class="bi bi-plus-circle"></i> Add Record
-                                    </button>
+
+                                    <!--begin::Action buttons (grouped; right-aligned from sm up, left on very small screens)-->
+                                    <div class="d-flex align-items-center flex-wrap gap-2 ms-sm-auto">
+                                        <span class="badge text-bg-warning" x-show="pendingCount > 0" x-cloak>
+                                            <i class="bi bi-exclamation-circle me-1"></i><span x-text="pendingCount"></span> unsaved
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-success" @click="openAddRecord()">
+                                            <i class="bi bi-plus-circle me-1"></i> Add Record
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" @click="saveChanges()" :disabled="isSaving">
+                                            <span x-show="isSaving" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                            <i x-show="!isSaving" class="bi bi-save me-1"></i>
+                                            <span x-text="isSaving ? 'Saving…' : 'Save Changes'"></span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="discardChanges()" :disabled="isSaving">
+                                            <i class="bi bi-x-circle me-1"></i> Discard
+                                        </button>
+                                    </div>
+                                    <!--end::Action buttons-->
                                 </div>
+                                <!--end::Toolbar row-->
                             </div>
                             <!--end::Header-->
-
-                            <!--begin::Type Filter-->
-                            <div class="card-body pb-1 pt-2 border-bottom">
-                                <ul class="nav nav-pills nav-sm flex-wrap gap-1">
-                                    <li class="nav-item">
-                                        <a class="nav-link py-1 px-2" :class="{ active: activeTypeFilter === 'all' }"
-                                           href="#" @click.prevent="setTypeFilter('all')">All</a>
-                                    </li>
-                                    <template x-for="t in availableTypes" :key="t">
-                                        <li class="nav-item">
-                                            <a class="nav-link py-1 px-2" :class="{ active: activeTypeFilter === t }"
-                                               href="#" @click.prevent="setTypeFilter(t)">
-                                                <span x-text="t"></span>
-                                                <span x-show="isNewType(t)" class="badge bg-warning text-dark ms-1">new</span>
-                                            </a>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </div>
-                            <!--end::Type Filter-->
 
                             <!--begin::Body-->
                             <div class="card-body p-0">
@@ -323,19 +356,6 @@
 
                             <!--begin::Footer-->
                             <div class="card-footer d-flex align-items-center flex-wrap gap-2">
-                                <button type="button" class="btn btn-success" @click="saveChanges()" :disabled="isSaving">
-                                    <span x-show="isSaving"  class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                    <i x-show="!isSaving" class="bi bi-save me-1"></i>
-                                    <span x-text="isSaving ? 'Saving…' : 'Save Changes'"></span>
-                                </button>
-                                <button type="button" class="btn btn-secondary" @click="discardChanges()" :disabled="isSaving">
-                                    <i class="bi bi-x-circle me-1"></i> Discard
-                                </button>
-                                <span class="text-warning fw-semibold" x-show="pendingCount > 0">
-                                    <i class="bi bi-exclamation-circle"></i>
-                                    <span x-text="pendingCount"></span> unsaved change(s)
-                                </span>
-
                                 <!-- Page size + pagination (right-aligned) -->
                                 <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
                                     <label class="small text-muted mb-0">Rows:</label>

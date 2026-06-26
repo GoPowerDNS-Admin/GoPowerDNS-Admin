@@ -261,6 +261,7 @@
 
                             <!--begin::Body-->
                             <div class="card-body p-0">
+                                <div class="table-responsive">
                                     <table class="table table-striped table-hover mb-0">
                                         <thead>
                                             <tr>
@@ -295,7 +296,7 @@
                                                               x-text="record.disabled ? 'Disabled' : 'Active'"></span>
                                                     </td>
                                                     <td class="record-content" style="max-width:220px;">
-                                                        <span class="d-inline text-truncate" :title="record.content" x-text="record.content"></span>
+                                                        <span class="d-inline-block text-truncate mw-100 align-bottom" :title="record.content" x-text="record.content"></span>
                                                         <template x-if="ptrZoneLink(record)">
                                                             <a :href="ptrZoneLink(record)" class="badge bg-light text-secondary border text-decoration-none ms-1 small"
                                                                title="Open PTR record in reverse zone">
@@ -343,6 +344,7 @@
                                             </template>
                                         </tbody>
                                     </table>
+                                </div>
 
                                 <!--begin::Empty State-->
                                 <div class="text-center text-muted py-5" x-show="filteredRecords.length === 0">

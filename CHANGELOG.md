@@ -4,7 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.3.0] - 2026-06-26
+
+### Dependencies
+
+- **deps:** Bump AdminLTE to 4.0.2 (final v4 release) (#87) ([8305088](8305088b6d0e20fa7750dfbb8d432c9c516c299e))
+
+### Documentation
+
+- Document sticky records toolbar, page preservation, responsive table (#91) ([0b99a1f](0b99a1f1509d8b7e1426d869b767f3398833282a))
+
+### Features
+
+- **zone:** Sticky records header with grouped actions and type dropdown (#88) ([6498aab](6498aab1816676a9be9a06d6f1b92309fd6648f3))
+- **zone:** Sticky records header with grouped actions, plus pagination & overflow fixes (#90) ([240bc7a](240bc7ae8397205ab8ac4441014792bbb9630a9a))
+- **branding:** Make product name and logo configurable (#89) ([30be1b1](30be1b1e0c831a91c21e675a71f7b86a81ae0848))
+
+## [0.2.0] - 2026-06-11
 
 ### Dependencies
 
@@ -110,6 +126,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Bug Fixes
 
+- **ci:** Supply base branch for changelog PR when checked out at tag ([880c70a](880c70a46ec39d85e61088a660e5917a05290196))
 - **demo:** Use DEFAULT SOA-EDIT-API for demo zones ([1fd4f08](1fd4f08665ee54ac38f397e1bfb204740cfbd9d7))
 - **zone:** Fix SOA modal x-model.number coercion + browser tests + Go 1.26 ([fe3265e](fe3265ecbeae6ec0f2d1ce6dad0aa90a90d06a35))
 
@@ -121,26 +138,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **config:** Return error instead of panic when config file is missing ([109ced7](109ced77b809b6ad1c176682efd3cb9750a46ca0))
 - **config:** Trust Podman container subnet in reverse proxy config ([2f06254](2f062544783c06f0ed945f2b6bbfe38272f407d8))
 - **zone:** SOA save fails when serial is 0 and incremented to 1 ([683f537](683f53729d082a6d05205133bb5f17b4e06e6081))
-- **ci:** Supply base branch for changelog PR when checked out at tag ([880c70a](880c70a46ec39d85e61088a660e5917a05290196))
 
 ## [0.1.0-alpha.5] - 2026-03-24
 
 ### Bug Fixes
 
+- **ci:** Lowercase repository owner in Docker image references ([f253ca5](f253ca5446a0541df3c1b4a54bfaa2bb5b3ee24c))
+- **logging:** Exclude health check requests from access logs ([ce86b70](ce86b70940bb263a8de0a9c8d58c9fd87d36a2f1))
 - **toml:** Improve comments for clarity in main.toml ([9aea832](9aea832e7baf7cd56c9f64b7c6d5e9bd1653007e))
 - **release:** Grant write permissions for pull requests in release workflow ([ef6a01a](ef6a01a98b4aefe91a4ba60c14a266d1c2749aaa))
 - **compose:** Set pull policy to always for app service ([ad7a37f](ad7a37f7ae9ffd45a3d926f81e7f8e560ebf6b37))
-
-### Features
-
-- **demo:** Seed demo user and pre-populated test zones ([bd188da](bd188da4bab4f2574418a0200c8b4ca4a862d998))
-
-## [0.1.0-alpha.4] - 2026-03-24
-
-### Bug Fixes
-
-- **ci:** Lowercase repository owner in Docker image references ([f253ca5](f253ca5446a0541df3c1b4a54bfaa2bb5b3ee24c))
-- **logging:** Exclude health check requests from access logs ([ce86b70](ce86b70940bb263a8de0a9c8d58c9fd87d36a2f1))
 
 ### Documentation
 
@@ -151,6 +158,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **web:** Add zerolog access log middleware logging method, path, status, latency, and IP ([b42b82e](b42b82eb86049085d8e1f6eba6a5a9432e7afdcb))
 - **web:** Replace plain error strings with AdminLTE error page (#46) ([f175a83](f175a8321df30f473e2fc49fa57a3ff784537d6f))
 - **web:** Replace plain error strings with AdminLTE error page ([71bd60b](71bd60b2e84256e8ab136b1ae73c8eb82f18b4b2))
+- **demo:** Seed demo user and pre-populated test zones ([bd188da](bd188da4bab4f2574418a0200c8b4ca4a862d998))
 
 ## [0.1.0-alpha.3] - 2026-03-24
 
@@ -169,6 +177,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deploy:** Remove dirname cd from cleanup.sh to work when piped via curl ([99abdd3](99abdd3bf7838c8fb4d1b4fe266786625461863a))
 - **deploy:** Replace unsupported --rmi all with explicit podman rm and rmi in cleanup ([ee1e8f2](ee1e8f29d98ab78533b6eaf90ca83c79b0eedd88))
 
+### Features
+
+- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
+- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
+- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
+- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
+- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
+
+## [0.1.0-alpha.2] - 2026-03-23
+
 ### Documentation
 
 - **readme:** Document pure-Go SQLite driver and SOA protection ([8661203](866120366d8e64349515e4037586b75386f68627))
@@ -176,13 +194,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Features
 
 - Replace CGO SQLite with pure-Go driver (#42) ([0bdee0a](0bdee0a6aa90a6271df009d6d1214d718287bdea))
-- **deploy:** Add Fly.io and VPS demo deployment with auto-reset (#44) ([7b01ff9](7b01ff948e463c233f2022302284f276c411cd99))
-- **deploy:** Make demo setup.sh curl-pipeable with interactive prompts ([928d5b5](928d5b5cbe68f7014cb5d646d5eb806e68a09691))
-- **deploy:** Add PowerDNS service to demo compose; auto-generate PDNS key ([672c756](672c7564a10f703ff1fcceba7277d6d82c0030ba))
-- **deploy:** Enable auto-start on reboot via systemd service ([f8d0d10](f8d0d10f158e1fd47f143b2da4af64f4c42e188f))
-- **deploy:** Add cleanup.sh to remove all demo containers, volumes, and config ([7f1e24e](7f1e24e3f6bfb0e675789254fe211877196e1845))
 
 ## [0.1.0-alpha.1] - 2026-03-23
+
+### Bug Fixes
+
+- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
+
+## [0.1.0-alpha-2] - 2026-03-23
+
+### Bug Fixes
+
+- **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
+- **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
+- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
+
+## [0.1.0-alpha.4] - 2026-03-22
 
 ### Bug Fixes
 
@@ -203,10 +230,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docker:** Replace vendor copy with go mod download for CI compatibility ([fd74c8f](fd74c8f0c4c306a082472f65c03ff51779665d54))
 - **csp:** Eliminate inline scripts and event handlers to comply with CSP (#37) ([7653a52](7653a5233f5fd9a5508e99a021cba73ebf73f0ea))
 - **zone:** Allow editing existing records of disallowed types and protect SOA (#38) ([922d5fb](922d5fb4ac0868dedf376a122c6931b8c51c3cd7))
-- **release:** Pull --rebase before pushing CHANGELOG to avoid rejection ([3f94bbe](3f94bbe5cd3093840437e79fe84534c1a7a8644a))
-- **release:** Open PR for CHANGELOG instead of pushing directly to main ([b86b8af](b86b8af2f2e383b090f1637e53efa15d0d22d3ab))
-- **release:** Force-push changelog branch to handle re-runs ([b5b38b6](b5b38b6d034531161cd13fcdb8e7f631ca921d02))
-- **release:** Delete changelog branch before pushing to avoid workflow permission error ([5491977](549197703b03485c62ec5ae6ee313b02b13ee025))
 
 ### Dependencies
 

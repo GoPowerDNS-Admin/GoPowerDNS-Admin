@@ -389,6 +389,19 @@ function zoneEditor(initData) {
                     });
                 }
             });
+
+            // Flag the records header as `is-stuck` while it's pinned, so the green
+            // top accent only shows when scrolling (at rest the card's own top border
+            // already provides it — drawing both would double it). The header sticks at
+            // top:0, so a -1px root inset makes its top edge cross the boundary (ratio<1)
+            // once pinned; rootMargin only affects the observer, not what's painted.
+            const stickyHeader = document.querySelector('.records-card-header');
+            if (stickyHeader && 'IntersectionObserver' in window) {
+                new IntersectionObserver(
+                    ([e]) => stickyHeader.classList.toggle('is-stuck', e.intersectionRatio < 1),
+                    { threshold: [1], rootMargin: '-1px 0px 0px 0px' },
+                ).observe(stickyHeader);
+            }
         },
 
         // ── Computed ──────────────────────────────────────────────────────────

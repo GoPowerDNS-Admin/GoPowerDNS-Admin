@@ -18,6 +18,27 @@
     .card:not(.collapsed-card) [data-lte-icon="expand"] { display: none; }
     /* Hide Alpine.js elements until the component initializes (prevents flash). */
     [x-cloak] { display: none !important; }
-    /* Keep the DNS Records card header (with Save/Discard) pinned while scrolling. */
-    .records-card-header { position: sticky; top: 0; z-index: 1020; }
+    /* AdminLTE's .app-main has `overflow: auto`, which makes it the sticky scroll
+       container — but it never actually scrolls (its height is only min-height:100vh,
+       so it grows to fit content and the window scrolls instead). That traps
+       position:sticky and the header below would just ride the page off-screen.
+       Let the window own the scroll so the records header can truly pin.
+       !important is needed to beat AdminLTE's `.sidebar-expand-*.layout-fixed .app-main`. */
+    .app-main { overflow: visible !important; }
+    /* Keep the DNS Records card header (with Save/Discard) pinned while scrolling.
+       Bootstrap's .card-header background is semi-transparent (rgba …,.03), so once
+       rows scroll behind the pinned header they bleed through — give it the opaque
+       card surface colour (adapts to light/dark via the Bootstrap variable). */
+    .records-card-header {
+        position: sticky;
+        top: 0;
+        z-index: 1020;
+        background-color: var(--bs-card-bg, #fff);
+    }
+    /* When pinned, the card's coloured top border (card-outline: 3px solid
+       var(--lte-card-variant-bg)) has scrolled away — redraw it on the stuck header
+       so the accent sticks too. Inset shadow avoids a layout shift on toggle. */
+    .records-card-header.is-stuck {
+        box-shadow: inset 0 3px 0 0 var(--lte-card-variant-bg, #198754);
+    }
 </style>

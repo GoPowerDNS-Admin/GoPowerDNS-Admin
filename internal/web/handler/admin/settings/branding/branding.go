@@ -5,9 +5,13 @@ package branding
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -183,6 +187,10 @@ func (s *Service) readUpload(c fiber.Ctx, field string, require imageKind) (*con
 		return nil, err
 	}
 
+	if err := validateSquareFavicon(data, require); err != nil {
+		return nil, err
+	}
+
 	return controller.NewAsset(contentType, data), nil
 }
 
@@ -287,4 +295,69 @@ func looksLikeSVG(data []byte) bool {
 	}
 
 	return bytes.Contains(bytes.ToLower(head), []byte("<svg"))
+}
+
+var (
+	svgViewBoxRe = regexp.MustCompile(`(?i)viewbox\s*=\s*["']\s*[-\d.eE]+\s+[-\d.eE]+\s+([-\d.eE]+)\s+([-\d.eE]+)`)
+	svgWidthRe   = regexp.MustCompile(`(?i)\swidth\s*=\s*["']\s*([\d.eE]+)`)
+	svgHeightRe  = regexp.MustCompile(`(?i)\sheight\s*=\s*["']\s*([\d.eE]+)`)
+)
+
+// validateSquareFavicon enforces a square aspect ratio for favicon uploads.
+// PNG dimensions are read from the header; SVG dimensions are derived from the
+// viewBox (preferred) or width/height attributes. SVGs whose dimensions cannot
+// be determined are accepted, since they scale freely. The logo is unconstrained.
+func validateSquareFavicon(data []byte, require imageKind) error {
+	switch require {
+	case kindPNG:
+		cfg, err := png.DecodeConfig(bytes.NewReader(data))
+		if err != nil {
+			return &uploadError{"Could not read PNG dimensions"}
+		}
+
+		if cfg.Width != cfg.Height {
+			return &uploadError{fmt.Sprintf("Favicon (PNG) must be square (got %dx%d)", cfg.Width, cfg.Height)}
+		}
+	case kindSVG:
+		if w, h, ok := svgDimensions(data); ok && w != h {
+			return &uploadError{fmt.Sprintf("Favicon (SVG) must be square (got %sx%s)",
+				strconv.FormatFloat(w, 'f', -1, 64), strconv.FormatFloat(h, 'f', -1, 64))}
+		}
+	case kindImage:
+		// logo: no aspect-ratio constraint
+	}
+
+	return nil
+}
+
+// svgDimensions extracts the width/height of an SVG from its viewBox, falling
+// back to the width/height attributes. ok is false when neither is present.
+func svgDimensions(data []byte) (width, height float64, ok bool) {
+	head := data
+	if len(head) > svgSniffLen {
+		head = head[:svgSniffLen]
+	}
+
+	if m := svgViewBoxRe.FindSubmatch(head); m != nil {
+		w, errW := strconv.ParseFloat(string(m[1]), 64)
+		h, errH := strconv.ParseFloat(string(m[2]), 64)
+
+		if errW == nil && errH == nil {
+			return w, h, true
+		}
+	}
+
+	mw := svgWidthRe.FindSubmatch(head)
+	mh := svgHeightRe.FindSubmatch(head)
+
+	if mw != nil && mh != nil {
+		w, errW := strconv.ParseFloat(string(mw[1]), 64)
+		h, errH := strconv.ParseFloat(string(mh[1]), 64)
+
+		if errW == nil && errH == nil {
+			return w, h, true
+		}
+	}
+
+	return 0, 0, false
 }

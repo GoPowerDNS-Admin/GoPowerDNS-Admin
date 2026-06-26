@@ -141,7 +141,7 @@ GoPowerDNS-Admin supports three database backends:
 | PostgreSQL    | Supported |                                 |
 | SQLite        | Supported | Pure Go — no CGO or C toolchain |
 
-Configure the backend in `etc/main.toml` under the `[database]` section.
+Configure the backend in `etc/main.toml` under the `[DB]` section (set `GormEngine` to `mysql`, `postgres`, or `sqlite`).
 
 ## Authentication
 
@@ -165,6 +165,9 @@ The zone editor provides a full-featured DNS record management interface:
 - Live search and per-type filter pills to quickly find records
 - Apex (`@`) records sorted first within each name group
 - Inline zone metadata (kind, serial, DNSSEC status) in the record list header
+- Sticky records toolbar — search, the type filter, and the Add / Save / Discard actions stay pinned to the top while scrolling long record lists, so saving is always one click away
+- Pagination position is preserved across **Save Changes** and **Discard** — editing a record on a later page returns you to that same page after the list reloads
+- Record table scrolls horizontally on narrow screens instead of overflowing; long values (e.g. large TXT records) truncate with the full value on hover
 - Collapsible zone settings card (SOA-EDIT-API, kind, masters, Auto-PTR toggle)
 - DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
 - SOA record is protected — it can be viewed but not deleted or overwritten via the record modal

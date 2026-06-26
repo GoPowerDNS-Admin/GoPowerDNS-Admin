@@ -356,6 +356,9 @@ function zoneEditor(initData) {
             this.$watch('searchQuery',      () => { this.currentPage = 1; });
             this.$watch('activeTypeFilter', () => { this.currentPage = 1; });
 
+            // Restore the page the user was on before a save-triggered reload.
+            this._restorePage();
+
             // If the URL contains a hash, navigate to and highlight that record.
             const hash = window.location.hash;
             if (hash) {
@@ -888,6 +891,27 @@ function zoneEditor(initData) {
 
         // ── Save all changes ──────────────────────────────────────────────────
 
+        /** Stash the current page so a reload can return the user to it. */
+        _rememberPage() {
+            try {
+                sessionStorage.setItem('zoneEditPage:' + this.zoneName, String(this.currentPage));
+            } catch (_) { /* sessionStorage unavailable — non-fatal */ }
+        },
+
+        /** Restore (and clear) a page stashed before a reload, clamped to valid range. */
+        _restorePage() {
+            try {
+                const key    = 'zoneEditPage:' + this.zoneName;
+                const stored = sessionStorage.getItem(key);
+                if (stored === null) return;
+                sessionStorage.removeItem(key);
+                const page = parseInt(stored, 10);
+                if (Number.isInteger(page) && page > 0) {
+                    this.currentPage = Math.min(page, this.totalPages);
+                }
+            } catch (_) { /* sessionStorage unavailable — non-fatal */ }
+        },
+
         async saveChanges() {
             if (this.pendingCount === 0) { showToast('No changes to save', 'warning'); return; }
 
@@ -904,6 +928,8 @@ function zoneEditor(initData) {
 
                 if (res.ok && data.success) {
                     showToast('Records saved successfully!', 'success');
+                    // Remember the current page so the reload lands where the user was.
+                    this._rememberPage();
                     let reloadDelay = 1000;
                     if (data.ptr_no_reverse_zone && data.ptr_no_reverse_zone.length > 0) {
                         const ips = data.ptr_no_reverse_zone.join(', ');
@@ -930,6 +956,8 @@ function zoneEditor(initData) {
                 });
                 if (!ok) return;
             }
+            // Remember the current page so the reload lands where the user was.
+            this._rememberPage();
             location.reload();
         },
     };

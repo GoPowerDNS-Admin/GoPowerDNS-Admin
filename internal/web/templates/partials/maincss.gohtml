@@ -16,4 +16,8 @@
     /* Card collapse icon toggling — AdminLTE4 does not handle data-lte-icon for card-collapse */
     .collapsed-card [data-lte-icon="collapse"] { display: none; }
     .card:not(.collapsed-card) [data-lte-icon="expand"] { display: none; }
+    /* Hide Alpine.js elements until the component initializes (prevents flash). */
+    [x-cloak] { display: none !important; }
+    /* Keep the DNS Records card header (with Save/Discard) pinned while scrolling. */
+    .records-card-header { position: sticky; top: 0; z-index: 1020; }
 </style>

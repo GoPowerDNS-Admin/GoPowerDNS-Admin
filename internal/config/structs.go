@@ -18,10 +18,59 @@ type Config struct {
 	DB        DB         `mapstructure:"db"`
 	Log       logger.Log `mapstructure:"log"`
 	Title     string     `mapstructure:"title"`
+	Branding  Branding   `mapstructure:"branding"`
 	Webserver Webserver  `mapstructure:"webserver"`
 	Record    Record     `mapstructure:"record"`
 	Auth      Auth       `mapstructure:"auth"`
 	PDNS      PDNS       `mapstructure:"pdns"`
+}
+
+// DefaultLogoURL is the bundled PowerDNS logo used when no custom branding
+// logo or favicon is configured.
+const DefaultLogoURL = "/static/img/powerdns_logo_icon.svg"
+
+// DefaultFaviconPNGURL is the bundled PNG favicon used as a fallback for
+// browsers that do not support SVG favicons when no custom one is configured.
+const DefaultFaviconPNGURL = "/static/img/favicon.png"
+
+// Branding allows overriding the visible product name and logo shown in the
+// sidebar, login and TOTP pages. Empty fields fall back to sensible defaults:
+// the name falls back to Title, and the images to the bundled PowerDNS logo.
+//
+// FaviconURL is the primary (SVG) favicon; FaviconPNGURL is the PNG fallback
+// rendered for browsers that do not support SVG favicons.
+//
+// Because the Content-Security-Policy restricts img-src to 'self' and data:,
+// custom images must be served same-origin (e.g. dropped into the mounted
+// static/img directory and referenced as /static/img/your-logo.svg) or supplied
+// as a data: URI. External URLs are blocked by the CSP.
+type Branding struct {
+	Name          string `mapstructure:"name"`
+	LogoURL       string `mapstructure:"logourl"`
+	FaviconURL    string `mapstructure:"faviconurl"`
+	FaviconPNGURL string `mapstructure:"faviconpngurl"`
+}
+
+// Resolve returns a copy of the branding with defaults applied for any empty
+// field. title is used as the fallback product name.
+func (b Branding) Resolve(title string) Branding {
+	if b.Name == "" {
+		b.Name = title
+	}
+
+	if b.LogoURL == "" {
+		b.LogoURL = DefaultLogoURL
+	}
+
+	if b.FaviconURL == "" {
+		b.FaviconURL = DefaultLogoURL
+	}
+
+	if b.FaviconPNGURL == "" {
+		b.FaviconPNGURL = DefaultFaviconPNGURL
+	}
+
+	return b
 }
 
 // PDNS holds optional PowerDNS server bootstrap settings.

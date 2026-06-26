@@ -1,0 +1,136 @@
+<!--begin::App Wrapper-->
+<div class="app-wrapper">
+    {{ template "partials/header-navigation" .}}
+    {{ template "partials/sidebar-navigation" .}}
+    <!--begin::App Main-->
+    <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-sm-6"><h3 class="mb-0">{{.Navigation.PageTitle}}</h3></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-end">
+                            {{range .Navigation.Breadcrumbs}}
+                            {{if .Active}}
+                            <li class="breadcrumb-item active" aria-current="page">{{.Title}}</li>
+                            {{else}}
+                            <li class="breadcrumb-item"><a href="{{.URL}}">{{.Title}}</a></li>
+                            {{end}}
+                            {{end}}
+                        </ol>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                {{if .Success}}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{.Success}}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {{end}}
+                {{if .Error}}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{.Error}}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {{end}}
+                <!--begin::Row-->
+                <div class="row">
+                    <div class="col-12 col-lg-8">
+                        <div class="card card-primary card-outline mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">Branding</h3>
+                            </div>
+                            <!--begin::Form-->
+                            <form method="POST" action="/admin/settings/branding" enctype="multipart/form-data">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="branding-name" class="form-label">Product name</label>
+                                        <input type="text" class="form-control" id="branding-name" name="name"
+                                               placeholder="GoPowerDNS-Admin"
+                                               value="{{.Current.Name}}">
+                                        <div class="form-text">Shown in the sidebar, login and TOTP pages. Leave empty to use the configured Title.</div>
+                                    </div>
+
+                                    <hr>
+
+                                    <!-- Logo -->
+                                    <div class="mb-4">
+                                        <label class="form-label d-block">Logo</label>
+                                        <div class="d-flex align-items-center gap-3 mb-2">
+                                            <img src="{{.Brand.LogoURL}}" alt="Current logo" style="height:48px;width:auto;background:#eee;padding:4px;border-radius:4px;">
+                                            {{if .Current.Logo}}<span class="badge text-bg-secondary">Uploaded ({{.Current.Logo.ContentType}})</span>{{end}}
+                                        </div>
+                                        <input type="file" class="form-control mb-2" name="logo" accept="image/svg+xml,image/png,image/jpeg,image/gif,image/webp,image/x-icon">
+                                        <input type="text" class="form-control mb-2" name="logo_url" placeholder="/static/img/your-logo.svg" value="{{.Current.LogoURL}}">
+                                        {{if .Current.Logo}}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="remove_logo" id="remove-logo" value="on">
+                                            <label class="form-check-label" for="remove-logo">Remove uploaded logo</label>
+                                        </div>
+                                        {{end}}
+                                        <div class="form-text">Upload an image, or enter a same-origin URL. Uploads take precedence over the URL.</div>
+                                    </div>
+
+                                    <!-- Favicon (SVG) -->
+                                    <div class="mb-4">
+                                        <label class="form-label d-block">Favicon (SVG)</label>
+                                        <div class="d-flex align-items-center gap-3 mb-2">
+                                            <img src="{{.Brand.FaviconURL}}" alt="Current SVG favicon" style="height:32px;width:auto;background:#eee;padding:4px;border-radius:4px;">
+                                            {{if .Current.FaviconSVG}}<span class="badge text-bg-secondary">Uploaded</span>{{end}}
+                                        </div>
+                                        <input type="file" class="form-control mb-2" name="favicon_svg" accept="image/svg+xml">
+                                        <input type="text" class="form-control mb-2" name="favicon_url" placeholder="/static/img/your-favicon.svg" value="{{.Current.FaviconURL}}">
+                                        {{if .Current.FaviconSVG}}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="remove_favicon_svg" id="remove-favicon-svg" value="on">
+                                            <label class="form-check-label" for="remove-favicon-svg">Remove uploaded SVG favicon</label>
+                                        </div>
+                                        {{end}}
+                                    </div>
+
+                                    <!-- Favicon (PNG) -->
+                                    <div class="mb-4">
+                                        <label class="form-label d-block">Favicon (PNG fallback)</label>
+                                        <div class="d-flex align-items-center gap-3 mb-2">
+                                            <img src="{{.Brand.FaviconPNGURL}}" alt="Current PNG favicon" style="height:32px;width:auto;background:#eee;padding:4px;border-radius:4px;">
+                                            {{if .Current.FaviconPNG}}<span class="badge text-bg-secondary">Uploaded</span>{{end}}
+                                        </div>
+                                        <input type="file" class="form-control mb-2" name="favicon_png" accept="image/png">
+                                        <input type="text" class="form-control mb-2" name="favicon_png_url" placeholder="/static/img/your-favicon.png" value="{{.Current.FaviconPNGURL}}">
+                                        {{if .Current.FaviconPNG}}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="remove_favicon_png" id="remove-favicon-png" value="on">
+                                            <label class="form-check-label" for="remove-favicon-png">Remove uploaded PNG favicon</label>
+                                        </div>
+                                        {{end}}
+                                        <div class="form-text">Rendered by browsers that do not support SVG favicons. Favicons must be square (equal width and height). Max upload size: 1 MB per image.</div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">Save Branding</button>
+                                </div>
+                            </form>
+                            <!--end::Form-->
+                        </div>
+                    </div>
+                </div>
+                <!--end::Row-->
+            </div>
+            <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+    </main>
+    <!--end::App Main-->
+    {{ template "partials/footer" .}}
+</div>
+<!--end::App Wrapper-->

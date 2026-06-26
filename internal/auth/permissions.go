@@ -44,4 +44,6 @@ const (
 	PermAdminZoneTags = "admin.zone.tags"
 	// PermAdminTTLPresets allows managing global TTL preset values.
 	PermAdminTTLPresets = "admin.ttl.presets"
+	// PermAdminBranding allows managing branding (product name, logo, favicon).
+	PermAdminBranding = "admin.branding"
 )

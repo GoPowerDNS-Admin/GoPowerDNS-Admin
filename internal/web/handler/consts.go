@@ -21,4 +21,7 @@ const (
 
 	// PDNSServerSettingsPath is the path to the PowerDNS server settings page.
 	PDNSServerSettingsPath = RootPath + "admin/settings/pdns-server"
+
+	// BrandingSettingsPath is the path to the branding settings page.
+	BrandingSettingsPath = RootPath + "admin/settings/branding"
 )

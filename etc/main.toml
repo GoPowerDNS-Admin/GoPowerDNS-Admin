@@ -1,6 +1,24 @@
 Title = "GO PowerDNS-Admin"
 DevMode = false
 
+# Branding (optional) — override the product name and logo shown in the sidebar,
+# login and TOTP pages. Any field left unset falls back to a default: the name
+# falls back to Title, the images to the bundled PowerDNS logo.
+# These values can also be edited at runtime via the admin GUI under
+# Settings → Branding (incl. image upload); GUI settings take precedence over
+# the values below.
+# Note: the Content-Security-Policy restricts images to same-origin ('self') and
+# data: URIs, so custom logos must be served from /static (e.g. drop a file into
+# the mounted static/img directory) or supplied as a data: URI — external URLs
+# are blocked.
+# FaviconURL is the primary (SVG) favicon; FaviconPNGURL is the PNG fallback for
+# browsers that do not support SVG favicons.
+# [branding]
+# Name = "Acme DNS"
+# LogoURL = "/static/img/your-logo.svg"
+# FaviconURL = "/static/img/your-favicon.svg"
+# FaviconPNGURL = "/static/img/your-favicon.png"
+
 [webserver]
 # REQUIRED: replace it with a random string of at least 32 characters before production use.
 CookieEncryptionKey = "replace_with_a_random_string_before_going_to_production"

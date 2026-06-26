@@ -15,8 +15,8 @@
     <meta name="title" content="PowerDNS-Admin | Login Page" />
     <meta name="description" content="PowerDNS-Admin Login Page" />
     <!--end::Primary Meta Tags-->
-    <link rel="icon" href="/static/img/powerdns_logo_icon.svg" type="image/svg+xml">
-    <link rel="icon" href="/static/img/favicon.png" type="image/png">
+    <link rel="icon" href="{{.Brand.FaviconURL}}" type="image/svg+xml">
+    <link rel="icon" href="{{.Brand.FaviconPNGURL}}" type="image/png">
     <!--begin::Fonts-->
     <link rel="stylesheet" href="/static/vendor/source-sans-3-5.2.9/index.css"/>
     <!--end::Fonts-->
@@ -32,7 +32,7 @@
   <body class="login-page bg-body-secondary">
     <div class="login-box">
       <div class="login-logo">
-        <a href="#"><b>Go</b>PowerDNS-Admin</a>
+        <a href="#">{{.Brand.Name}}</a>
       </div>
       <!-- /.login-logo -->
       <div class="card">

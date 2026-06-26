@@ -198,6 +198,12 @@ func seedPermissions(db *gorm.DB) {
 			Action:      "ttl.presets",
 			Description: "Manage global TTL preset values",
 		},
+		{
+			Name:        "admin.branding",
+			Resource:    "admin",
+			Action:      "branding",
+			Description: "Manage branding (product name, logo, favicon)",
+		},
 	}
 
 	for _, perm := range permissions {

@@ -396,6 +396,39 @@ func TestTLSEnabled(t *testing.T) {
 	}
 }
 
+func TestBrandingResolve(t *testing.T) {
+	// Empty branding falls back to the title and the bundled logo for all images.
+	got := Branding{}.Resolve("My Title")
+	if got.Name != "My Title" {
+		t.Errorf("Name = %q, want %q", got.Name, "My Title")
+	}
+
+	if got.LogoURL != DefaultLogoURL {
+		t.Errorf("LogoURL = %q, want %q", got.LogoURL, DefaultLogoURL)
+	}
+
+	if got.FaviconURL != DefaultLogoURL {
+		t.Errorf("FaviconURL = %q, want %q", got.FaviconURL, DefaultLogoURL)
+	}
+
+	if got.FaviconPNGURL != DefaultFaviconPNGURL {
+		t.Errorf("FaviconPNGURL = %q, want %q", got.FaviconPNGURL, DefaultFaviconPNGURL)
+	}
+
+	// Explicit values are preserved and the title fallback is not applied.
+	custom := Branding{
+		Name:          "Acme DNS",
+		LogoURL:       "/static/img/acme.svg",
+		FaviconURL:    "/static/img/acme-icon.svg",
+		FaviconPNGURL: "/static/img/acme-icon.png",
+	}
+
+	got = custom.Resolve("My Title")
+	if got != custom {
+		t.Errorf("Resolve overrode explicit branding: got %+v, want %+v", got, custom)
+	}
+}
+
 func TestReadConfigWithOverlayFile(t *testing.T) {
 	projectRoot, err := filepath.Abs("../../")
 	if err != nil {

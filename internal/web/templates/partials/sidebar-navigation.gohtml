@@ -6,13 +6,13 @@
         <a href="#" class="brand-link">
             <!--begin::Brand Image-->
             <img
-                    src="/static/img/powerdns_logo_icon.svg"
-                    alt="PowerDNS-Admin"
+                    src="{{.Brand.LogoURL}}"
+                    alt="{{.Brand.Name}}"
                     class="brand-image opacity-75 shadow"
             />
             <!--end::Brand Image-->
             <!--begin::Brand Text-->
-            <span class="brand-text fw-light">PowerDNS Admin</span>
+            <span class="brand-text fw-light">{{.Brand.Name}}</span>
             <!--end::Brand Text-->
         </a>
         <!--end::Brand Link-->
@@ -107,7 +107,7 @@
                     </a>
                 </li>
                 {{ end }}
-                {{ if or (call .hasPermission "admin.zone.records") (call .hasPermission "admin.pdns.server") (call .hasPermission "admin.ttl.presets") }}
+                {{ if or (call .hasPermission "admin.zone.records") (call .hasPermission "admin.pdns.server") (call .hasPermission "admin.ttl.presets") (call .hasPermission "admin.branding") }}
                 <li class="nav-item{{if and .Navigation (eq .Navigation.ActiveSection "settings")}} menu-open{{end}}">
                     <a href="#" class="nav-link{{if and .Navigation (eq .Navigation.ActiveSection "settings")}} active{{end}}">
                         <i class="nav-icon bi bi-gear"></i>
@@ -138,6 +138,14 @@
                             <a href="/admin/settings/ttl-presets" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "ttl-presets")}} active{{end}}">
                                 <i class="nav-icon bi bi-clock"></i>
                                 <p>TTL Presets</p>
+                            </a>
+                        </li>
+                        {{ end }}
+                        {{ if call .hasPermission "admin.branding" }}
+                        <li class="nav-item">
+                            <a href="/admin/settings/branding" class="nav-link{{if and .Navigation (eq .Navigation.ActivePage "branding")}} active{{end}}">
+                                <i class="nav-icon bi bi-palette"></i>
+                                <p>Branding</p>
                             </a>
                         </li>
                         {{ end }}

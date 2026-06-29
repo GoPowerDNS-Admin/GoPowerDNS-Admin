@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.2] - 2026-06-29
+
+### Documentation
+
+- **readme:** Add dashboard screenshot, badges, and positioning (#99) ([c070b32](c070b32a95ebe3ad281b91934896e04465e6c4c0))
+- **community:** Add contributing guide, code of conduct, and issue/PR templates (#100) ([ff5ae8f](ff5ae8f94eb1a792b99449497815488de37d9088))
+- **readme:** Dedupe, refresh, and document missing features (#101) ([482b443](482b4438b13b39d30a63eb1e45ab1b013b454c4e))
+
+### Features
+
+- **dashboard:** Search reverse zones by hostname and IP (#98) ([e61b31d](e61b31dcdfa1de5d2ba9f6293867b2162edf4ec2))
+
 ## [0.3.1] - 2026-06-29
 
 ### Bug Fixes

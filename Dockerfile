@@ -1,5 +1,5 @@
 # ─── Builder ─────────────────────────────────────────────────────────────────
-FROM golang:1.26.1-alpine AS builder
+FROM golang:1.26.4-alpine AS builder
 
 # CGO is required by mattn/go-sqlite3
 RUN apk add --no-cache gcc musl-dev

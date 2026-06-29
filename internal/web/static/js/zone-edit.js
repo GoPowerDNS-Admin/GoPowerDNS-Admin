@@ -402,6 +402,19 @@ function zoneEditor(initData) {
                     { threshold: [1], rootMargin: '-1px 0px 0px 0px' },
                 ).observe(stickyHeader);
             }
+
+            // Per-row action menus sit inside the .table-responsive scroll box,
+            // whose `overflow-x:auto` also clips vertically. When a search filter
+            // shrinks the list to a few rows, an opened (and possibly flipped-up)
+            // Edit/Delete menu gets clipped. Positioning the menu with Popper's
+            // `fixed` strategy detaches it from that overflow box so it stays
+            // visible; the z-index lift in maincss.gohtml keeps it above the
+            // sticky header. Bootstrap reads this default for dropdowns it
+            // auto-creates later, including rows re-rendered by Alpine.
+            if (window.bootstrap?.Dropdown) {
+                bootstrap.Dropdown.Default.popperConfig =
+                    (defaults) => ({ ...defaults, strategy: 'fixed' });
+            }
         },
 
         // ── Computed ──────────────────────────────────────────────────────────

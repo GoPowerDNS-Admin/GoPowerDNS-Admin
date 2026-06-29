@@ -62,7 +62,7 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 - Zone tag-based access control
 - Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
 - Admin-configurable TTL presets shown as a dropdown in the record modal
-- Configurable branding — custom product name, logo, and favicons (SVG + PNG) set from the admin UI or `main.toml`, applied without a restart
+- Configurable branding — custom product name, logo, and favicons (SVG + PNG); set live from the admin UI, or seeded from `main.toml`
 - DNSSEC-managed records automatically hidden from the zone editor and dashboard
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
@@ -221,13 +221,13 @@ The role editor groups permissions by resource with icon badges and tri-state to
 
 ## Branding
 
-Customize the UI from **Settings → Branding** (`/admin/settings/branding`) or the `[branding]` section in `main.toml`:
+Customize the UI with a custom product name, logo, and favicons:
 
 - **Product name** — shown in the sidebar, login, and 2FA pages (defaults to the configured title)
 - **Logo** — sidebar and login header image (SVG, PNG, JPEG, GIF, WebP, or ICO)
 - **Favicons** — separate SVG and PNG favicons, each of which must be square
 
-Assets can be uploaded (max 1 MB each) or referenced by a same-origin URL. Changes apply immediately — no restart required.
+Set these live from the admin UI at **Settings → Branding** (`/admin/settings/branding`) — assets can be uploaded (max 1 MB each) or referenced by a same-origin URL, and changes apply immediately without a restart. The `[branding]` section in `main.toml` provides the startup defaults (applied on restart) and is overridden by anything set in the admin UI.
 
 ## Activity Log & Undo
 

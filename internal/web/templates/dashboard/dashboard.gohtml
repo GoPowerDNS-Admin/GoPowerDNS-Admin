@@ -90,13 +90,14 @@
                                     {{if $tabData.SortField}}<input type="hidden" name="sort" value="{{$tabData.SortField}}">{{end}}
                                     {{if $tabData.SortOrder}}<input type="hidden" name="order" value="{{$tabData.SortOrder}}">{{end}}
                                     <div class="row g-3">
+                                        {{$isReverse := or (eq $activeTab "reverse-ipv4") (eq $activeTab "reverse-ipv6")}}
                                         <div class="col-md-4">
-                                            <label for="search" class="form-label">Search Zone Name</label>
+                                            <label for="search" class="form-label">{{if $isReverse}}Search Hostname or IP{{else}}Search Zone Name{{end}}</label>
                                             <input type="text"
                                                    class="form-control"
                                                    id="search"
                                                    name="search"
-                                                   placeholder="Search by zone name..."
+                                                   placeholder="{{if $isReverse}}Search by hostname or IP...{{else}}Search by zone name...{{end}}"
                                                    value="{{$tabData.SearchQuery}}">
                                         </div>
                                         <div class="col-md-3">

@@ -1,0 +1,75 @@
+name: Bug report
+description: Report a problem with GoPowerDNS-Admin
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! Please search [existing issues](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/issues) first to avoid duplicates.
+
+        **Do not report security vulnerabilities here** — follow the [Security Policy](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/blob/main/SECURITY.md) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug, including what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the issue?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: GoPowerDNS-Admin version
+      description: Output of `gopowerdns-admin --version`, or the container image tag.
+      placeholder: "v0.3.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database backend
+      options:
+        - SQLite
+        - MySQL/MariaDB
+        - PostgreSQL
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: auth
+    attributes:
+      label: Authentication method
+      options:
+        - Local DB
+        - OIDC
+        - LDAP
+        - Not applicable / not sure
+    validations:
+      required: false
+  - type: input
+    id: deployment
+    attributes:
+      label: Deployment & environment
+      description: How are you running it (binary, container), OS/arch, and PowerDNS version?
+      placeholder: "container ghcr.io/... on Linux arm64, PowerDNS 4.9"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste any relevant log output. This will be rendered as code, so no need for backticks.
+      render: shell
+    validations:
+      required: false

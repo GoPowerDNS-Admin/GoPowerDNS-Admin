@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **zone:** Keep per-row action menu visible when search narrows records (#94) ([67d0bc1](67d0bc11cb5ddb2c291aa8894295858dee73f3ce))
+
 ## [0.3.0] - 2026-06-26
 
 ### Dependencies

@@ -62,6 +62,7 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 - Zone tag-based access control
 - Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
 - Admin-configurable TTL presets shown as a dropdown in the record modal
+- Configurable branding — custom product name, logo, and favicons (SVG + PNG) set from the admin UI or `main.toml`, applied without a restart
 - DNSSEC-managed records automatically hidden from the zone editor and dashboard
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
@@ -217,6 +218,16 @@ The role editor groups permissions by resource with icon badges and tri-state to
 
 - Each resource group shows a count badge and an **All** toggle (checked / indeterminate / unchecked)
 - **Select All** / **Deselect All** buttons apply across all groups at once
+
+## Branding
+
+Customize the UI from **Settings → Branding** (`/admin/settings/branding`) or the `[branding]` section in `main.toml`:
+
+- **Product name** — shown in the sidebar, login, and 2FA pages (defaults to the configured title)
+- **Logo** — sidebar and login header image (SVG, PNG, JPEG, GIF, WebP, or ICO)
+- **Favicons** — separate SVG and PNG favicons, each of which must be square
+
+Assets can be uploaded (max 1 MB each) or referenced by a same-origin URL. Changes apply immediately — no restart required.
 
 ## Activity Log & Undo
 

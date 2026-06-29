@@ -70,6 +70,7 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
 - Go backend with server-rendered templates
 - Health check endpoint (`GET /health`) for load balancer and container probes
+- Update check — periodically queries the GitHub releases API and shows a hint in the footer (to admins) when a newer version is available; opt out via `[update] enabled = false`
 - Native TLS (manual cert/key) and automatic TLS via Let's Encrypt / ACME
 - Reverse proxy support (HAProxy, nginx, Traefik) with configurable trusted IP allowlist and proxy header
 - Security headers on all responses: `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, `Referrer-Policy`, and more
@@ -392,6 +393,7 @@ docker run -d \
 - A `[pdns]` section in `main.toml` (or via `GPDNS_PDNS_*` env vars) can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur.
 - Authentication supports Local DB, OIDC, and LDAP; see `internal/config/structs.go` for the available fields.
 - Configuration is validated at startup — the app fails fast with a clear error on placeholder or missing secrets, an invalid database or ACME setup, or incomplete OIDC settings.
+- The `[update]` section controls the GitHub version check (`enabled`, `interval`, `repository`). It is on by default with a 24h interval (minimum 1h); set `enabled = false` (or `GPDNS_UPDATE_ENABLED=false`) to disable all outbound checks.
 
 ## Contributing
 

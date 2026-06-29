@@ -23,6 +23,17 @@ type Config struct {
 	Record    Record     `mapstructure:"record"`
 	Auth      Auth       `mapstructure:"auth"`
 	PDNS      PDNS       `mapstructure:"pdns"`
+	Update    Update     `mapstructure:"update"`
+}
+
+// Update controls the periodic check for newer GoPowerDNS-Admin releases.
+// When Enabled, the app queries the GitHub releases API at Interval and shows
+// a hint in the UI footer (to admins) when a newer version is available.
+// Repository is the "owner/repo" to query.
+type Update struct {
+	Enabled    bool          `mapstructure:"enabled"`
+	Interval   time.Duration `mapstructure:"interval"`
+	Repository string        `mapstructure:"repository"`
 }
 
 // DefaultLogoURL is the bundled PowerDNS logo used when no custom branding

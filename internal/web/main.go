@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	brandingctrl "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/branding"
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/updatecheck"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/activity"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/group"
@@ -268,9 +270,16 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 		log.Error().Err(err).Msg("failed to load branding settings; using configured defaults")
 	}
 
+	// Periodically check GitHub for newer releases; the footer shows a hint to
+	// admins when one is available. Fails soft and is a no-op when disabled or
+	// on a dev build.
+	updateChecker := updatecheck.New(cfg.Update, version.Version())
+	go updateChecker.Run(context.Background())
+
 	app.Use(func(c fiber.Ctx) error {
 		c.Locals("AppVersion", version.Get())
 		c.Locals("Brand", brandingStore.Brand())
+		c.Locals("Update", updateChecker.Info())
 
 		return c.Next()
 	})

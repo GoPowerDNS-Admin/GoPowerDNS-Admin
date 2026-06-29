@@ -3,5 +3,12 @@
     <!--begin::Copyright-->
     <a href="https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin" class="text-decoration-none">{{.AppVersion}}</a>
     <!--end::Copyright-->
+    {{if and .Update .Update.UpdateAvailable (call .hasPermission "admin.server.config")}}
+    <a href="{{.Update.ReleaseURL}}" target="_blank" rel="noopener noreferrer"
+       class="badge text-bg-warning text-decoration-none ms-2"
+       title="A newer version ({{.Update.LatestVersion}}) is available">
+        <i class="bi bi-arrow-up-circle"></i> {{.Update.LatestVersion}} available
+    </a>
+    {{end}}
 </footer>
 <!--end::Footer-->

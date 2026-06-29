@@ -33,6 +33,13 @@ func Get() string {
 	return v
 }
 
+// Version returns the raw build version string injected via -ldflags
+// (e.g. "v0.3.2"), or "dev" for an unversioned build. Unlike Get, it never
+// includes the branch suffix — useful for comparing against released tags.
+func Version() string {
+	return version
+}
+
 func commitFromBuildInfo() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {

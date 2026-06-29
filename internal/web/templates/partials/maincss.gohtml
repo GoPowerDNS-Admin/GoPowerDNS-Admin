@@ -41,4 +41,11 @@
     .records-card-header.is-stuck {
         box-shadow: inset 0 3px 0 0 var(--lte-card-variant-bg, #198754);
     }
+    /* Per-row action menus (Edit / Delete) live inside the scrollable
+       .table-responsive and below the sticky header (z-index:1020). When a
+       search filter shrinks the list to a few rows, the menu would otherwise be
+       clipped by the short scroll box or painted behind the pinned header.
+       Lift the menu above the header here; zone-edit.js pairs this with a Popper
+       `fixed` strategy so the menu also escapes the table's overflow clipping. */
+    #zone-editor .dropdown-menu { --bs-dropdown-zindex: 1031; }
 </style>

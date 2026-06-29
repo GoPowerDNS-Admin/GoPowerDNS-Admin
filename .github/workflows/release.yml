@@ -219,6 +219,16 @@ jobs:
         with:
           fetch-depth: 0 # full history required by git-cliff
 
+      # On workflow_dispatch the release/tag does not exist yet — the "Create
+      # release" step below creates it. git-cliff (run before that) would
+      # therefore not see this version and would file the new commits under
+      # [unreleased] and emit the *previous* release's notes. Create the tag
+      # locally first (not pushed; the API tag is created later at the same
+      # SHA) so git-cliff attributes the commits to RELEASE_TAG.
+      - name: Tag locally for git-cliff
+        if: github.event_name == 'workflow_dispatch'
+        run: git tag "$RELEASE_TAG" "$GITHUB_SHA"
+
       - name: Generate release notes
         if: github.event_name == 'workflow_dispatch'
         uses: orhun/git-cliff-action@v4
@@ -273,6 +283,7 @@ jobs:
             PRERELEASE="--prerelease"
           fi
           gh release create "${{ env.RELEASE_TAG }}" \
+            --target "$GITHUB_SHA" \
             --title "${{ env.RELEASE_TAG }}" \
             --notes-file RELEASE_NOTES.md \
             $PRERELEASE

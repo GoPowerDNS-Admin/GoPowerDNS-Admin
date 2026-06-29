@@ -19,6 +19,15 @@ DevMode = false
 # FaviconURL = "/static/img/your-favicon.svg"
 # FaviconPNGURL = "/static/img/your-favicon.png"
 
+# Update check (optional) — periodically query the GitHub releases API and show
+# a hint in the footer (to admins) when a newer version is available. Set
+# enabled = false to disable all outbound version checks. interval is clamped to
+# a minimum of 1h.
+[update]
+enabled = true
+interval = "24h"
+repository = "GoPowerDNS-Admin/GoPowerDNS-Admin"
+
 [webserver]
 # REQUIRED: replace it with a random string of at least 32 characters before production use.
 CookieEncryptionKey = "replace_with_a_random_string_before_going_to_production"

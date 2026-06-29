@@ -18,18 +18,13 @@ GoPowerDNS-Admin is a modern, web-based administration UI for PowerDNS, written 
 
 A lightweight, easy-to-deploy alternative to the original Python [PowerDNS-Admin](https://github.com/PowerDNS-Admin/PowerDNS-Admin), rebuilt in Go with a focus on simple operation:
 
-- **Single static binary** — no Python runtime, virtualenv, or system packages to manage. Drop in one file (or one container) and run.
-- **Pure-Go SQLite** — run with zero external database (no CGO, no C toolchain), or connect MySQL/MariaDB or PostgreSQL when you need it.
-- **Runs anywhere** — prebuilt binaries and multi-arch container images for amd64, arm64, and armv7 (happy on a Raspberry Pi).
-- **Modern UI** — AdminLTE 4 / Bootstrap 5 with reactive Alpine.js components.
-- **Batteries included** — RBAC, OIDC/LDAP/TOTP auth, an audit log with undo, auto-PTR, and DNSSEC-aware editing.
-- **Actively maintained** — regular tagged releases and a live, daily-reset demo.
-
 |                      | GoPowerDNS-Admin                          | PowerDNS-Admin (Python)         |
 | -------------------- | ----------------------------------------- | ------------------------------- |
 | Built with           | Go                                        | Python / Flask                  |
 | Deployment artifact  | Single self-contained binary or container | Python environment or container |
 | Zero-config local DB | Pure-Go SQLite (no CGO / C toolchain)     | SQLite via Python               |
+
+Prebuilt binaries and multi-arch container images (amd64, arm64, armv7) make it easy to run anywhere, including a Raspberry Pi. Beyond easier deployment, it's batteries-included — RBAC, OIDC/LDAP/TOTP authentication, an audit log with undo, auto-PTR, and DNSSEC-aware editing. See [Key Features](#key-features) for the full list.
 
 ## Documentation
 
@@ -321,7 +316,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.3.0
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.3.1
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```

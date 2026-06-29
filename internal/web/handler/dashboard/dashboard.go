@@ -191,7 +191,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 	forwardZones, reverseV4Zones, reverseV6Zones = s.applyZoneAccessFilter(c, forwardZones, reverseV4Zones, reverseV6Zones)
 
 	zones := selectTabZones(activeTab, forwardZones, reverseV4Zones, reverseV6Zones)
-	zones = filterZones(zones, params.SearchQuery, params.FilterKind)
+	zones = s.filterTabZones(ctx, zones, activeTab, &params)
 	sortZones(zones, params.SortField, params.SortOrder)
 
 	paginatedZones, totalPages, actualPage := paginateZones(zones, params.Page, params.PageSize)
@@ -268,6 +268,22 @@ func (s *Service) applyZoneAccessFilter(c fiber.Ctx, fwd, v4, v6 []Zone) ([]Zone
 	}
 
 	return filterByAccess(fwd, accessible), filterByAccess(v4, accessible), filterByAccess(v6, accessible)
+}
+
+// filterTabZones applies the active tab's search and kind filters. Reverse tabs
+// also match by hostname (PTR content) and IP; forward tabs keep the plain
+// zone-name substring match.
+func (s *Service) filterTabZones(ctx context.Context, zones []Zone, activeTab string, params *QueryParams) []Zone {
+	if params.SearchQuery == "" || (activeTab != TabReverseV4 && activeTab != TabReverseV6) {
+		return filterZones(zones, params.SearchQuery, params.FilterKind)
+	}
+
+	categorySuffix := suffixReverseV4
+	if activeTab == TabReverseV6 {
+		categorySuffix = suffixReverseV6
+	}
+
+	return s.filterReverseZones(ctx, zones, params.SearchQuery, params.FilterKind, categorySuffix)
 }
 
 // selectTabZones returns the zone slice for the active tab.

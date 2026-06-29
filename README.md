@@ -186,6 +186,7 @@ The zone editor provides a full-featured DNS record management interface:
 - Pagination position is preserved across **Save Changes** and **Discard** — editing a record on a later page returns you to that same page after the list reloads
 - Record table scrolls horizontally on narrow screens instead of overflowing; long values (e.g. large TXT records) truncate with the full value on hover
 - Collapsible zone settings card (SOA-EDIT-API, kind, masters, Auto-PTR toggle)
+- SOA-EDIT-API selector (INCREASE / EPOCH / OFF) with a warning when set to **OFF**, since PowerDNS then will not auto-update the zone serial
 - DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
 - SOA record is protected — it can be viewed but not deleted or overwritten via the record modal
 - Admin-configurable TTL presets available as a dropdown in the record modal (see TTL Presets below)
@@ -389,6 +390,7 @@ docker run -d \
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.
 - A `[pdns]` section in `main.toml` (or via `GPDNS_PDNS_*` env vars) can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur.
 - Authentication supports Local DB, OIDC, and LDAP; see `internal/config/structs.go` for the available fields.
+- Configuration is validated at startup — the app fails fast with a clear error on placeholder or missing secrets, an invalid database or ACME setup, or incomplete OIDC settings.
 
 ## Contributing
 

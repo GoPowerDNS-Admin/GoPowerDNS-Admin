@@ -50,10 +50,6 @@ The demo resets automatically every day at midnight UTC. Feel free to create zon
 
 Two sample zones (`example.com` and `example.org`) with a variety of record types, plus a reverse zone (`203.0.113.in-addr.arpa`), are pre-populated on each reset so there is something to explore immediately.
 
-## Status: Pre-1.0
-
-Core features are functional and stable. As a pre-1.0 project, minor interfaces or configuration details may still change between minor releases. Bug reports and feedback are welcome — please open an issue.
-
 ## Key Features
 
 - Zone and record management (create, edit, and manage DNS records)

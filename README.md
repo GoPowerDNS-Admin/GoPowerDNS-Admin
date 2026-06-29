@@ -12,7 +12,7 @@ GoPowerDNS-Admin is a modern, web-based administration UI for PowerDNS, written 
 
 [![GoPowerDNS-Admin dashboard](screenshots/dashboard.jpg)](https://demo.gopowerdnsadmin.org/login)
 
-> **[▶ Try the live demo](https://demo.gopowerdnsadmin.org/login)** — resets daily; sign in with `admin` / `changeme`.
+> **[▶ Try the live demo](#live-demo)** — no install required.
 
 ## Why GoPowerDNS-Admin?
 

@@ -49,6 +49,7 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 
 - Zone and record management (create, edit, and manage DNS records)
 - Forward and reverse zone creation with automatic CIDR-to-zone-name conversion for IPv4 and IPv6
+- Reverse-zone search by hostname or IP — on the Reverse IPv4/IPv6 dashboard tabs, find the zone owning a PTR by typing the target hostname or the IP address (full or partial), not just the reversed zone name
 - Duplicate zone detection with a direct link to the existing zone
 - Auto-PTR: automatically create, update, and delete PTR records in the matching reverse zone when A/AAAA records change (per-zone opt-in, disabled automatically on reverse and Slave zones)
 - Cross-zone hint badges in the record list: A/AAAA records link to their PTR entry; PTR records link back to the forward record — clicking navigates to and highlights the target row

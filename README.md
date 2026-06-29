@@ -1,10 +1,35 @@
 # GoPowerDNS-Admin
 
+[![Latest release](https://img.shields.io/github/v/release/GoPowerDNS-Admin/GoPowerDNS-Admin?sort=semver)](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/releases)
+[![License: MIT](https://img.shields.io/github/license/GoPowerDNS-Admin/GoPowerDNS-Admin)](LICENSE)
+[![Container image](https://img.shields.io/badge/ghcr.io-gopowerdns--admin-2496ED?logo=docker&logoColor=white)](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/pkgs/container/gopowerdns-admin)
+[![Live demo](https://img.shields.io/badge/live%20demo-online-brightgreen)](https://demo.gopowerdnsadmin.org/login)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/chrisamti)
 
 ---
 
-GoPowerDNS-Admin is a web-based administration UI for PowerDNS. It helps you manage zones and DNS records, configure your PowerDNS server connection, and handle authentication with multiple providers — all from a modern web interface written in Go.
+GoPowerDNS-Admin is a modern, web-based administration UI for PowerDNS, written in Go. Manage forward and reverse zones and their records, configure your PowerDNS server, and authenticate via local accounts, OIDC, or LDAP — all from a single, self-contained binary with no runtime dependencies.
+
+[![GoPowerDNS-Admin dashboard](screenshots/dashboard.jpg)](https://demo.gopowerdnsadmin.org/login)
+
+> **[▶ Try the live demo](https://demo.gopowerdnsadmin.org/login)** — resets daily; sign in with `admin` / `changeme`.
+
+## Why GoPowerDNS-Admin?
+
+A lightweight, easy-to-deploy alternative to the original Python [PowerDNS-Admin](https://github.com/PowerDNS-Admin/PowerDNS-Admin), rebuilt in Go with a focus on simple operation:
+
+- **Single static binary** — no Python runtime, virtualenv, or system packages to manage. Drop in one file (or one container) and run.
+- **Pure-Go SQLite** — run with zero external database (no CGO, no C toolchain), or connect MySQL/MariaDB or PostgreSQL when you need it.
+- **Runs anywhere** — prebuilt binaries and multi-arch container images for amd64, arm64, and armv7 (happy on a Raspberry Pi).
+- **Modern UI** — AdminLTE 4 / Bootstrap 5 with reactive Alpine.js components.
+- **Batteries included** — RBAC, OIDC/LDAP/TOTP auth, an audit log with undo, auto-PTR, and DNSSEC-aware editing.
+- **Actively maintained** — regular tagged releases and a live, daily-reset demo.
+
+|                      | GoPowerDNS-Admin                          | PowerDNS-Admin (Python)         |
+| -------------------- | ----------------------------------------- | ------------------------------- |
+| Built with           | Go                                        | Python / Flask                  |
+| Deployment artifact  | Single self-contained binary or container | Python environment or container |
+| Zero-config local DB | Pure-Go SQLite (no CGO / C toolchain)     | SQLite via Python               |
 
 ## Documentation
 

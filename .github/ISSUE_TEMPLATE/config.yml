@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://docs.gopowerdnsadmin.org
+    about: Check the documentation site before opening an issue — your question may already be answered.
+  - name: Live demo
+    url: https://demo.gopowerdnsadmin.org/login
+    about: Try the app in the live demo (resets daily).
+  - name: Report a security vulnerability
+    url: https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/security/advisories/new
+    about: Please report security issues privately, not as public issues.

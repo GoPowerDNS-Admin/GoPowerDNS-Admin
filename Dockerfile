@@ -1,9 +1,6 @@
 # ─── Builder ─────────────────────────────────────────────────────────────────
 FROM golang:1.26.4-alpine AS builder
 
-# CGO is required by mattn/go-sqlite3
-RUN apk add --no-cache gcc musl-dev
-
 ARG VERSION=dev
 
 WORKDIR /build
@@ -14,7 +11,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux \
+RUN CGO_ENABLED=0 GOOS=linux \
     go build \
     -ldflags="-s -w -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${VERSION}" \
     -o go-pdns .

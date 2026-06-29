@@ -378,10 +378,6 @@ docker run -d \
   ...
 ```
 
-## Background & Inspiration
-
-The idea for this Go-based version came from the PowerDNS-Admin project (https://github.com/PowerDNS-Admin/PowerDNS-Admin), which is not further developed. This repository provides a Go implementation that follows similar goals while evolving independently.
-
 ## Configuration Highlights
 
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.
@@ -390,8 +386,8 @@ The idea for this Go-based version came from the PowerDNS-Admin project (https:/
 
 ## Contributing
 
-Contributions are welcome! Given the rapid pace of changes, please open an issue or draft PR early to align on direction.
+Contributions are welcome! Please read the [contributing guide](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) before opening a pull request. For anything beyond a small fix, open an issue first to align on direction. For security issues, follow the [Security Policy](SECURITY.md).
 
 ## License
 
-This project is licensed under the terms specified in the `LICENSE` file.
+This project is licensed under the [MIT License](LICENSE).

@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an idea or enhancement for GoPowerDNS-Admin
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please search [existing issues](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/issues) first to avoid duplicates.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem would this solve? Is your request related to a frustration or a gap in the current behavior?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe what you'd like to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you've considered.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else — screenshots, mockups, links, or related PowerDNS behavior.
+    validations:
+      required: false

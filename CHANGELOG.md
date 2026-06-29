@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.3] - 2026-06-29
+
+### Bug Fixes
+
+- **release:** Stop duplicating version in release binaries (#104) ([2a39975](2a399758a4928b40af291a0eca1aad18a95ac753))
+
+### Features
+
+- **update:** Check GitHub for newer releases and hint in footer (#105) ([cfcd6b6](cfcd6b6371ad2c93f875fd83876daee2b8288cda))
+
 ## [0.3.2] - 2026-06-29
 
 ### Documentation

@@ -15,12 +15,13 @@ const devVersion = "dev"
 var version = devVersion //nolint:gochecknoglobals // must be a var so -ldflags -X can override it at link time
 var branch = ""          //nolint:gochecknoglobals // must be a var so -ldflags -X can override it at link time
 
-// Get returns the application version, optionally suffixed with the branch
-// name when available (e.g. "abc1234-dirty (feat/my-feature)").
-// When not set via -ldflags, the commit hash is read from the VCS info
-// embedded by the Go toolchain (Go 1.18+).
+// Get returns the application version for display, optionally suffixed with the
+// branch name when one is set (e.g. "abc1234-dirty (feat/my-feature)"). It uses
+// the release version from Version; for an unversioned local build, it falls
+// back to the commit hash read from the VCS info embedded by the Go toolchain
+// (Go 1.18+).
 func Get() string {
-	v := version
+	v := Version()
 
 	if v == devVersion {
 		v = commitFromBuildInfo()
@@ -33,11 +34,37 @@ func Get() string {
 	return v
 }
 
-// Version returns the raw build version string injected via -ldflags
-// (e.g. "v0.3.2"), or "dev" for an unversioned build. Unlike Get, it never
-// includes the branch suffix — useful for comparing against released tags.
+// Version returns the release version without the branch suffix — useful for
+// comparing against released tags. It prefers the value injected via -ldflags
+// (e.g. "v0.3.2"); failing that, it reads the module version embedded by the Go
+// toolchain (set when installed via `go install module@vX.Y.Z`). It returns
+// "dev" for an unversioned build (e.g., a plain `go build` from a checkout).
 func Version() string {
+	if version != devVersion {
+		return version
+	}
+
+	if m := moduleVersion(); m != "" {
+		return m
+	}
+
 	return version
+}
+
+// moduleVersion returns the main module's version from the embedded build info,
+// or "" when it is unavailable (e.g. "(devel)" for a local build).
+func moduleVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+
+	v := info.Main.Version
+	if v == "" || v == "(devel)" {
+		return ""
+	}
+
+	return v
 }
 
 func commitFromBuildInfo() string {

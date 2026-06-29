@@ -12,24 +12,19 @@ GoPowerDNS-Admin is a modern, web-based administration UI for PowerDNS, written 
 
 [![GoPowerDNS-Admin dashboard](screenshots/dashboard.jpg)](https://demo.gopowerdnsadmin.org/login)
 
-> **[▶ Try the live demo](https://demo.gopowerdnsadmin.org/login)** — resets daily; sign in with `admin` / `changeme`.
+> **[▶ Try the live demo](#live-demo)** — no install required.
 
 ## Why GoPowerDNS-Admin?
 
 A lightweight, easy-to-deploy alternative to the original Python [PowerDNS-Admin](https://github.com/PowerDNS-Admin/PowerDNS-Admin), rebuilt in Go with a focus on simple operation:
-
-- **Single static binary** — no Python runtime, virtualenv, or system packages to manage. Drop in one file (or one container) and run.
-- **Pure-Go SQLite** — run with zero external database (no CGO, no C toolchain), or connect MySQL/MariaDB or PostgreSQL when you need it.
-- **Runs anywhere** — prebuilt binaries and multi-arch container images for amd64, arm64, and armv7 (happy on a Raspberry Pi).
-- **Modern UI** — AdminLTE 4 / Bootstrap 5 with reactive Alpine.js components.
-- **Batteries included** — RBAC, OIDC/LDAP/TOTP auth, an audit log with undo, auto-PTR, and DNSSEC-aware editing.
-- **Actively maintained** — regular tagged releases and a live, daily-reset demo.
 
 |                      | GoPowerDNS-Admin                          | PowerDNS-Admin (Python)         |
 | -------------------- | ----------------------------------------- | ------------------------------- |
 | Built with           | Go                                        | Python / Flask                  |
 | Deployment artifact  | Single self-contained binary or container | Python environment or container |
 | Zero-config local DB | Pure-Go SQLite (no CGO / C toolchain)     | SQLite via Python               |
+
+Prebuilt binaries and multi-arch container images (amd64, arm64, armv7) make it easy to run anywhere, including a Raspberry Pi. Beyond easier deployment, it's batteries-included — RBAC, OIDC/LDAP/TOTP authentication, an audit log with undo, auto-PTR, and DNSSEC-aware editing. See [Key Features](#key-features) for the full list.
 
 ## Documentation
 
@@ -50,14 +45,11 @@ The demo resets automatically every day at midnight UTC. Feel free to create zon
 
 Two sample zones (`example.com` and `example.org`) with a variety of record types, plus a reverse zone (`203.0.113.in-addr.arpa`), are pre-populated on each reset so there is something to explore immediately.
 
-## Status: Pre-1.0
-
-Core features are functional and stable. As a pre-1.0 project, minor interfaces or configuration details may still change between minor releases. Bug reports and feedback are welcome — please open an issue.
-
 ## Key Features
 
 - Zone and record management (create, edit, and manage DNS records)
 - Forward and reverse zone creation with automatic CIDR-to-zone-name conversion for IPv4 and IPv6
+- Reverse-zone search by hostname or IP — on the Reverse IPv4/IPv6 dashboard tabs, find the zone owning a PTR by typing the target hostname or the IP address (full or partial), not just the reversed zone name
 - Duplicate zone detection with a direct link to the existing zone
 - Auto-PTR: automatically create, update, and delete PTR records in the matching reverse zone when A/AAAA records change (per-zone opt-in, disabled automatically on reverse and Slave zones)
 - Cross-zone hint badges in the record list: A/AAAA records link to their PTR entry; PTR records link back to the forward record — clicking navigates to and highlights the target row
@@ -71,6 +63,7 @@ Core features are functional and stable. As a pre-1.0 project, minor interfaces 
 - Zone tag-based access control
 - Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
 - Admin-configurable TTL presets shown as a dropdown in the record modal
+- Configurable branding — custom product name, logo, and favicons (SVG + PNG); set live from the admin UI, or seeded from `main.toml`
 - DNSSEC-managed records automatically hidden from the zone editor and dashboard
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
@@ -194,6 +187,7 @@ The zone editor provides a full-featured DNS record management interface:
 - Pagination position is preserved across **Save Changes** and **Discard** — editing a record on a later page returns you to that same page after the list reloads
 - Record table scrolls horizontally on narrow screens instead of overflowing; long values (e.g. large TXT records) truncate with the full value on hover
 - Collapsible zone settings card (SOA-EDIT-API, kind, masters, Auto-PTR toggle)
+- SOA-EDIT-API selector (INCREASE / EPOCH / OFF) with a warning when set to **OFF**, since PowerDNS then will not auto-update the zone serial
 - DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
 - SOA record is protected — it can be viewed but not deleted or overwritten via the record modal
 - Admin-configurable TTL presets available as a dropdown in the record modal (see TTL Presets below)
@@ -226,6 +220,16 @@ The role editor groups permissions by resource with icon badges and tri-state to
 
 - Each resource group shows a count badge and an **All** toggle (checked / indeterminate / unchecked)
 - **Select All** / **Deselect All** buttons apply across all groups at once
+
+## Branding
+
+Customize the UI with a custom product name, logo, and favicons:
+
+- **Product name** — shown in the sidebar, login, and 2FA pages (defaults to the configured title)
+- **Logo** — sidebar and login header image (SVG, PNG, JPEG, GIF, WebP, or ICO)
+- **Favicons** — separate SVG and PNG favicons, each of which must be square
+
+Set these live from the admin UI at **Settings → Branding** (`/admin/settings/branding`) — assets can be uploaded (max 1 MB each) or referenced by a same-origin URL, and changes apply immediately without a restart. The `[branding]` section in `main.toml` provides the startup defaults (applied on restart) and is overridden by anything set in the admin UI.
 
 ## Activity Log & Undo
 
@@ -325,7 +329,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.3.0
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.3.1
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```
@@ -382,20 +386,17 @@ docker run -d \
   ...
 ```
 
-## Background & Inspiration
-
-The idea for this Go-based version came from the PowerDNS-Admin project (https://github.com/PowerDNS-Admin/PowerDNS-Admin), which is not further developed. This repository provides a Go implementation that follows similar goals while evolving independently.
-
 ## Configuration Highlights
 
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.
 - A `[pdns]` section in `main.toml` (or via `GPDNS_PDNS_*` env vars) can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur.
 - Authentication supports Local DB, OIDC, and LDAP; see `internal/config/structs.go` for the available fields.
+- Configuration is validated at startup — the app fails fast with a clear error on placeholder or missing secrets, an invalid database or ACME setup, or incomplete OIDC settings.
 
 ## Contributing
 
-Contributions are welcome! Given the rapid pace of changes, please open an issue or draft PR early to align on direction.
+Contributions are welcome! Please read the [contributing guide](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) before opening a pull request. For anything beyond a small fix, open an issue first to align on direction. For security issues, follow the [Security Policy](SECURITY.md).
 
 ## License
 
-This project is licensed under the terms specified in the `LICENSE` file.
+This project is licensed under the [MIT License](LICENSE).

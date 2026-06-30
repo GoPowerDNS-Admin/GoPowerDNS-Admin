@@ -30,10 +30,10 @@ Manage zones, records, and users from a clean Go-powered interface.
 <div class="hx-mt-6"></div>
 
 {{< hextra/feature-grid >}}
-{{< hextra/feature-card title="Zone & Record Management" subtitle="Create, edit, and delete DNS records with a reactive UI. No full page reloads." >}}
-{{< hextra/feature-card title="Auto-PTR" subtitle="Automatically manage PTR records in reverse zones when A/AAAA records change." >}}
-{{< hextra/feature-card title="Multi-Auth" subtitle="Local accounts with TOTP, OpenID Connect, and LDAP — enable any combination." >}}
-{{< hextra/feature-card title="RBAC" subtitle="Fine-grained role-based access control with zone tag restrictions per user or group." >}}
-{{< hextra/feature-card title="Activity Log & Undo" subtitle="Every change is recorded with a before/after diff. Undo record changes and zone deletes." >}}
-{{< hextra/feature-card title="Pure Go" subtitle="No CGO, no C toolchain required. SQLite, MySQL/MariaDB, and PostgreSQL supported." >}}
+{{< hextra/feature-card icon="server" title="Zone & Record Management" subtitle="Create, edit, and delete DNS records with a reactive UI. No full page reloads." >}}
+{{< hextra/feature-card icon="refresh" title="Auto-PTR" subtitle="Automatically manage PTR records in reverse zones when A/AAAA records change." >}}
+{{< hextra/feature-card icon="key" title="Multi-Auth" subtitle="Local accounts with TOTP, OpenID Connect, and LDAP — enable any combination." >}}
+{{< hextra/feature-card icon="shield-check" title="RBAC" subtitle="Fine-grained role-based access control with zone tag restrictions per user or group." >}}
+{{< hextra/feature-card icon="rewind" title="Activity Log & Undo" subtitle="Every change is recorded with a before/after diff. Undo record changes and zone deletes." >}}
+{{< hextra/feature-card icon="code" title="Pure Go" subtitle="No CGO, no C toolchain required. SQLite, MySQL/MariaDB, and PostgreSQL supported." >}}
 {{< /hextra/feature-grid >}}

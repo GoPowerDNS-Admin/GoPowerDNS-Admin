@@ -1,0 +1,22 @@
+/* GoPowerDNS-Admin docs — brand overrides.
+   Hextra derives its full primary palette from these three HSL variables.
+   PowerDNS red. */
+
+:root {
+  --primary-hue: 354deg;
+  --primary-saturation: 70%;
+  --primary-lightness: 48%;
+}
+
+.dark {
+  /* Lighter + slightly more saturated so links stay legible on dark backgrounds. */
+  --primary-hue: 354deg;
+  --primary-saturation: 75%;
+  --primary-lightness: 62%;
+}
+
+/* Give the navbar logo a touch of breathing room and keep it crisp. */
+.hextra-navbar img {
+  height: 1.6rem;
+  width: auto;
+}

@@ -17,6 +17,11 @@ All significant user actions are recorded in the activity log, accessible at **A
 | Zone settings updated   | Before/after diff of changed fields      |
 | Zone deleted            | Full zone snapshot (all RRsets) for undo |
 | Records changed         | Per-RRset before/after diff              |
+| Record change undone    | The record change that was reverted      |
+| Zone deletion undone    | The recreated zone                       |
+
+Undo operations are themselves recorded as `record_undone` and
+`zone_deleted_undone` events, so the log always shows who reverted what.
 
 ## Browsing the log
 

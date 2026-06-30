@@ -17,15 +17,13 @@ Users can enable TOTP for their own account:
 
 ## Admin enforcement
 
-Admins can require all local users to enroll TOTP before accessing the application. Configure in `main.toml`:
+Enforcement is **per-user**, not a global config option. An admin can require a
+specific user to use TOTP by enabling the **TOTP Required** flag when creating or
+editing that user under **Admin → Users → Edit**.
 
-```toml
-[auth.local]
-Enabled         = true
-TOTPEnforced    = true
-```
-
-When enforcement is on, users without TOTP configured are redirected to the enrollment page on their next login.
+When the flag is set, the user is redirected to the enrollment page on their next
+login and cannot proceed until they have configured an authenticator. A user
+cannot disable TOTP on their own account while the flag is enforced.
 
 ## Recovery
 

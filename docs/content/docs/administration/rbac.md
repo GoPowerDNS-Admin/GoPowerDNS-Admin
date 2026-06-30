@@ -8,11 +8,13 @@ GoPowerDNS-Admin uses role-based access control (RBAC). Roles are assigned to us
 
 ## Built-in roles
 
-| Role     | Description                              |
-| -------- | ---------------------------------------- |
-| `admin`  | Full access to all features and settings |
-| `user`   | Can manage zones and records             |
-| `viewer` | Read-only access to zones and records    |
+Three roles are seeded on first run:
+
+| Role     | Description                              | Permissions                                                                                        |
+| -------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `admin`  | Full access to all features and settings | Every permission                                                                                   |
+| `user`   | Can manage zones and records             | `dashboard.view`, `zone.create`, `zone.read`, `zone.update`, `zone.delete`, `zone.list`, `admin.activity.log` |
+| `viewer` | Read-only access to zones and records    | `dashboard.view`, `zone.read`, `zone.list`, `admin.server.config`, `admin.activity.log`            |
 
 ## Role editor
 
@@ -24,15 +26,27 @@ Navigate to **Admin → Roles**. Permissions are grouped by resource with icon b
 
 ## Permissions
 
-Permissions follow the pattern `resource.action`, for example:
+Permissions follow the pattern `resource.action`. The full set:
 
-- `zone.view`, `zone.create`, `zone.edit`, `zone.delete`
-- `admin.users`, `admin.roles`, `admin.activity.log`, `admin.activity.log.undo`
+| Group        | Permissions                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------- |
+| Dashboard    | `dashboard.view`                                                                                              |
+| Zones        | `zone.create`, `zone.read`, `zone.update`, `zone.delete`, `zone.list`                                         |
+| Admin        | `admin.settings`, `admin.server.config`, `admin.pdns.server`, `admin.zone.records`, `admin.users`, `admin.roles`, `admin.groups`, `admin.group.mappings`, `admin.tags`, `admin.zone.tags`, `admin.ttl.presets`, `admin.branding` |
+| Activity log | `admin.activity.log`, `admin.activity.log.undo`                                                               |
+
+{{< callout >}}
+The actions are `read` and `update` — not `view`/`edit`. So a read-only grant is
+`zone.read`, and editing records is `zone.update`.
+{{< /callout >}}
 
 ## Groups
 
-Users can be assigned to groups; permissions are resolved as the union of all role assignments across the user's individual roles and group roles.
+Users can be assigned to groups; permissions are resolved as the union of all role
+assignments across the user's individual roles and group roles. Groups also
+provide the bridge for external identity providers: see
+[Group Mappings](/docs/administration/group-mappings) for mapping OIDC/LDAP groups to roles.
 
 ## Zone tag access control
 
-Restrict which zones a user or group can see using zone tags. See [Zone Tags](zone-tags).
+Restrict which zones a user or group can see using zone tags. See [Zone Tags](/docs/administration/zone-tags).

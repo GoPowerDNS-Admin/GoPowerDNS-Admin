@@ -14,7 +14,7 @@ When **Auto-PTR** is enabled and you save A or AAAA record changes, the applicat
 2. **Creates or replaces** a PTR record pointing to the record's FQDN for every new IP.
 3. **Deletes** the PTR record for every IP that was removed — but only if it still points to the same FQDN. If the PTR was manually changed to point elsewhere, it is left untouched.
 
-All PTR operations are recorded in the [activity log](../administration/activity-log).
+All PTR operations are recorded in the [activity log](/docs/administration/activity-log).
 
 ## Enabling Auto-PTR
 
@@ -33,6 +33,12 @@ If Auto-PTR is enabled but no reverse zone exists in PowerDNS for a given IP, a 
 
 ```
 Auto-PTR: no reverse zone found for 192.0.2.1
+```
+
+If several addresses lack a reverse zone, they are listed together, comma-separated:
+
+```
+Auto-PTR: no reverse zone found for 192.0.2.1, 192.0.2.2
 ```
 
 No PTR record is created in this case. Create the appropriate reverse zone first, then re-save the A/AAAA record.

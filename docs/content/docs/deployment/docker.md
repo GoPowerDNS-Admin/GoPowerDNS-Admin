@@ -52,9 +52,25 @@ services:
     depends_on:
       - powerdns
 
+  powerdns:
+    image: powerdns/pdns-auth-49:4.9.6
+    ports:
+      - "5300:53/udp"
+      - "5300:53/tcp"
+    command:
+      - "--api=yes"
+      - "--api-key=changeme"
+      - "--webserver=yes"
+      - "--webserver-address=0.0.0.0"
+      - "--webserver-port=8081"
+      - "--webserver-allow-from=0.0.0.0/0"
+
 volumes:
   gopowerdns-data:
 ```
+
+The `GPDNS_PDNS_*` environment variables bootstrap the PowerDNS connection on
+first startup; `APIKEY` must match the `--api-key` you pass to PowerDNS.
 
 ## Build locally
 

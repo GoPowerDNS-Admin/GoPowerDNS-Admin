@@ -16,7 +16,7 @@ Manage zones, records, and users from a clean Go-powered interface.
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx-mb-12">
+<div class="hx:mb-12">
 {{< hextra/hero-button text="Get Started" link="docs/getting-started" >}}
 {{< hextra/hero-button text="Live Demo" link="https://demo.gopowerdnsadmin.org/login" style="secondary" >}}
 </div>

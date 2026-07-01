@@ -16,7 +16,9 @@ services:
       - "--default-soa-edit=INCEPTION-INCREMENT"
 
   app:
-    image: ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.2.0
+    # Floating stable tag: the release workflow re-points `latest` to each
+    # non-prerelease release, so the nightly reset pulls the newest version.
+    image: ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
     pull_policy: always
     restart: unless-stopped
     depends_on:

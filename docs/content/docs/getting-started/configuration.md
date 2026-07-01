@@ -2,7 +2,7 @@
 title: Configuration
 weight: 2
 prev: /docs/getting-started/installation
-next: /docs/getting-started/first-run
+next: /docs/getting-started/powerdns
 ---
 
 Configuration is read from a TOML file, with **environment variables** taking
@@ -170,6 +170,10 @@ fields are set and no PowerDNS server is already configured in the database, the
 connection is seeded automatically — handy for demo or automated deployments
 where the admin UI can't be used for initial setup. Otherwise, configure it from
 the UI after first login (see [First Run](/docs/getting-started/first-run)).
+
+The PowerDNS server itself must have its API enabled and reachable for any of
+this to work — see [PowerDNS Server](/docs/getting-started/powerdns) for the
+required `pdns.conf` settings.
 
 ```toml
 [pdns]

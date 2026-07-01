@@ -1,5 +1,6 @@
 ---
 title: OpenID Connect
+description: "Set up OpenID Connect (OIDC) single sign-on in GoPowerDNS-Admin — provider URL, client credentials, scopes, and group claims."
 weight: 3
 prev: /docs/authentication/totp
 next: /docs/authentication/ldap

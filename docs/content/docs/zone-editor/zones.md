@@ -1,5 +1,6 @@
 ---
 title: Managing Zones
+description: "Create, edit, and delete DNS zones in GoPowerDNS-Admin, including zone kind, SOA-EDIT-API, and master servers."
 weight: 1
 next: /docs/zone-editor/records
 ---

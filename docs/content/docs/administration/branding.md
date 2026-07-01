@@ -1,5 +1,6 @@
 ---
 title: Branding
+description: "Customize the GoPowerDNS-Admin product name, logo, and favicon from configuration or the Branding settings page."
 weight: 6
 prev: /docs/administration/group-mappings
 ---

@@ -1,5 +1,6 @@
 ---
 title: Docker
+description: "Run GoPowerDNS-Admin with Docker — published images, volumes, environment variables, and a Compose stack with PowerDNS."
 weight: 1
 next: /docs/deployment/tls
 ---

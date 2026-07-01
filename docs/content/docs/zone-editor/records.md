@@ -1,5 +1,6 @@
 ---
 title: Managing Records
+description: "Create, edit, and delete DNS records in GoPowerDNS-Admin with a reactive UI and no full page reloads."
 weight: 2
 next: /docs/zone-editor/auto-ptr
 prev: /docs/zone-editor/zones

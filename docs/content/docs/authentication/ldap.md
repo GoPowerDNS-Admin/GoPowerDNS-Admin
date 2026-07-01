@@ -1,5 +1,6 @@
 ---
 title: LDAP
+description: "Configure LDAP authentication in GoPowerDNS-Admin — bind settings, user filters, StartTLS, and group mapping."
 weight: 4
 prev: /docs/authentication/oidc
 ---

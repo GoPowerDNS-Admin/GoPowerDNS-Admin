@@ -1,5 +1,6 @@
 ---
 title: Installation
+description: "Install GoPowerDNS-Admin using the Docker image, a prebuilt binary, or from source — prerequisites and supported platforms."
 weight: 1
 next: /docs/getting-started/configuration
 ---

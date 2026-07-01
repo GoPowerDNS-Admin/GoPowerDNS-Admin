@@ -1,5 +1,6 @@
 ---
 title: GoPowerDNS-Admin
+description: "GoPowerDNS-Admin is a modern web-based administration UI for PowerDNS — manage DNS zones, records, and users with RBAC, multi-auth, and an activity log."
 layout: hextra-home
 ---
 

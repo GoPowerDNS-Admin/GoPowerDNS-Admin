@@ -1,5 +1,6 @@
 ---
 title: Configuration
+description: "Configure GoPowerDNS-Admin with TOML and environment variables — web server, database, authentication, PowerDNS, and branding settings."
 weight: 2
 prev: /docs/getting-started/installation
 next: /docs/getting-started/powerdns

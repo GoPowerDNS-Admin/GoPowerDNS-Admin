@@ -1,5 +1,6 @@
 ---
 title: TTL Presets
+description: "Define reusable TTL presets in GoPowerDNS-Admin so editors pick consistent record TTLs from a dropdown."
 weight: 4
 prev: /docs/administration/activity-log
 next: /docs/administration/group-mappings

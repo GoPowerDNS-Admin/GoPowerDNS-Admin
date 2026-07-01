@@ -1,5 +1,6 @@
 ---
 title: Zone Tags
+description: "Organize zones with tags in GoPowerDNS-Admin and use them to scope role-based access for users and groups."
 weight: 2
 prev: /docs/administration/rbac
 next: /docs/administration/activity-log

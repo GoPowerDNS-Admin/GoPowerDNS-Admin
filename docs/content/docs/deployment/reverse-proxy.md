@@ -1,5 +1,6 @@
 ---
 title: Reverse Proxy
+description: "Run GoPowerDNS-Admin behind a reverse proxy — forwarded headers, public base URL, and trusted-proxy configuration."
 weight: 3
 prev: /docs/deployment/tls
 ---

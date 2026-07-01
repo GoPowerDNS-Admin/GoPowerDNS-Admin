@@ -1,5 +1,6 @@
 ---
 title: TLS / HTTPS
+description: "Serve GoPowerDNS-Admin over HTTPS — built-in TLS, automatic ACME / Let's Encrypt certificates, or termination upstream."
 weight: 2
 prev: /docs/deployment/docker
 next: /docs/deployment/reverse-proxy

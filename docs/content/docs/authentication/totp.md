@@ -1,5 +1,6 @@
 ---
 title: TOTP (2FA)
+description: "Enable TOTP two-factor authentication (2FA) for local GoPowerDNS-Admin accounts using any authenticator app."
 weight: 2
 prev: /docs/authentication/local
 next: /docs/authentication/oidc

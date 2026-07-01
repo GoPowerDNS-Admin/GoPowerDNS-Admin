@@ -1,5 +1,6 @@
 ---
 title: Activity Log
+description: "Track every change in GoPowerDNS-Admin with the activity log — view before/after diffs of zone and record changes and undo them."
 weight: 3
 prev: /docs/administration/zone-tags
 next: /docs/administration/ttl-presets

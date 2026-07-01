@@ -1,5 +1,6 @@
 ---
 title: PowerDNS Server
+description: "Configure your PowerDNS authoritative server's API so GoPowerDNS-Admin can connect — api-key, webserver, and webserver-allow-from."
 weight: 3
 prev: /docs/getting-started/configuration
 next: /docs/getting-started/first-run

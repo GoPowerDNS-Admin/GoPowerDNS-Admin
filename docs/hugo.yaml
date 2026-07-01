@@ -29,6 +29,11 @@ markup:
 params:
   description: "Web-based administration UI for PowerDNS, written in Go."
 
+  # Default Open Graph / social-share image (used when a page sets no images).
+  # 1200x630 PNG card — the format social/search crawlers expect.
+  images:
+    - img/og-card.png
+
   navbar:
     displayTitle: true
     displayLogo: true

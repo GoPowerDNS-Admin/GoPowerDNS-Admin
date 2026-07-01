@@ -1,5 +1,6 @@
 ---
 title: Auto-PTR
+description: "Automatically create and update PTR records in reverse zones when A/AAAA records change, using GoPowerDNS-Admin Auto-PTR."
 weight: 3
 prev: /docs/zone-editor/records
 ---

@@ -1,5 +1,6 @@
 ---
 title: Deployment
+description: "Deploy GoPowerDNS-Admin as a Docker container, standalone binary, or behind a reverse proxy, with built-in or upstream TLS."
 weight: 4
 ---
 

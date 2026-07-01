@@ -1,5 +1,6 @@
 ---
 title: Roles & Permissions
+description: "Configure role-based access control in GoPowerDNS-Admin — define roles, assign fine-grained permissions, and restrict users to zone tags."
 weight: 1
 next: /docs/administration/zone-tags
 ---

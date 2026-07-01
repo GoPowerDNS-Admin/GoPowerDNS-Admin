@@ -1,5 +1,6 @@
 ---
 title: Getting Started
+description: "Get started with GoPowerDNS-Admin — install via Docker or binary, configure it, connect PowerDNS, and log in."
 weight: 1
 ---
 

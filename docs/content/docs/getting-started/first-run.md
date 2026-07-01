@@ -1,5 +1,6 @@
 ---
 title: First Run
+description: "First run of GoPowerDNS-Admin — the default admin login, connecting to PowerDNS, and verifying the health check."
 weight: 4
 prev: /docs/getting-started/powerdns
 ---

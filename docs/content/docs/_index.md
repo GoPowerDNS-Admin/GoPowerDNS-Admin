@@ -1,5 +1,6 @@
 ---
 title: Documentation
+description: "Documentation for GoPowerDNS-Admin: install and configure the web UI for PowerDNS, plus zone editing, authentication, deployment, and administration guides."
 weight: 1
 ---
 

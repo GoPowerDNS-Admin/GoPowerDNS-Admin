@@ -1,5 +1,6 @@
 ---
 title: Authentication
+description: "Authentication in GoPowerDNS-Admin — local accounts with TOTP, OpenID Connect (OIDC), and LDAP, enabled in any combination."
 weight: 3
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: Local Accounts
+description: "Manage local database accounts in GoPowerDNS-Admin, including Argon2 password hashing and optional TOTP two-factor auth."
 weight: 1
 next: /docs/authentication/totp
 ---

@@ -1,5 +1,6 @@
 ---
 title: Group Mappings
+description: "Map OIDC and LDAP groups to GoPowerDNS-Admin roles to assign permissions automatically when users log in."
 weight: 5
 prev: /docs/administration/ttl-presets
 next: /docs/administration/branding

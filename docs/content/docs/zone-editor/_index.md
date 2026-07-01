@@ -1,5 +1,6 @@
 ---
 title: Zone Editor
+description: "Manage DNS zones and records in the GoPowerDNS-Admin zone editor, with automatic PTR handling for reverse zones."
 weight: 2
 ---
 

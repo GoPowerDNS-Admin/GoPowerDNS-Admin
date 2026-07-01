@@ -1,7 +1,7 @@
 ---
 title: First Run
-weight: 3
-prev: /docs/getting-started/configuration
+weight: 4
+prev: /docs/getting-started/powerdns
 ---
 
 ## Default credentials
@@ -18,6 +18,9 @@ Change the admin password immediately after your first login.
 {{< /callout >}}
 
 ## Connecting to PowerDNS
+
+Make sure your PowerDNS server has its API enabled and reachable first — see
+[PowerDNS Server](/docs/getting-started/powerdns).
 
 If you did not set the `[pdns]` bootstrap section in `main.toml`, connect via the UI:
 

@@ -2,12 +2,46 @@
 title: Configuration
 weight: 2
 prev: /docs/getting-started/installation
-next: /docs/getting-started/first-run
+next: /docs/getting-started/powerdns
 ---
 
-Configuration is read from TOML files. By default the application loads
-`etc/main.toml`. You can point it at an **overlay file** to override only the
-keys you care about — the overlay is merged on top of `main.toml`:
+Configuration is read from a TOML file, with **environment variables** taking
+the highest priority. Every setting has an env-var override, so a container
+deployment can be configured entirely without editing files — see
+[Environment variable overrides](#environment-variable-overrides) below.
+
+The config file lives at `/etc/go-pdns/main.toml` in the Docker image (mount
+your own there, read-only). For a binary or source checkout it defaults to
+`etc/main.toml`, or you can pass a path explicitly.
+
+## Quick start
+
+**Docker / binary** — set the essentials with environment variables and let
+SQLite handle storage. The `GPDNS_PDNS_*` variables bootstrap the PowerDNS
+connection on first startup:
+
+```bash
+docker run -d \
+  --name gopowerdns-admin \
+  -p 8080:8080 \
+  -v gopowerdns-data:/var/lib/go-pdns \
+  -e GPDNS_WEBSERVER_COOKIEENCRYPTIONKEY="replace_with_a_random_string_of_at_least_32_chars" \
+  -e GPDNS_WEBSERVER_ARGON2SALT="replace_with_a_random_salt" \
+  -e GPDNS_DB_NAME="/var/lib/go-pdns/go-pdns.db" \
+  -e GPDNS_PDNS_APISERVERURL="http://powerdns:8081" \
+  -e GPDNS_PDNS_APIKEY="changeme" \
+  -e GPDNS_PDNS_VHOST="localhost" \
+  ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
+```
+
+Prefer a file? Mount your own `main.toml` at `/etc/go-pdns/` (or edit
+`etc/main.toml` next to the binary). The keys are documented below.
+
+## Config file and overlays (development)
+
+When running from source you can point the app at an **overlay file** to
+override only the keys you care about — the overlay is merged on top of
+`main.toml`:
 
 ```bash
 go run . start                       # loads etc/main.toml
@@ -16,11 +50,7 @@ go run . start etc/local/dev.toml    # loads etc/main.toml, then merges dev.toml
 
 When an overlay path like `etc/local/dev.toml` is given, `main.toml` is derived
 from its grandparent directory (`etc/main.toml`) and loaded first, then the
-overlay is merged. Environment variables always take the highest priority.
-
-## Quick start
-
-Copy the shipped config and create a local overlay for your changes:
+overlay is merged. A common workflow:
 
 ```bash
 mkdir -p etc/local
@@ -140,6 +170,10 @@ fields are set and no PowerDNS server is already configured in the database, the
 connection is seeded automatically — handy for demo or automated deployments
 where the admin UI can't be used for initial setup. Otherwise, configure it from
 the UI after first login (see [First Run](/docs/getting-started/first-run)).
+
+The PowerDNS server itself must have its API enabled and reachable for any of
+this to work — see [PowerDNS Server](/docs/getting-started/powerdns) for the
+required `pdns.conf` settings.
 
 ```toml
 [pdns]

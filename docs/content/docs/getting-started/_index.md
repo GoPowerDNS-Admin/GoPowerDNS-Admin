@@ -3,4 +3,6 @@ title: Getting Started
 weight: 1
 ---
 
-GoPowerDNS-Admin requires Go (no C toolchain) and an accessible PowerDNS instance. The quickest path to a running instance is Docker Compose for PowerDNS plus `go run` for the admin UI.
+GoPowerDNS-Admin needs an accessible PowerDNS authoritative server with the API enabled, plus a database (SQLite works out of the box). The quickest way to get running is the published Docker image — pull it, point it at your PowerDNS, and log in.
+
+Prefer a plain binary? Grab a release build instead. Contributing to the project or want to run from source? See [From source](/docs/getting-started/installation#from-source-development), which covers the Go toolchain and development mode.

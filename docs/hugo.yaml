@@ -30,10 +30,9 @@ params:
   description: "Web-based administration UI for PowerDNS, written in Go."
 
   # Default Open Graph / social-share image (used when a page sets no images).
-  # TODO: replace with a proper 1200x630 PNG card — SVG is poorly supported by
-  # most social/search crawlers, so previews may not render until then.
+  # 1200x630 PNG card — the format social/search crawlers expect.
   images:
-    - img/powerdns_logo_icon.svg
+    - img/og-card.png
 
   navbar:
     displayTitle: true

@@ -16,12 +16,10 @@ Manage zones, records, and users from a clean Go-powered interface.
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx-mb-6">
+<div class="hx-mb-12">
 {{< hextra/hero-button text="Get Started" link="docs/getting-started" >}}
 {{< hextra/hero-button text="Live Demo" link="https://demo.gopowerdnsadmin.org/login" style="secondary" >}}
 </div>
-
-<div class="hx-mt-6"></div>
 
 {{< hextra/feature-grid >}}
 {{< hextra/feature-card icon="server" title="Zone & Record Management" subtitle="Create, edit, and delete DNS records with a reactive UI. No full page reloads." >}}

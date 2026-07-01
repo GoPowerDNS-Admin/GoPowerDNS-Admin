@@ -8,5 +8,8 @@ cd "$(dirname "$0")"
 
 echo "[$(date)] Resetting demo..."
 podman compose down -v
+# Pull the newest stable image (compose pins the floating `latest` tag) so the
+# nightly reset also upgrades the demo to the most recent release.
+podman compose pull
 podman compose up -d
-echo "[$(date)] Reset complete."
+echo "[$(date)] Reset complete (running $(podman image inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/gopowerdns-admin/gopowerdns-admin:latest 2>/dev/null || echo unknown))."

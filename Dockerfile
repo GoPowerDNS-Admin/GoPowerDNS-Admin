@@ -19,6 +19,13 @@ RUN CGO_ENABLED=0 GOOS=linux \
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM alpine:3
 
+LABEL org.opencontainers.image.title="GoPowerDNS-Admin" \
+      org.opencontainers.image.description="A modern, web-based administration UI for PowerDNS, written in Go. Manage forward and reverse zones and records, configure your PowerDNS server, and authenticate via local accounts, OIDC, or LDAP." \
+      org.opencontainers.image.source="https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin" \
+      org.opencontainers.image.url="https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin" \
+      org.opencontainers.image.documentation="https://docs.gopowerdnsadmin.org" \
+      org.opencontainers.image.licenses="MIT"
+
 # ca-certificates: needed for ACME/Let's Encrypt and OIDC provider connections.
 # tzdata: allows the container timezone to be set via TZ env var.
 RUN apk add --no-cache ca-certificates tzdata \

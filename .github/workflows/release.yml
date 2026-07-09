@@ -191,17 +191,32 @@ jobs:
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v6
+        env:
+          # Annotate the manifest list (image index) itself. GHCR reads the
+          # package description from the index annotation, not the per-arch
+          # image config labels.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
           images: ghcr.io/${{ env.REGISTRY_OWNER }}/gopowerdns-admin
+          annotations: |
+            org.opencontainers.image.description=A modern, web-based administration UI for PowerDNS, written in Go. Manage forward and reverse zones and records, configure your PowerDNS server, and authenticate via local accounts, OIDC, or LDAP.
           tags: |
             type=raw,value=${{ env.RELEASE_TAG }}
             type=raw,value=latest,enable=${{ !contains(env.RELEASE_TAG, '-alpha') && !contains(env.RELEASE_TAG, '-beta') && !contains(env.RELEASE_TAG, '-rc') }}
 
       - name: Create and push manifest
         working-directory: /tmp/digests
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
         run: |
+          annotation_args=()
+          while IFS= read -r annotation; do
+            [ -n "$annotation" ] && annotation_args+=(--annotation "$annotation")
+          done <<< "$ANNOTATIONS"
+
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            "${annotation_args[@]}" \
             $(printf 'ghcr.io/${{ env.REGISTRY_OWNER }}/gopowerdns-admin@sha256:%s ' *)
 
   release:

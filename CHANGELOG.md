@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.4] - 2026-07-09
+
+### Bug Fixes
+
+- **dashboard:** Clear persisted filters when resetting (#111) ([cae4817](cae48175292770bfb47ba65d6b299ef3f70ae61d))
+
+### Documentation
+
+- Correct config/auth reference and restyle the docs site (#107) ([db7697e](db7697ee4b08b69d2eeb50f59462b410ee222aaa))
+- **getting-started:** Reorient onboarding around Docker/binary for admins (#109) ([bcb0007](bcb00077dbf58b610d208555cad813dcc69bbd65))
+- **seo:** Per-page meta descriptions and social share card (#110) ([82e0e77](82e0e77c78488c5b036bf5e19caa5177dfd4f16a))
+
 ## [0.3.3] - 2026-06-29
 
 ### Bug Fixes

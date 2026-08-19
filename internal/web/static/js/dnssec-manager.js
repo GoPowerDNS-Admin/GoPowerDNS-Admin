@@ -4,13 +4,13 @@
  * Mounted on the DNSSEC card via x-data="dnssecManager('<zone>')".
  * Communicates with the JSON endpoints under /zone/edit/:name/dnssec.
  */
-function dnssecManager(zoneName) {
+function dnssecManager(zoneName, initialEnabled) {
     return {
         zoneName,
         loaded: false,
         error: null,
         busy: false,
-        enabled: false,
+        enabled: !!initialEnabled,
         keys: [],
         pendingDeleteKeyID: null,
         _deleteModal: null,

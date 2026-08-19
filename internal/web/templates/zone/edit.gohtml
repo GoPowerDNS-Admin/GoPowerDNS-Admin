@@ -175,6 +175,213 @@
                     </div>
                     <!--end::Zone Settings Card-->
 
+                    <!--begin::DNSSEC Card (Native and Master zones only)-->
+                    {{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
+                    <div class="card card-warning card-outline mb-4" id="dnssec-card"
+                         x-data="dnssecManager('{{.Form.Name}}')" x-init="init()">
+                        <!--begin::Header-->
+                        <div class="card-header d-flex align-items-center">
+                            <div class="card-title mb-0 me-2">
+                                <i class="bi bi-shield-lock me-1"></i> DNSSEC
+                            </div>
+                            <template x-if="loaded && enabled">
+                                <span class="badge bg-success ms-1"><i class="bi bi-shield-check me-1"></i>Enabled</span>
+                            </template>
+                            <template x-if="loaded && !enabled">
+                                <span class="badge bg-secondary ms-1">Disabled</span>
+                            </template>
+                            <div class="card-tools ms-auto">
+                                <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse" title="Expand / Collapse">
+                                    <i data-lte-icon="expand" class="bi bi-plus-lg"></i>
+                                    <i data-lte-icon="collapse" class="bi bi-dash-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!--end::Header-->
+                        <!--begin::Body-->
+                        <div class="card-body">
+                            <!-- Loading spinner -->
+                            <template x-if="!loaded">
+                                <div class="text-center py-3">
+                                    <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+                                    Loading DNSSEC status…
+                                </div>
+                            </template>
+
+                            <!-- Error -->
+                            <template x-if="loaded && error">
+                                <div class="alert alert-danger mb-0" x-text="error"></div>
+                            </template>
+
+                            <!-- Disabled state -->
+                            <template x-if="loaded && !error && !enabled">
+                                <div>
+                                    <div class="callout callout-warning">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        DNSSEC is <strong>not enabled</strong> for this zone.
+                                        Enabling it will generate a Combined Signing Key (CSK) using the PowerDNS server default algorithm.
+                                    </div>
+                                    <button class="btn btn-warning" @click="enableDNSSEC()" :disabled="busy">
+                                        <span x-show="busy" class="spinner-border spinner-border-sm me-1"></span>
+                                        <i x-show="!busy" class="bi bi-shield-plus me-1"></i>
+                                        Enable DNSSEC
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Enabled state: key table -->
+                            <template x-if="loaded && !error && enabled">
+                                <div>
+                                    <div class="table-responsive mb-3">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Type</th>
+                                                    <th>Algorithm</th>
+                                                    <th>Bits</th>
+                                                    <th>Active</th>
+                                                    <th>Published</th>
+                                                    <th>DS Records</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="key in keys" :key="key.id">
+                                                    <tr>
+                                                        <td x-text="key.id" class="text-muted small align-middle"></td>
+                                                        <td class="align-middle">
+                                                            <span class="badge bg-light text-dark border text-uppercase" x-text="key.key_type"></span>
+                                                        </td>
+                                                        <td class="align-middle" x-text="key.algorithm"></td>
+                                                        <td class="align-middle" x-text="key.bits || '—'"></td>
+                                                        <td class="align-middle">
+                                                            <span :class="key.active ? 'badge bg-success' : 'badge bg-danger'"
+                                                                  x-text="key.active ? 'Active' : 'Inactive'"></span>
+                                                        </td>
+                                                        <td class="align-middle">
+                                                            <span :class="key.published ? 'badge bg-success' : 'badge bg-secondary'"
+                                                                  x-text="key.published ? 'Published' : 'Hidden'"></span>
+                                                        </td>
+                                                        <td class="align-middle">
+                                                            <template x-if="key.ds && key.ds.length > 0">
+                                                                <button class="btn btn-sm btn-outline-secondary"
+                                                                        @click="showDS(key)"
+                                                                        title="View DS records">
+                                                                    <i class="bi bi-clipboard me-1"></i>DS
+                                                                </button>
+                                                            </template>
+                                                            <template x-if="!key.ds || key.ds.length === 0">
+                                                                <span class="text-muted small">—</span>
+                                                            </template>
+                                                        </td>
+                                                        <td class="align-middle text-end">
+                                                            <div class="dropdown">
+                                                                <button type="button" class="btn btn-sm btn-light"
+                                                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                                                        data-bs-boundary="viewport">
+                                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                                </button>
+                                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                                    <li>
+                                                                        <button class="dropdown-item" type="button"
+                                                                                @click="toggleActive(key)">
+                                                                            <i class="bi me-2"
+                                                                               :class="key.active ? 'bi-pause-circle text-warning' : 'bi-play-circle text-success'"></i>
+                                                                            <span x-text="key.active ? 'Deactivate' : 'Activate'"></span>
+                                                                        </button>
+                                                                    </li>
+                                                                    <li>
+                                                                        <button class="dropdown-item" type="button"
+                                                                                @click="togglePublished(key)">
+                                                                            <i class="bi me-2"
+                                                                               :class="key.published ? 'bi-eye-slash text-warning' : 'bi-eye text-success'"></i>
+                                                                            <span x-text="key.published ? 'Unpublish' : 'Publish'"></span>
+                                                                        </button>
+                                                                    </li>
+                                                                    <li><hr class="dropdown-divider"></li>
+                                                                    <li>
+                                                                        <button class="dropdown-item text-danger" type="button"
+                                                                                @click="confirmDeleteKey(key)">
+                                                                            <i class="bi bi-trash me-2"></i>Delete Key
+                                                                        </button>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @click="disableDNSSEC()" :disabled="busy">
+                                            <span x-show="busy" class="spinner-border spinner-border-sm me-1"></span>
+                                            <i x-show="!busy" class="bi bi-shield-x me-1"></i>
+                                            Disable DNSSEC
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <!--end::Body-->
+                    </div>
+                    <!--end::DNSSEC Card-->
+
+                    <!-- DS Records Modal -->
+                    <div class="modal fade" id="dsModal" tabindex="-1" aria-labelledby="dsModalLabel">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="dsModalLabel">
+                                        <i class="bi bi-clipboard me-1"></i> DS Records
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body" id="ds-modal-body">
+                                    <!-- filled by JS -->
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Key Confirm Modal -->
+                    <div class="modal fade" id="deleteKeyModal" tabindex="-1" aria-labelledby="deleteKeyModalLabel">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="deleteKeyModalLabel">
+                                        <i class="bi bi-exclamation-triangle me-1"></i> Delete Cryptokey
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="callout callout-warning">
+                                        Deleting this key is <strong>irreversible</strong>.
+                                        If it is the only active signing key, DNSSEC will stop working for this zone.
+                                        Ensure any DS records in the parent zone are removed first.
+                                    </div>
+                                    <p class="mb-0">Key ID: <strong x-text="pendingDeleteKeyID"></strong></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-danger" @click="deleteKey()">
+                                        <i class="bi bi-trash me-1"></i> Delete Key
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script src="/static/js/dnssec-manager.js"></script>
+                    {{end}}
+                    <!--end::DNSSEC Card-->
+
                     {{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
                     <!--begin::Alpine zone editor — wraps DNS records card + modals-->
                     <script type="application/json" id="zone-data">{{.InitDataJSON}}</script>
@@ -193,7 +400,7 @@
                                     <span class="badge bg-secondary" x-text="filteredRecords.length"></span>
                                     {{if .Zone}}
                                     <span class="text-muted small ms-1">
-                                        {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}{{if .DNSSECEnabled}} · <span class="text-success"><i class="bi bi-shield-check"></i> DNSSEC</span>{{end}}
+                                        {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}
                                     </span>
                                     {{end}}
                                 </div>

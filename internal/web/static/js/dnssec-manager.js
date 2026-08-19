@@ -147,28 +147,51 @@ function dnssecManager(zoneName) {
             const body = document.getElementById('ds-modal-body');
             if (!body) return;
 
-            if (!key.ds || key.ds.length === 0) {
-                body.innerHTML = '<p class="text-muted">No DS records available for this key.</p>';
-            } else {
-                const rows = key.ds.map(ds => `
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control form-control-sm font-monospace" value="${escapeHtml(ds)}" readonly>
-                        <button class="btn btn-sm btn-outline-secondary" type="button"
-                                onclick="navigator.clipboard.writeText(${JSON.stringify(ds)}).then(()=>showToast('Copied!','success'))">
-                            <i class="bi bi-clipboard"></i>
-                        </button>
-                    </div>`).join('');
+            // Clear previous content and listeners
+            body.replaceChildren();
 
-                body.innerHTML = `
-                    <p class="text-muted small mb-2">
-                        Add these DS records to your registrar or parent zone to complete the chain of trust.
-                    </p>
-                    ${rows}
-                    <p class="text-muted small mt-2 mb-0">
-                        Key ID: <strong>${key.id}</strong> &mdash;
-                        Type: <strong class="text-uppercase">${escapeHtml(key.key_type)}</strong> &mdash;
-                        Algorithm: <strong>${escapeHtml(key.algorithm)}</strong>
-                    </p>`;
+            if (!key.ds || key.ds.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'text-muted';
+                empty.textContent = 'No DS records available for this key.';
+                body.appendChild(empty);
+            } else {
+                const intro = document.createElement('p');
+                intro.className = 'text-muted small mb-2';
+                intro.textContent = 'Add these DS records to your registrar or parent zone to complete the chain of trust.';
+                body.appendChild(intro);
+
+                key.ds.forEach(ds => {
+                    const group = document.createElement('div');
+                    group.className = 'input-group mb-2';
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'form-control form-control-sm font-monospace';
+                    input.value = ds;
+                    input.readOnly = true;
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm btn-outline-secondary';
+                    btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                    btn.addEventListener('click', () => {
+                        navigator.clipboard.writeText(ds).then(() => {
+                            showToast('Copied!', 'success');
+                        }).catch(() => {
+                            showToast('Copy failed — select and copy manually.', 'warning');
+                        });
+                    });
+
+                    group.appendChild(input);
+                    group.appendChild(btn);
+                    body.appendChild(group);
+                });
+
+                const meta = document.createElement('p');
+                meta.className = 'text-muted small mt-2 mb-0';
+                meta.innerHTML = `Key ID: <strong>${key.id}</strong> &mdash; Type: <strong class="text-uppercase">${escapeHtml(key.key_type)}</strong> &mdash; Algorithm: <strong>${escapeHtml(key.algorithm)}</strong>`;
+                body.appendChild(meta);
             }
 
             if (!this._dsModal) {

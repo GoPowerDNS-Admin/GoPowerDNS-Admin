@@ -16,8 +16,11 @@ function dnssecManager(zoneName) {
         _deleteModal: null,
         _dsModal: null,
 
-        async init() {
-            await this.loadKeys();
+        async onToggle() {
+            // Load on first expand only; subsequent toggles reuse cached state.
+            if (!this.loaded) {
+                await this.loadKeys();
+            }
         },
 
         baseUrl() {

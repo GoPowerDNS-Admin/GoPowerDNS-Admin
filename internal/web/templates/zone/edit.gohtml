@@ -177,8 +177,8 @@
 
                     <!--begin::DNSSEC Card (Native and Master zones only)-->
                     {{if or (eq .Form.Kind "Native") (eq .Form.Kind "Master")}}
-                    <div class="card card-warning card-outline mb-4" id="dnssec-card"
-                         x-data="dnssecManager('{{.Form.Name}}')" x-init="init()">
+                    <div class="card card-warning card-outline mb-4 collapsed-card" id="dnssec-card"
+                         x-data="dnssecManager('{{.Form.Name}}')">
                         <!--begin::Header-->
                         <div class="card-header d-flex align-items-center">
                             <div class="card-title mb-0 me-2">
@@ -187,11 +187,12 @@
                             <template x-if="loaded && enabled">
                                 <span class="badge bg-success ms-1"><i class="bi bi-shield-check me-1"></i>Enabled</span>
                             </template>
-                            <template x-if="loaded && !enabled">
+                            <template x-if="loaded && !enabled && !error">
                                 <span class="badge bg-secondary ms-1">Disabled</span>
                             </template>
                             <div class="card-tools ms-auto">
-                                <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse" title="Expand / Collapse">
+                                <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse"
+                                        title="Expand / Collapse" @click="onToggle()">
                                     <i data-lte-icon="expand" class="bi bi-plus-lg"></i>
                                     <i data-lte-icon="collapse" class="bi bi-dash-lg"></i>
                                 </button>
@@ -216,7 +217,7 @@
                             <!-- Disabled state -->
                             <template x-if="loaded && !error && !enabled">
                                 <div>
-                                    <div class="callout callout-warning">
+                                    <div class="callout callout-warning mb-3">
                                         <i class="bi bi-info-circle me-1"></i>
                                         DNSSEC is <strong>not enabled</strong> for this zone.
                                         Enabling it will generate a Combined Signing Key (CSK) using the PowerDNS server default algorithm.

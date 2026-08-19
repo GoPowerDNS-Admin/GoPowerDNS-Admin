@@ -11,8 +11,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+      image_tag: ${{ steps.info.outputs.image_tag }}
+      owner: ${{ steps.info.outputs.owner }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: info
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="${{ github.ref_name }}-${SHORT_SHA}"
+          # Sanitise branch name for use as a Docker tag (/ -> -, lowercase)
+          IMAGE_TAG=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "version=${VERSION}"    >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "owner=${OWNER}"        >> "$GITHUB_OUTPUT"
+
+  build-binaries:
     name: ${{ matrix.name }}
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -64,11 +88,10 @@ jobs:
           GOARM: ${{ matrix.goarm }}
           CGO_ENABLED: "0"
         run: |
-          VERSION="${{ github.ref_name }}-$(git rev-parse --short HEAD)"
           mkdir -p dist
           go build -v \
             -ldflags="-s -w \
-              -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${VERSION} \
+              -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.version=${{ needs.prepare.outputs.version }} \
               -X github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/version.branch=${{ github.ref_name }}" \
             -o dist/${{ matrix.artifact }} \
             .
@@ -78,3 +101,101 @@ jobs:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.artifact }}
           retention-days: 7
+
+  build-docker:
+    name: Docker / ${{ matrix.platform }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            artifact: digest-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            artifact: digest-arm64
+          - platform: linux/arm/v7
+            runner: ubuntu-24.04-arm
+            artifact: digest-armv7
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          build-args: |
+            VERSION=${{ needs.prepare.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.platform }}-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}-${{ github.ref_name }}
+          outputs: type=image,name=ghcr.io/${{ needs.prepare.outputs.owner }}/gopowerdns-admin,push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  merge-docker:
+    name: Docker / merge manifest
+    needs: [prepare, build-docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ needs.prepare.outputs.owner }}/gopowerdns-admin:${{ needs.prepare.outputs.image_tag }} \
+            $(printf 'ghcr.io/${{ needs.prepare.outputs.owner }}/gopowerdns-admin@sha256:%s ' *)
+
+      - name: Image summary
+        run: |
+          echo "### Docker image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "docker pull ghcr.io/${{ needs.prepare.outputs.owner }}/gopowerdns-admin:${{ needs.prepare.outputs.image_tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"

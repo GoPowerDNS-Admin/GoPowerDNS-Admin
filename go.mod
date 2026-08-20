@@ -15,6 +15,7 @@ require (
 	github.com/gofiber/storage/postgres/v3 v3.6.2
 	github.com/gofiber/template/html/v3 v3.0.7
 	github.com/joeig/go-powerdns/v3 v3.23.0
+	github.com/miekg/dns v1.1.73
 	github.com/onsi/gomega v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.5.0

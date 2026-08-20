@@ -21,6 +21,11 @@ const (
 	ActionRecordChanged      = "record_changed"
 	ActionRecordUndone       = "record_undone"
 	ActionZoneDeletedUndone  = "zone_deleted_undone"
+	ActionDNSSECEnabled      = "dnssec_enabled"
+	ActionDNSSECDisabled     = "dnssec_disabled"
+	ActionDNSSECKeyCreated   = "dnssec_key_created"
+	ActionDNSSECKeyDeleted   = "dnssec_key_deleted"
+	ActionDNSSECKeyChanged   = "dnssec_key_changed"
 )
 
 // ResourceType constants categorize the resource affected by an action.

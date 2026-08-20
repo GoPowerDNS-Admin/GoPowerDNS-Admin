@@ -44,6 +44,7 @@ import (
 	profiletotp "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/profile/totp"
 	totphandler "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/totp"
 	zoneadd "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/add"
+	zonednssec "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/dnssec"
 	zoneedit "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/zone/edit"
 	accesslogmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/accesslog"
 	authmiddleware "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/middleware/auth"
@@ -320,6 +321,7 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 	ttlsettings.Handler.Init(app, cfg, db, authService)
 	zone.Handler.Init(app, cfg, db, authService)
 	zoneadd.Handler.Init(app, cfg, db, authService)
+	zonednssec.Handler.Init(app, cfg, db, authService)
 	zoneedit.Handler.Init(app, cfg, db, authService)
 	configuration.Handler.Init(app, cfg, db, authService)
 	group.Handler.Init(app, cfg, db, authService)

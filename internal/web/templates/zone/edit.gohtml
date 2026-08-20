@@ -316,14 +316,60 @@
                                         </table>
                                     </div>
 
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 flex-wrap">
                                         <button class="btn btn-outline-danger btn-sm"
                                                 @click="disableDNSSEC()" :disabled="busy">
                                             <span x-show="busy" class="spinner-border spinner-border-sm me-1"></span>
                                             <i x-show="!busy" class="bi bi-shield-x me-1"></i>
                                             Disable DNSSEC
                                         </button>
+                                        <button class="btn btn-outline-info btn-sm"
+                                                @click="checkChain()" :disabled="chainBusy">
+                                            <span x-show="chainBusy" class="spinner-border spinner-border-sm me-1"></span>
+                                            <i x-show="!chainBusy" class="bi bi-link-45deg me-1"></i>
+                                            Verify Trust Chain
+                                        </button>
                                     </div>
+
+                                    <!-- Trust chain results -->
+                                    <template x-if="chainError">
+                                        <div class="alert alert-danger mt-3 mb-0" x-text="chainError"></div>
+                                    </template>
+                                    <template x-if="chainResult">
+                                        <div class="mt-3">
+                                            <div :class="chainResult.valid ? 'alert alert-success mb-2' : 'alert alert-danger mb-2'">
+                                                <i :class="chainResult.valid ? 'bi bi-shield-check me-1' : 'bi bi-shield-x me-1'"></i>
+                                                <strong x-text="chainResult.valid ? 'Trust chain is valid.' : 'Trust chain is broken.'"></strong>
+                                                <span x-show="!chainResult.valid" class="ms-1" x-text="chainResult.reason"></span>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width:1%">Status</th>
+                                                            <th>Zone</th>
+                                                            <th>Detail</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template x-for="link in chainResult.links" :key="link.zone">
+                                                            <tr>
+                                                                <td class="align-middle text-center">
+                                                                    <i :class="{
+                                                                        'bi bi-check-circle-fill text-success': link.status === 'ok',
+                                                                        'bi bi-x-circle-fill text-danger': link.status === 'missing',
+                                                                        'bi bi-exclamation-circle-fill text-warning': link.status === 'error'
+                                                                    }"></i>
+                                                                </td>
+                                                                <td class="align-middle font-monospace small" x-text="link.zone"></td>
+                                                                <td class="align-middle small text-muted" x-text="link.detail"></td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                         </div>

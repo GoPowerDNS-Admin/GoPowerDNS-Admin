@@ -1,5 +1,5 @@
 /**
- * dnssecManager — Alpine.js component for DNSSEC lifecycle management (Phase 1).
+ * dnssecManager — Alpine.js component for DNSSEC lifecycle management.
  *
  * Mounted on the DNSSEC card via x-data="dnssecManager('<zone>')".
  * Communicates with the JSON endpoints under /zone/edit/:name/dnssec.
@@ -15,6 +15,11 @@ function dnssecManager(zoneName, initialEnabled) {
         pendingDeleteKeyID: null,
         _deleteModal: null,
         _dsModal: null,
+
+        // Trust chain state
+        chainBusy: false,
+        chainResult: null,
+        chainError: null,
 
         async onToggle() {
             // Load on first expand only; subsequent toggles reuse cached state.
@@ -146,11 +151,26 @@ function dnssecManager(zoneName, initialEnabled) {
             }
         },
 
+        async checkChain() {
+            this.chainBusy = true;
+            this.chainResult = null;
+            this.chainError = null;
+            try {
+                const r = await fetch(`${this.baseUrl()}/chain`);
+                const data = await r.json();
+                if (!data.success) throw new Error(data.message || 'Unknown error');
+                this.chainResult = data.chain;
+            } catch (e) {
+                this.chainError = 'Chain check failed: ' + e.message;
+            } finally {
+                this.chainBusy = false;
+            }
+        },
+
         showDS(key) {
             const body = document.getElementById('ds-modal-body');
             if (!body) return;
 
-            // Clear previous content and listeners
             body.replaceChildren();
 
             if (!key.ds || key.ds.length === 0) {
@@ -159,14 +179,50 @@ function dnssecManager(zoneName, initialEnabled) {
                 empty.textContent = 'No DS records available for this key.';
                 body.appendChild(empty);
             } else {
-                const intro = document.createElement('p');
-                intro.className = 'text-muted small mb-2';
-                intro.textContent = 'Add these DS records to your registrar or parent zone to complete the chain of trust.';
-                body.appendChild(intro);
+                // Best practices info box
+                const info = document.createElement('div');
+                info.className = 'alert alert-info small mb-3';
+                info.innerHTML =
+                    '<strong><i class="bi bi-info-circle me-1"></i>Best practice:</strong> ' +
+                    'Submit only the <strong>SHA-256 (type 2)</strong> DS record to your registrar. ' +
+                    'SHA-1 (type 1) is considered weak and most registries accept or prefer SHA-256 only. ' +
+                    'Submitting both is harmless but unnecessary. ' +
+                    'Never submit SHA-384 (type 4) unless explicitly required by your registry.';
+                body.appendChild(info);
 
                 key.ds.forEach(ds => {
+                    // DS format from PowerDNS: "<keytag> <algo> <digesttype> <digest>"
+                    // If the string contains "DS" (full zone-file format), find the offset;
+                    // otherwise treat it as the raw 4-field form.
+                    const parts = ds.trim().split(/\s+/);
+                    const dsIdx = parts.findIndex(p => p.toUpperCase() === 'DS');
+                    const base = dsIdx !== -1 ? dsIdx + 1 : 0;
+                    const digestType = parseInt(parts[base + 2], 10);
+
+                    const digestInfo = dsDigestInfo(digestType);
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'mb-3';
+
+                    // Label row
+                    const labelRow = document.createElement('div');
+                    labelRow.className = 'd-flex align-items-center gap-2 mb-1';
+
+                    const badge = document.createElement('span');
+                    badge.className = `badge ${digestInfo.badgeClass}`;
+                    badge.textContent = digestInfo.label;
+                    labelRow.appendChild(badge);
+
+                    const desc = document.createElement('span');
+                    desc.className = 'small text-muted';
+                    desc.textContent = digestInfo.description;
+                    labelRow.appendChild(desc);
+
+                    wrapper.appendChild(labelRow);
+
+                    // Input + copy button
                     const group = document.createElement('div');
-                    group.className = 'input-group mb-2';
+                    group.className = 'input-group';
 
                     const input = document.createElement('input');
                     input.type = 'text';
@@ -188,7 +244,8 @@ function dnssecManager(zoneName, initialEnabled) {
 
                     group.appendChild(input);
                     group.appendChild(btn);
-                    body.appendChild(group);
+                    wrapper.appendChild(group);
+                    body.appendChild(wrapper);
                 });
 
                 const meta = document.createElement('p');
@@ -211,4 +268,40 @@ function escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+// dsDigestInfo returns display metadata for a DS digest type number (RFC 4034 / IANA registry).
+function dsDigestInfo(type) {
+    switch (type) {
+        case 1:
+            return {
+                label: 'Type 1 — SHA-1',
+                badgeClass: 'bg-warning text-dark',
+                description: 'Deprecated — weak, avoid submitting to registrar',
+            };
+        case 2:
+            return {
+                label: 'Type 2 — SHA-256',
+                badgeClass: 'bg-success',
+                description: 'Recommended — submit this one to your registrar',
+            };
+        case 3:
+            return {
+                label: 'Type 3 — GOST R 34.11-94',
+                badgeClass: 'bg-secondary',
+                description: 'Obsolete — do not use',
+            };
+        case 4:
+            return {
+                label: 'Type 4 — SHA-384',
+                badgeClass: 'bg-info text-dark',
+                description: 'Stronger than SHA-256, but rarely required',
+            };
+        default:
+            return {
+                label: `Type ${isNaN(type) ? '?' : type}`,
+                badgeClass: 'bg-secondary',
+                description: 'Unknown digest type',
+            };
+    }
 }

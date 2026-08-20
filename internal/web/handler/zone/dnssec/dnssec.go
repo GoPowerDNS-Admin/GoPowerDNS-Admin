@@ -72,6 +72,9 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 
 	// POST /zone/edit/:name/dnssec/keys/:id/delete — delete a single key
 	app.Post(BasePath+"/keys/:id/delete", requireUpdate, s.DeleteKey)
+
+	// GET /zone/edit/:name/dnssec/chain — full trust chain verification
+	app.Get(BasePath+"/chain", requireUpdate, s.CheckChain)
 }
 
 // CryptokeyView is the JSON representation of a cryptokey sent to the frontend.

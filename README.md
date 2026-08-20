@@ -64,7 +64,10 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 - Activity/audit log with diff tracking, detail view, and undo support (record changes and zone deletes)
 - Admin-configurable TTL presets shown as a dropdown in the record modal
 - Configurable branding — custom product name, logo, and favicons (SVG + PNG); set live from the admin UI, or seeded from `main.toml`
-- DNSSEC-managed records automatically hidden from the zone editor and dashboard
+- Full DNSSEC lifecycle management per zone (Native and Master zones): enable/disable signing, view and copy DS records, toggle active/published state per key, delete individual keys — all from the zone editor
+  - DS records modal with per-digest-type badges (SHA-1 deprecated warning, SHA-256 recommended) and best-practice guidance so operators know exactly which record to submit to their registrar
+  - **Trust chain verification** — one-click full chain walk from the DNS root down to the zone, querying authoritative nameservers directly (bypasses caches); each delegation level reported as ok / missing / error with the DS record detail
+- DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) automatically hidden from the zone editor and dashboard to prevent accidental edits
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components

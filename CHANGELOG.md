@@ -4,17 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.4.0] - 2026-08-20
 
 ### Features
 
-- **dnssec:** DS records modal now shows a digest-type badge (SHA-1 deprecated, SHA-256 recommended) and a best-practice info box for each DS record, so operators know exactly which record to submit to their registrar
-- **dnssec:** Trust chain verification — one-click full chain walk from the DNS root to the zone, querying authoritative nameservers directly and reporting each delegation level as ok / missing / error with DS record detail
+- **dnssec:** Full DNSSEC lifecycle management — enable/disable signing, view and manage cryptokeys (activate, deactivate, publish, unpublish, delete), and display DS records per key (#118)
+- **dnssec:** DS records modal with per-digest-type badges (SHA-1 deprecated, SHA-256 recommended) and a best-practice info box so operators know exactly which record to submit to their registrar (#118)
+- **dnssec:** Trust chain verification — one-click full chain walk from the DNS root to the zone, querying authoritative nameservers directly and reporting each delegation level as ok / missing / error with DS record detail (#118)
 
 ### Documentation
 
-- **zone-editor:** Add DNSSEC page covering enable/disable, key management, DS record submission, digest-type guidance, and trust chain verification
-- **readme:** Expand DNSSEC feature bullets with DS digest guidance and trust chain verification
+- **zone-editor:** Add DNSSEC page covering enable/disable, key management, DS record submission, digest-type guidance, and trust chain verification (#118)
+- **readme:** Expand DNSSEC feature bullets with full lifecycle, DS digest guidance, and trust chain verification (#118)
 
 ## [0.3.4] - 2026-07-09
 

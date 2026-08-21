@@ -11,6 +11,34 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler"
 )
 
+// reconcileMembershipForUpdate applies the correct membership strategy for a group update:
+//   - local group: replace members from the submitted form;
+//   - local -> external conversion: clear members so the directory becomes the sole
+//     source of truth (repopulated on next login by SyncUserGroups);
+//   - already external: leave members untouched (owned by SyncUserGroups).
+//
+// It operates within the given transaction and does not commit.
+func (s *Service) reconcileMembershipForUpdate(
+	c fiber.Ctx, tx *gorm.DB, groupID uint, wasExternal, isExternal bool, input *formInput,
+) error {
+	if !isExternal {
+		return s.updateOrCreateGroupMembership(c, tx, groupID, input)
+	}
+
+	// Group is (now) external. Only clear rows when it just converted from local;
+	// a group that was already external keeps its synced membership untouched.
+	if !wasExternal {
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.UserGroup{}).Error; err != nil {
+			tx.Rollback()
+			log.Error().Err(err).Msg("failed to clear memberships on external conversion")
+
+			return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to update group members", nil)
+		}
+	}
+
+	return nil
+}
+
 // updateOrCreateGroupMembership replaces the membership rows for a group within the
 // given transaction. It does not commit; the caller owns the transaction lifecycle.
 //

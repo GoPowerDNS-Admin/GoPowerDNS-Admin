@@ -300,6 +300,71 @@ func TestUpdate_ExternalGroup_AllowsRoleMappingAndName(t *testing.T) {
 	g.Expect(mappedRoleID(t, db, grp.ID)).To(gomega.Equal(adminRole.ID))
 }
 
+// --- Local -> external conversion ---
+
+func TestUpdate_LocalToExternal_DoesNotWriteSubmittedMembers(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	role := createRole(t, db, "viewer")
+	u := createUser(t, db, "frank", role.ID)
+
+	grp := createGroup(t, db, "team", models.GroupSourceLocal)
+
+	app := newTestApp(t, db)
+
+	// Convert the local group to LDAP while also submitting members. The submitted
+	// members must NOT be written, otherwise they become phantom external memberships.
+	form := url.Values{
+		"name":        {"team"},
+		"source":      {"ldap"},
+		"external_id": {"cn=team,dc=example,dc=com"},
+		"user_ids":    {uintStr(u.ID)},
+	}
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d", Path, grp.ID), form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
+
+	var reloaded models.Group
+	g.Expect(db.First(&reloaded, grp.ID).Error).To(gomega.Succeed())
+	g.Expect(reloaded.Source).To(gomega.Equal(models.GroupSourceLDAP))
+	g.Expect(memberIDs(t, db, grp.ID)).To(gomega.BeEmpty())
+}
+
+func TestUpdate_LocalToExternal_ClearsExistingMembers(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	role := createRole(t, db, "viewer")
+	u := createUser(t, db, "grace", role.ID)
+
+	grp := createGroup(t, db, "team2", models.GroupSourceLocal)
+	addUserToGroup(t, db, u.ID, grp.ID) // pre-existing local member
+
+	app := newTestApp(t, db)
+
+	form := url.Values{
+		"name":        {"team2"},
+		"source":      {"oidc"},
+		"external_id": {"team2-claim"},
+	}
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d", Path, grp.ID), form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
+
+	var reloaded models.Group
+	g.Expect(db.First(&reloaded, grp.ID).Error).To(gomega.Succeed())
+	g.Expect(reloaded.Source).To(gomega.Equal(models.GroupSourceOIDC))
+	// Manual local members are dropped so the directory becomes the source of truth.
+	g.Expect(memberIDs(t, db, grp.ID)).To(gomega.BeEmpty())
+}
+
 // --- Create ---
 
 func TestCreate_LocalGroup_AddsMembership(t *testing.T) {

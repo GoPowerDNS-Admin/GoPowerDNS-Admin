@@ -552,18 +552,23 @@ func (s *Service) Update(c fiber.Ctx) error {
 	}
 
 	// External groups (LDAP/OIDC) are synchronized from the directory. Their identity
-	// fields (source, external id) form the sync key and must not be edited, and their
-	// membership is owned by SyncUserGroups — so we preserve both here regardless of
-	// what the form submitted.
-	isExternal := g.Source != models.GroupSourceLocal
+	// fields (source, external id) form the sync key and must not be edited once the
+	// group is external, and their membership is owned by SyncUserGroups.
+	wasExternal := g.Source != models.GroupSourceLocal
 
 	g.Name = input.Name
 	g.Description = input.Description
 
-	if !isExternal {
+	// Only a currently-local group may change its source / external id. An already
+	// external group keeps its stored identity regardless of what the form submitted.
+	if !wasExternal {
 		g.Source = models.GroupSource(input.Source)
 		g.ExternalID = input.ExternalID
 	}
+
+	// Decide membership handling from the final source, not the stored one, so that
+	// converting a local group to LDAP/OIDC does not write phantom memberships.
+	isExternal := g.Source != models.GroupSourceLocal
 
 	// Begin transaction
 	tx := s.db.Begin()
@@ -591,11 +596,8 @@ func (s *Service) Update(c fiber.Ctx) error {
 		return errMapping
 	}
 
-	// Only reconcile membership for local groups; external membership is owned by sync.
-	if !isExternal {
-		if errGMS := s.updateOrCreateGroupMembership(c, tx, g.ID, &input); errGMS != nil {
-			return errGMS
-		}
+	if errGMS := s.reconcileMembershipForUpdate(c, tx, g.ID, wasExternal, isExternal, &input); errGMS != nil {
+		return errGMS
 	}
 
 	if err = tx.Commit().Error; err != nil {

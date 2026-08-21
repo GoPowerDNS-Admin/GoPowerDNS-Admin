@@ -43,8 +43,18 @@ func CreatePostgres(dbCfg *config.Config) string {
 
 // CreateSQLite returns the SQLite database file path from the configuration.
 // Only cfg.DB.Name is used; host, port, user, and password are ignored.
+// This returns the bare path and is also used to derive sibling file names
+// (e.g. the sessions database), so it must not include DSN query parameters.
 func CreateSQLite(dbCfg *config.Config) string {
 	return dbCfg.DB.Name
+}
+
+// CreateSQLiteGorm returns the SQLite DSN used for the GORM connection. It enables
+// foreign key enforcement (off by default in SQLite) so the ON DELETE CASCADE /
+// RESTRICT constraints declared on the models are actually applied, matching the
+// behavior of the MySQL and PostgreSQL backends.
+func CreateSQLiteGorm(dbCfg *config.Config) string {
+	return CreateSQLite(dbCfg) + "?_pragma=foreign_keys(1)"
 }
 
 // CreatePostgresURL builds a PostgreSQL connection URL from the configuration.

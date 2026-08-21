@@ -104,7 +104,7 @@ func openDB(cfg *config.Config) (*gorm.DB, session.StorageBackend) {
 	case "sqlite":
 		log.Info().Msg("using SQLite database driver")
 
-		db, err = gorm.Open(gormsqlite.Open(dsn.CreateSQLite(cfg)), &gorm.Config{})
+		db, err = gorm.Open(gormsqlite.Open(dsn.CreateSQLiteGorm(cfg)), &gorm.Config{})
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to connect database")
 		}

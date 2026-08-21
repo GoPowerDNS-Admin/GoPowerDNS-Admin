@@ -67,7 +67,7 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="name" class="form-label">Name</label>
-                                    <input type="text" class="form-control" id="name" name="name" value="{{ .Group.Name }}" required maxlength="100">
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ .Group.Name }}" required maxlength="255">
                                 </div>
 
                                 <div class="col-md-6">
@@ -93,7 +93,7 @@
 
                                 <div class="col-md-6">
                                     <label for="external_id" class="form-label">External ID</label>
-                                    <input type="text" class="form-control" id="external_id" name="external_id" value="{{ .Group.ExternalID }}" maxlength="255" placeholder="External identifier (DN for LDAP, claim for OIDC)" {{ if $isExternal }}readonly{{ end }}>
+                                    <input type="text" class="form-control" id="external_id" name="external_id" value="{{ .Group.ExternalID }}" maxlength="512" placeholder="External identifier (DN for LDAP, claim for OIDC)" {{ if $isExternal }}readonly{{ end }}>
                                     <div id="external-id-help" class="form-text">{{ if $isExternal }}Locked — managed by the directory.{{ else }}Optional. Required when source is external.{{ end }}</div>
                                 </div>
 

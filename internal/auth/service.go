@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 
+	"github.com/go-ldap/ldap/v3"
 	"gorm.io/gorm"
 
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/models"
@@ -168,7 +169,7 @@ func (s *Service) SyncUserGroups(userID uint64, externalGroups []string, source 
 
 			err := tx.Where("external_id = ? AND source = ?", externalGroup, source).
 				FirstOrCreate(&group, models.Group{
-					Name:       externalGroup,
+					Name:       groupDisplayName(externalGroup, source),
 					ExternalID: externalGroup,
 					Source:     source,
 				}).Error
@@ -205,4 +206,22 @@ func (s *Service) AssignRoleToUser(userID uint64, roleID uint) error {
 	return s.db.Model(&models.User{}).
 		Where("id = ?", userID).
 		Update("role_id", roleID).Error
+}
+
+// groupDisplayName derives a human-friendly group name from an external group
+// identifier. For LDAP the identifier is a distinguished name, so the first RDN
+// value is used (e.g. "cn=dns-admins,ou=groups,dc=example,dc=com" -> "dns-admins"),
+// keeping the display name short while the full DN is retained in ExternalID.
+// OIDC/local identifiers are used verbatim.
+func groupDisplayName(external string, source models.GroupSource) string {
+	if source != models.GroupSourceLDAP {
+		return external
+	}
+
+	dn, err := ldap.ParseDN(external)
+	if err != nil || len(dn.RDNs) == 0 || len(dn.RDNs[0].Attributes) == 0 {
+		return external
+	}
+
+	return dn.RDNs[0].Attributes[0].Value
 }

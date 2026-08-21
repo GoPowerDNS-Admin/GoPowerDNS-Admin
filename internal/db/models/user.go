@@ -43,7 +43,8 @@ type User struct {
 	// AuthSource indicates how this user authenticates (local, oidc, or ldap).
 	AuthSource AuthSource `gorm:"type:varchar(20);not null;default:'local'"`
 	// ExternalID is the external identifier for OIDC (sub claim) or LDAP (DN) users.
-	ExternalID string `gorm:"size:255"`
+	// Sized to accommodate long LDAP distinguished names.
+	ExternalID string `gorm:"size:512"`
 	// TOTPSecret is the base32-encoded TOTP secret (local auth only).
 	TOTPSecret string `gorm:"size:64"`
 	// TOTPEnabled indicates TOTP has been set up and is active.

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -90,6 +91,54 @@ func newTestApp(t *testing.T, db *gorm.DB) *fiber.App {
 	app.Post(RouteDelete, s.Delete)
 
 	return app
+}
+
+// captureViews records the data map passed to Render so tests can assert on the
+// exact values a handler hands to the template (e.g. IsExternal, SelectedIDs).
+type captureViews struct {
+	mu       sync.Mutex
+	lastData any
+}
+
+func (v *captureViews) Load() error { return nil }
+
+func (v *captureViews) Render(w io.Writer, name string, data any, _ ...string) error {
+	v.mu.Lock()
+	v.lastData = data
+	v.mu.Unlock()
+
+	_, _ = io.WriteString(w, name)
+
+	return nil
+}
+
+func (v *captureViews) data() fiber.Map {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	m, _ := v.lastData.(fiber.Map)
+
+	return m
+}
+
+// newCaptureApp builds an app whose create/update routes use a capturing Views
+// engine, so tests can inspect the render data map on validation-error rerenders.
+func newCaptureApp(t *testing.T, db *gorm.DB) (*fiber.App, *captureViews) {
+	t.Helper()
+
+	views := &captureViews{}
+	app := fiber.New(fiber.Config{Views: views})
+
+	s := &Service{
+		cfg:       &config.Config{},
+		db:        db,
+		validator: validator.New(),
+	}
+
+	app.Post(Path, s.Create)
+	app.Post(RouteUpdate, s.Update)
+
+	return app, views
 }
 
 func createRole(t *testing.T, db *gorm.DB, name string) models.Role {
@@ -230,10 +279,10 @@ func TestUpdate_ExternalGroup_PreservesMembership(t *testing.T) {
 
 	app := newTestApp(t, db)
 
-	// Attacker/admin tries to swap membership to bob via a crafted POST.
+	// Attacker/admin tries to swap membership to bob via a crafted POST. The real UI
+	// disables the source field for external groups, so it is not submitted here.
 	form := url.Values{
 		"name":     {"cn=dns-admins,dc=example,dc=com"},
-		"source":   {"ldap"},
 		"user_ids": {uintStr(u2.ID)},
 	}
 
@@ -282,9 +331,9 @@ func TestUpdate_ExternalGroup_AllowsRoleMappingAndName(t *testing.T) {
 
 	app := newTestApp(t, db)
 
+	// The source field is disabled in the UI for external groups, so it is omitted.
 	form := url.Values{
 		"name":    {"DNS Admins"},
-		"source":  {"ldap"},
 		"role_id": {uintStr(uint64(adminRole.ID))},
 	}
 
@@ -419,4 +468,132 @@ func TestCreate_ExternalGroup_SkipsMembership(t *testing.T) {
 	g.Expect(db.Where("name = ?", "cn=new-ldap,dc=example,dc=com").First(&grp).Error).To(gomega.Succeed())
 	// Manual member seeding must be ignored for external groups.
 	g.Expect(memberIDs(t, db, grp.ID)).To(gomega.BeEmpty())
+}
+
+// --- External ID required for external sources (fix B) ---
+
+func TestCreate_ExternalGroup_RequiresExternalID(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	app := newTestApp(t, db)
+
+	// Selecting an external source without an external id must be rejected.
+	form := url.Values{
+		"name":   {"cn=blank,dc=example,dc=com"},
+		"source": {"ldap"},
+	}
+
+	resp := doPost(t, app, Path, form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
+
+	var count int64
+	db.Model(&models.Group{}).Where("name = ?", "cn=blank,dc=example,dc=com").Count(&count)
+	g.Expect(count).To(gomega.BeZero())
+}
+
+func TestUpdate_LocalToExternal_RequiresExternalID(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	role := createRole(t, db, "viewer")
+	u := createUser(t, db, "hank", role.ID)
+
+	grp := createGroup(t, db, "team", models.GroupSourceLocal)
+	addUserToGroup(t, db, u.ID, grp.ID)
+
+	app := newTestApp(t, db)
+
+	// Convert to LDAP but leave the external id blank — must be rejected, and the
+	// group must remain a valid local group with its membership intact.
+	form := url.Values{
+		"name":   {"team"},
+		"source": {"ldap"},
+	}
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d", Path, grp.ID), form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
+
+	var reloaded models.Group
+	g.Expect(db.First(&reloaded, grp.ID).Error).To(gomega.Succeed())
+	g.Expect(reloaded.Source).To(gomega.Equal(models.GroupSourceLocal))
+	g.Expect(memberIDs(t, db, grp.ID)).To(gomega.ConsistOf(u.ID))
+}
+
+// --- Validation-error rerender preserves external state (fix A) ---
+
+func TestUpdate_ExternalGroup_ValidationError_PreservesStateAndMembers(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	role := createRole(t, db, "viewer")
+	u := createUser(t, db, "ivy", role.ID)
+
+	grp := createGroup(t, db, "cn=team,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, u.ID, grp.ID)
+
+	app, views := newCaptureApp(t, db)
+
+	// Blank name fails validation. The source field is disabled in the UI, so it is
+	// not submitted (defaults to local) — the rerender must still treat the group as
+	// external and repopulate its synced members.
+	form := url.Values{
+		"name": {""},
+	}
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d", Path, grp.ID), form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
+
+	data := views.data()
+	g.Expect(data).NotTo(gomega.BeNil())
+	g.Expect(data["IsExternal"]).To(gomega.Equal(true))
+
+	grpData, ok := data["Group"].(models.Group)
+	g.Expect(ok).To(gomega.BeTrue())
+	g.Expect(grpData.Source).To(gomega.Equal(models.GroupSourceLDAP))
+	g.Expect(grpData.ExternalID).To(gomega.Equal("cn=team,dc=example,dc=com"))
+
+	selected, ok := data["SelectedIDs"].([]uint64)
+	g.Expect(ok).To(gomega.BeTrue())
+	g.Expect(selected).To(gomega.ConsistOf(u.ID))
+}
+
+func TestUpdate_LocalToExternal_ValidationError_StaysEditable(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	grp := createGroup(t, db, "team", models.GroupSourceLocal)
+
+	app, views := newCaptureApp(t, db)
+
+	// Converting local -> external with a blank external id fails validation. Because
+	// the stored group is still local, the rerender must remain editable so the admin
+	// can supply the required external id.
+	form := url.Values{
+		"name":   {"team"},
+		"source": {"ldap"},
+	}
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d", Path, grp.ID), form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusBadRequest))
+
+	data := views.data()
+	g.Expect(data).NotTo(gomega.BeNil())
+	g.Expect(data["IsExternal"]).To(gomega.Equal(false))
+
+	grpData, ok := data["Group"].(models.Group)
+	g.Expect(ok).To(gomega.BeTrue())
+	g.Expect(grpData.Source).To(gomega.Equal(models.GroupSourceLDAP))
 }

@@ -53,7 +53,7 @@
                             • Name is required. • For external sources (OIDC/LDAP), set the External ID. • Select users to add them to this group. • Optionally map a role so members inherit its permissions.
                         </p>
 
-                        {{ $isExternal := and (not .IsCreate) (ne .Group.Source "local") }}
+                        {{ $isExternal := and (not .IsCreate) .IsExternal }}
                         {{ if $isExternal }}
                         <div class="alert alert-info d-flex align-items-center" role="alert">
                             <i class="bi bi-info-circle me-2"></i>

@@ -3,6 +3,7 @@ package group
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
@@ -408,7 +409,7 @@ func (s *Service) Edit(c fiber.Ctx) error {
 	}
 
 	var g models.Group
-	if err := s.db.First(&g, id).Error; err != nil {
+	if err = s.db.First(&g, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).SendString(ErrGroupNotFound)
 		}
@@ -418,46 +419,58 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", ErrFailedLoadGroup, nil)
 	}
 
-	// Load all users
+	data, err := s.formContext(&g)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load group form context")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", ErrFailedLoadGroup, nil)
+	}
+
+	data["Navigation"] = editGroupNav(g.ID)
+	data["Group"] = g
+	data["IsCreate"] = false
+	data["IsExternal"] = g.Source != models.GroupSourceLocal
+
+	return c.Render(TemplateForm, data, handler.BaseLayout)
+}
+
+// editGroupNav builds the breadcrumb/navigation context for the edit-group page.
+func editGroupNav(groupID uint) *navigation.Context {
+	return navigation.NewContext(TitleEditGroup, NavSectionAdmin, NavEntityGroup).
+		AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
+		AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
+		AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
+		AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(groupID), 10)+"/edit", true)
+}
+
+// formContext loads the shared template data for the group create/edit form:
+// all users and roles, the group's current members, its mapped role, and its tags.
+func (s *Service) formContext(g *models.Group) (fiber.Map, error) {
 	var users []models.User
 	if err := s.db.Order(handler.OrderUsernameASC).Find(&users).Error; err != nil {
-		log.Error().Err(err).Msg("failed to load users")
-		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load users", nil)
+		return nil, fmt.Errorf("load users: %w", err)
 	}
 
-	// Load all roles
 	var roles []models.Role
 	if err := s.db.Order(handler.OrderNameASC).Find(&roles).Error; err != nil {
-		log.Error().Err(err).Msg("failed to load roles")
-		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load roles", nil)
+		return nil, fmt.Errorf("load roles: %w", err)
 	}
 
-	// Load current group members
 	var userGroups []models.UserGroup
 	if err := s.db.Where("group_id = ?", g.ID).Find(&userGroups).Error; err != nil {
-		log.Error().Err(err).Msg("failed to load group members")
-		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", "Failed to load group members", nil)
+		return nil, fmt.Errorf("load members: %w", err)
 	}
 
-	// Load group mapping (role assignment)
-	var groupMapping models.GroupMapping
-
-	var mappedRoleID uint
-	if err := s.db.Where("group_id = ?", g.ID).First(&groupMapping).Error; err == nil {
-		mappedRoleID = groupMapping.RoleID
-	}
-
-	// Create a slice of selected user IDs
 	selectedIDs := make([]uint64, 0, len(userGroups))
 	for i := range userGroups {
 		selectedIDs = append(selectedIDs, userGroups[i].UserID)
 	}
 
-	nav := navigation.NewContext(TitleEditGroup, NavSectionAdmin, NavEntityGroup).
-		AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
-		AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
-		AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
-		AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(g.ID), 10)+"/edit", true)
+	var mapping models.GroupMapping
+
+	var mappedRoleID uint
+	if err := s.db.Where("group_id = ?", g.ID).First(&mapping).Error; err == nil {
+		mappedRoleID = mapping.RoleID
+	}
 
 	var allTags []models.Tag
 	s.db.Order("name asc").Find(&allTags)
@@ -470,17 +483,14 @@ func (s *Service) Edit(c fiber.Ctx) error {
 		tagAssignedSet[assignedGroupTags[i].TagID] = true
 	}
 
-	return c.Render(TemplateForm, fiber.Map{
-		"Navigation":   nav,
-		"Group":        g,
-		"IsCreate":     false,
+	return fiber.Map{
 		"Users":        users,
 		"Roles":        roles,
 		"MappedRoleID": mappedRoleID,
 		"SelectedIDs":  selectedIDs,
 		"AllTags":      allTags,
 		"AssignedSet":  tagAssignedSet,
-	}, handler.BaseLayout)
+	}, nil
 }
 
 // Update handles updating an existing group.
@@ -502,6 +512,13 @@ func (s *Service) Update(c fiber.Ctx) error {
 
 		return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", ErrFailedLoadGroup, nil)
 	}
+
+	// External groups (LDAP/OIDC) are synchronized from the directory. Capture the
+	// stored state up front: their identity fields (source, external id) form the sync
+	// key and must not be edited once external, and their membership is owned by
+	// SyncUserGroups. This is derived from the stored source so it survives a disabled
+	// (unsubmitted) source field on validation-error rerenders.
+	wasExternal := g.Source != models.GroupSourceLocal
 
 	// Get user IDs from the form
 	userIDsBytes := c.Request().PostArgs().PeekMulti("user_ids")
@@ -531,30 +548,33 @@ func (s *Service) Update(c fiber.Ctx) error {
 	if errValidator := s.validator.Struct(input); errValidator != nil {
 		log.Warn().Err(errValidator).Msg("validation failed for update group")
 
-		nav := navigation.NewContext(TitleEditGroup, NavSectionAdmin, NavEntityGroup).
-			AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
-			AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
-			AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
-			AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(g.ID), 10)+"/edit", true)
-
-		// keep old values mixed with submitted
+		// Reflect submitted values for editable fields, but preserve the stored
+		// identity for external groups so the rerender keeps its read-only state
+		// (the disabled source field is not submitted).
 		g.Name = input.Name
-		g.ExternalID = input.ExternalID
-		g.Source = models.GroupSource(input.Source)
 		g.Description = input.Description
 
-		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, fiber.Map{
-			"Navigation": nav,
-			"Error":      ErrValidationPrefix + errValidator.Error(),
-			"Group":      g,
-			"IsCreate":   false,
-		}, handler.BaseLayout)
-	}
+		if !wasExternal {
+			g.Source = models.GroupSource(input.Source)
+			g.ExternalID = input.ExternalID
+		}
 
-	// External groups (LDAP/OIDC) are synchronized from the directory. Their identity
-	// fields (source, external id) form the sync key and must not be edited once the
-	// group is external, and their membership is owned by SyncUserGroups.
-	wasExternal := g.Source != models.GroupSourceLocal
+		data, ctxErr := s.formContext(&g)
+		if ctxErr != nil {
+			log.Error().Err(ctxErr).Msg("failed to load group form context")
+			return handler.RenderError(c, fiber.StatusInternalServerError, "Database Error", ErrFailedLoadGroup, nil)
+		}
+
+		data["Navigation"] = editGroupNav(g.ID)
+		data["Error"] = ErrValidationPrefix + errValidator.Error()
+		data["Group"] = g
+		data["IsCreate"] = false
+		// The lock reflects the stored state, so an in-progress local→external
+		// conversion stays editable (the user may still need to set the external id).
+		data["IsExternal"] = wasExternal
+
+		return c.Status(fiber.StatusBadRequest).Render(TemplateForm, data, handler.BaseLayout)
+	}
 
 	g.Name = input.Name
 	g.Description = input.Description
@@ -577,17 +597,12 @@ func (s *Service) Update(c fiber.Ctx) error {
 		tx.Rollback()
 		log.Error().Err(errSave).Msg("failed to update group")
 
-		nav := navigation.NewContext(TitleEditGroup, NavSectionAdmin, NavEntityGroup).
-			AddBreadcrumb(BreadcrumbHomeLbl, dashboard.Path, false).
-			AddBreadcrumb(BreadcrumbAdminLbl, HrefHash, false).
-			AddBreadcrumb(BreadcrumbGroupsLbl, Path, false).
-			AddBreadcrumb(BreadcrumbEditLbl, Path+"/"+strconv.FormatUint(uint64(g.ID), 10)+"/edit", true)
-
 		return c.Status(fiber.StatusInternalServerError).Render(TemplateForm, fiber.Map{
-			"Navigation": nav,
+			"Navigation": editGroupNav(g.ID),
 			"Error":      ErrFailedUpdateGroup,
 			"Group":      g,
 			"IsCreate":   false,
+			"IsExternal": wasExternal,
 		}, handler.BaseLayout)
 	}
 

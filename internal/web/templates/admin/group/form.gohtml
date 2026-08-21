@@ -53,6 +53,16 @@
                             • Name is required. • For external sources (OIDC/LDAP), set the External ID. • Select users to add them to this group. • Optionally map a role so members inherit its permissions.
                         </p>
 
+                        {{ $isExternal := and (not .IsCreate) (ne .Group.Source "local") }}
+                        {{ if $isExternal }}
+                        <div class="alert alert-info d-flex align-items-center" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <div>
+                                This is an externally-synced <strong>{{ .Group.Source }}</strong> group. Its source, external ID and membership are managed by the directory and reconciled on login — edit the role mapping and zone tags here.
+                            </div>
+                        </div>
+                        {{ end }}
+
                         <form method="post" action="{{ if .IsCreate }}/admin/group{{ else }}/admin/group/{{ .Group.ID }}{{ end }}">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -73,17 +83,18 @@
 
                                 <div class="col-md-6">
                                     <label for="source" class="form-label">Source</label>
-                                    <select id="source" name="source" class="form-select">
+                                    <select id="source" name="source" class="form-select" {{ if $isExternal }}disabled{{ end }}>
                                         <option value="local" {{ if eq .Group.Source "local" }}selected{{ end }}>Local</option>
                                         <option value="oidc" {{ if eq .Group.Source "oidc" }}selected{{ end }}>OIDC</option>
                                         <option value="ldap" {{ if eq .Group.Source "ldap" }}selected{{ end }}>LDAP</option>
                                     </select>
+                                    {{ if $isExternal }}<div class="form-text">Locked — managed by the directory.</div>{{ end }}
                                 </div>
 
                                 <div class="col-md-6">
                                     <label for="external_id" class="form-label">External ID</label>
-                                    <input type="text" class="form-control" id="external_id" name="external_id" value="{{ .Group.ExternalID }}" maxlength="255" placeholder="External identifier (DN for LDAP, claim for OIDC)">
-                                    <div class="form-text">Optional. Required when source is external.</div>
+                                    <input type="text" class="form-control" id="external_id" name="external_id" value="{{ .Group.ExternalID }}" maxlength="255" placeholder="External identifier (DN for LDAP, claim for OIDC)" {{ if $isExternal }}readonly{{ end }}>
+                                    <div class="form-text">{{ if $isExternal }}Locked — managed by the directory.{{ else }}Optional. Required when source is external.{{ end }}</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -94,7 +105,29 @@
                                 <div class="col-md-12">
                                     <label class="form-label">Group Members</label>
                                     <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
-                                        {{ if .Users }}
+                                        {{ if $isExternal }}
+                                            {{ $selectedIDs := .SelectedIDs }}
+                                            {{ $hasMembers := false }}
+                                            {{ range .Users }}
+                                                {{ $userID := .ID }}
+                                                {{ $username := .Username }}
+                                                {{ $email := .Email }}
+                                                {{ range $selectedIDs }}
+                                                    {{ if eq . $userID }}
+                                                        {{ $hasMembers = true }}
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="member-{{ $userID }}" checked disabled>
+                                                            <label class="form-check-label" for="member-{{ $userID }}">
+                                                                {{ $username }} <small class="text-muted">({{ $email }})</small>
+                                                            </label>
+                                                        </div>
+                                                    {{ end }}
+                                                {{ end }}
+                                            {{ end }}
+                                            {{ if not $hasMembers }}
+                                                <p class="text-muted mb-0">No members synced yet. Membership is populated when a matching user logs in.</p>
+                                            {{ end }}
+                                        {{ else if .Users }}
                                             {{ $selectedIDs := .SelectedIDs }}
                                             {{ range .Users }}
                                                 {{ $userID := .ID }}
@@ -115,7 +148,7 @@
                                             <p class="text-muted mb-0">No users available</p>
                                         {{ end }}
                                     </div>
-                                    <div class="form-text">Select users who should be members of this group</div>
+                                    <div class="form-text">{{ if $isExternal }}Membership is managed by {{ .Group.Source }} and synced on login.{{ else }}Select users who should be members of this group{{ end }}</div>
                                 </div>
                             </div>
 

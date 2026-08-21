@@ -366,22 +366,25 @@ func (s *Service) Create(c fiber.Ctx) error {
 		}
 	}
 
-	// Create user group memberships
-	for _, userIDStr := range input.UserIDs {
-		userID, err := strconv.ParseUint(userIDStr, 10, 64)
-		if err != nil {
-			continue // skip invalid IDs
-		}
+	// Create user group memberships. External groups (LDAP/OIDC) get their membership
+	// from directory sync on login, so manual seeding is intentionally skipped.
+	if g.Source == models.GroupSourceLocal {
+		for _, userIDStr := range input.UserIDs {
+			userID, err := strconv.ParseUint(userIDStr, 10, 64)
+			if err != nil {
+				continue // skip invalid IDs
+			}
 
-		userGroup := models.UserGroup{
-			UserID:  userID,
-			GroupID: g.ID,
-		}
-		if err := tx.Create(&userGroup).Error; err != nil {
-			tx.Rollback()
-			log.Error().Err(err).Msg("failed to add user to group")
+			userGroup := models.UserGroup{
+				UserID:  userID,
+				GroupID: g.ID,
+			}
+			if err := tx.Create(&userGroup).Error; err != nil {
+				tx.Rollback()
+				log.Error().Err(err).Msg("failed to add user to group")
 
-			return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to add users to group", nil)
+				return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to add users to group", nil)
+			}
 		}
 	}
 
@@ -548,10 +551,19 @@ func (s *Service) Update(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
+	// External groups (LDAP/OIDC) are synchronized from the directory. Their identity
+	// fields (source, external id) form the sync key and must not be edited, and their
+	// membership is owned by SyncUserGroups — so we preserve both here regardless of
+	// what the form submitted.
+	isExternal := g.Source != models.GroupSourceLocal
+
 	g.Name = input.Name
-	g.ExternalID = input.ExternalID
-	g.Source = models.GroupSource(input.Source)
 	g.Description = input.Description
+
+	if !isExternal {
+		g.Source = models.GroupSource(input.Source)
+		g.ExternalID = input.ExternalID
+	}
 
 	// Begin transaction
 	tx := s.db.Begin()
@@ -575,21 +587,20 @@ func (s *Service) Update(c fiber.Ctx) error {
 	}
 
 	// Update or create group mapping; RoleID == 0 means remove any existing mapping.
-	if input.RoleID > 0 {
-		if errUoCGM := s.updateOrCreateGroupMapping(c, tx, g.ID, input.RoleID); errUoCGM != nil {
-			return errUoCGM
-		}
-	} else {
-		if err := tx.Where("group_id = ?", g.ID).Delete(&models.GroupMapping{}).Error; err != nil {
-			tx.Rollback()
-			log.Error().Err(err).Msg("failed to remove group mapping")
+	if errMapping := s.reconcileGroupMapping(c, tx, g.ID, input.RoleID); errMapping != nil {
+		return errMapping
+	}
 
-			return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to remove group role", nil)
+	// Only reconcile membership for local groups; external membership is owned by sync.
+	if !isExternal {
+		if errGMS := s.updateOrCreateGroupMembership(c, tx, g.ID, &input); errGMS != nil {
+			return errGMS
 		}
 	}
 
-	if errGMS := s.updateOrCreateGroupMembership(c, tx, g.ID, &input); errGMS != nil {
-		return errGMS
+	if err = tx.Commit().Error; err != nil {
+		log.Error().Err(err).Msg("failed to commit transaction")
+		return handler.RenderError(c, fiber.StatusInternalServerError, "Save Failed", "Failed to update group", nil)
 	}
 
 	syncGroupTags(s.db, g.ID, parseGroupTagIDs(c))

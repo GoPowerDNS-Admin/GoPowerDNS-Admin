@@ -946,6 +946,37 @@ func TestDelete_PreventsGroupAdminDelete(t *testing.T) {
 	g.Expect(count).To(gomega.Equal(int64(1)))
 }
 
+// TestDelete_FailsClosedWhenGroupRoleCheckErrors ensures that if the inherited-admin
+// lookup fails (e.g. a transient DB/query error), deletion is aborted rather than
+// permitted, so the admin-protection guard cannot be bypassed.
+func TestDelete_FailsClosedWhenGroupRoleCheckErrors(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	initSessionStore()
+
+	viewerRole := createRole(t, db, "viewer")
+	u := createUser(t, db, "unverifiable", viewerRole.ID)
+
+	// Break the group-role lookup by removing a table the join depends on.
+	if err := db.Migrator().DropTable("group_mappings"); err != nil {
+		t.Fatalf("drop table: %v", err)
+	}
+
+	app := newTestApp(t, db)
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d/delete", Path, u.ID), nil)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	// The guard cannot verify inherited admin rights, so it must fail closed.
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusInternalServerError))
+
+	var count int64
+	db.Model(&models.User{}).Where("id = ?", u.ID).Count(&count)
+	g.Expect(count).To(gomega.Equal(int64(1)))
+}
+
 // TestDelete_AllowsNonAdminGroupRoleDelete ensures the group-role guard only blocks
 // admin inheritance, not any group role — a viewer-via-group user is still deletable.
 func TestDelete_AllowsNonAdminGroupRoleDelete(t *testing.T) {

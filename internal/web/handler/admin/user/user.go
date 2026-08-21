@@ -3,6 +3,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
@@ -514,14 +515,19 @@ func (s *Service) Delete(c fiber.Ctx) error {
 
 	// Prevent deleting admin users, whether the admin role is assigned directly
 	// or inherited via a group mapping (mirrors the disabled Delete button in the UI).
-	if user.Role.Name == "admin" || hasGroupRole(s.db, user.ID, "admin") {
-		nav := navigation.NewContext("Users", "admin", "user").
-			AddBreadcrumb("Home", dashboard.Path, false).
-			AddBreadcrumb("Admin", "#", false).
-			AddBreadcrumb("Users", Path, true)
+	inheritedAdmin, errRole := hasGroupRole(s.db, user.ID, "admin")
+	if errRole != nil {
+		// Fail closed: if the inherited-admin check cannot be verified, refuse the
+		// deletion rather than risk removing a privileged account on a query failure.
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateList, fiber.Map{
+			"Navigation": usersListNav(),
+			"Error":      "Could not verify user permissions; deletion aborted.",
+		}, handler.BaseLayout)
+	}
 
+	if user.Role.Name == "admin" || inheritedAdmin {
 		return c.Status(fiber.StatusForbidden).Render(TemplateList, fiber.Map{
-			"Navigation": nav,
+			"Navigation": usersListNav(),
 			"Error":      "Cannot delete admin users.",
 		}, handler.BaseLayout)
 	}
@@ -697,8 +703,18 @@ func loadGroupRoles(db *gorm.DB, users []models.User) map[uint64][]string {
 	return result
 }
 
+// usersListNav builds the breadcrumb/navigation context for the users list page.
+func usersListNav() *navigation.Context {
+	return navigation.NewContext("Users", "admin", "user").
+		AddBreadcrumb("Home", dashboard.Path, false).
+		AddBreadcrumb("Admin", "#", false).
+		AddBreadcrumb("Users", Path, true)
+}
+
 // hasGroupRole reports whether the user inherits the named role via any group mapping.
-func hasGroupRole(db *gorm.DB, userID uint64, roleName string) bool {
+// The error must be handled by the caller: for security guards, treat an error as
+// "cannot verify" and fail closed rather than assuming the role is absent.
+func hasGroupRole(db *gorm.DB, userID uint64, roleName string) (bool, error) {
 	var count int64
 
 	err := db.Table("roles").
@@ -710,8 +726,8 @@ func hasGroupRole(db *gorm.DB, userID uint64, roleName string) bool {
 		log.Error().Err(err).Uint64("user_id", userID).Str("role", roleName).
 			Msg("failed to check group role")
 
-		return false
+		return false, fmt.Errorf("check group role: %w", err)
 	}
 
-	return count > 0
+	return count > 0, nil
 }

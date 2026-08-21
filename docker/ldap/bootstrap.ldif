@@ -28,14 +28,86 @@ sn: User
 mail: dnsuser@example.com
 userPassword: dnsuserpassword
 
+# Alice - member of dns-admins and dns-editors (multiple group roles)
+dn: uid=alice,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: alice
+cn: Alice Anderson
+givenName: Alice
+sn: Anderson
+mail: alice@example.com
+userPassword: alicepassword
+
+# Bob - member of dns-editors
+dn: uid=bob,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: bob
+cn: Bob Baker
+givenName: Bob
+sn: Baker
+mail: bob@example.com
+userPassword: bobpassword
+
+# Carol - member of dns-users and dns-viewers
+dn: uid=carol,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: carol
+cn: Carol Carter
+givenName: Carol
+sn: Carter
+mail: carol@example.com
+userPassword: carolpassword
+
+# Dave - member of dns-viewers only
+dn: uid=dave,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: dave
+cn: Dave Davis
+givenName: Dave
+sn: Davis
+mail: dave@example.com
+userPassword: davepassword
+
+# Eve - no group membership (default role, no inheritance)
+dn: uid=eve,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+uid: eve
+cn: Eve Evans
+givenName: Eve
+sn: Evans
+mail: eve@example.com
+userPassword: evepassword
+
 # Admin group
 dn: cn=dns-admins,ou=groups,dc=example,dc=com
 objectClass: groupOfNames
 cn: dns-admins
 member: uid=testuser,ou=users,dc=example,dc=com
+member: uid=alice,ou=users,dc=example,dc=com
 
 # DNS-Users group
 dn: cn=dns-users,ou=groups,dc=example,dc=com
 objectClass: groupOfNames
 cn: dns-users
 member: uid=dnsuser,ou=users,dc=example,dc=com
+member: uid=carol,ou=users,dc=example,dc=com
+
+# DNS-Editors group
+dn: cn=dns-editors,ou=groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: dns-editors
+member: uid=alice,ou=users,dc=example,dc=com
+member: uid=bob,ou=users,dc=example,dc=com
+
+# DNS-Viewers group
+dn: cn=dns-viewers,ou=groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: dns-viewers
+member: uid=carol,ou=users,dc=example,dc=com
+member: uid=dave,ou=users,dc=example,dc=com
+
+# Network-Ops group (only testuser, for testing a user in 3 groups)
+dn: cn=network-ops,ou=groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: network-ops
+member: uid=testuser,ou=users,dc=example,dc=com

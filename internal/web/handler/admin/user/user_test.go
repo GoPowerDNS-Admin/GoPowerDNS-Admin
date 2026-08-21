@@ -185,6 +185,55 @@ func newTestApp(t *testing.T, db *gorm.DB) *fiber.App {
 	return app
 }
 
+// captureViews records the data map passed to Render so tests can assert on the
+// exact values a handler hands to the template (e.g. GroupRoles).
+type captureViews struct {
+	mu       sync.Mutex
+	lastName string
+	lastData any
+}
+
+func (v *captureViews) Load() error { return nil }
+
+func (v *captureViews) Render(w io.Writer, name string, data any, _ ...string) error {
+	v.mu.Lock()
+	v.lastName = name
+	v.lastData = data
+	v.mu.Unlock()
+
+	_, _ = io.WriteString(w, name)
+
+	return nil
+}
+
+func (v *captureViews) data() fiber.Map {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	m, _ := v.lastData.(fiber.Map)
+
+	return m
+}
+
+// newCaptureApp builds an app whose List route uses a capturing Views engine, so
+// tests can inspect the render data map instead of only the HTTP status.
+func newCaptureApp(t *testing.T, db *gorm.DB) (*fiber.App, *captureViews) {
+	t.Helper()
+
+	views := &captureViews{}
+	app := fiber.New(fiber.Config{Views: views})
+
+	s := &Service{
+		cfg:       newTestConfig(),
+		db:        db,
+		validator: validator.New(),
+	}
+
+	app.Get(Path, s.List)
+
+	return app, views
+}
+
 // newSessionApp builds a Service + app for tests that need a real session
 // (e.g. self-deactivation and self-delete checks).
 func newSessionApp(t *testing.T, db *gorm.DB) (*Service, *fiber.App) {
@@ -855,10 +904,8 @@ func TestLoadGroupRoles_DeduplicatesRolesFromMultipleGroups(t *testing.T) {
 
 // --- List with GroupRoles ---
 
-// TestList_GroupRoles_PopulatedForLDAPUser verifies that the List handler returns HTTP 200
-// when an LDAP user has a group-inherited role that differs from their direct role.
-// The GroupRoles map is exercised via loadGroupRoles directly in the unit tests below;
-// here we confirm the handler itself does not error when the data is present.
+// TestList_GroupRoles_PopulatedForLDAPUser verifies the List handler passes a
+// GroupRoles map to the template containing the LDAP user's inherited admin role.
 func TestList_GroupRoles_PopulatedForLDAPUser(t *testing.T) {
 	g := gomega.NewWithT(t)
 	db := newTestDB(t)
@@ -877,13 +924,21 @@ func TestList_GroupRoles_PopulatedForLDAPUser(t *testing.T) {
 	addUserToGroup(t, db, ldapUser.ID, grp.ID)
 	mapGroupToRole(t, db, grp.ID, adminRole.ID)
 
-	app := newTestApp(t, db)
+	app, views := newCaptureApp(t, db)
 
 	resp := doGet(t, app, Path)
 
 	defer func() { _ = resp.Body.Close() }()
 
 	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
+
+	data := views.data()
+	g.Expect(data).NotTo(gomega.BeNil())
+	g.Expect(data).To(gomega.HaveKey("GroupRoles"))
+
+	groupRoles, ok := data["GroupRoles"].(map[uint64][]string)
+	g.Expect(ok).To(gomega.BeTrue(), "GroupRoles should be map[uint64][]string")
+	g.Expect(groupRoles[ldapUser.ID]).To(gomega.ConsistOf("admin"))
 }
 
 func TestList_GroupRoles_NotShownWhenGroupRoleMatchesDirect(t *testing.T) {
@@ -900,13 +955,22 @@ func TestList_GroupRoles_NotShownWhenGroupRoleMatchesDirect(t *testing.T) {
 	addUserToGroup(t, db, localAdmin.ID, grp.ID)
 	mapGroupToRole(t, db, grp.ID, adminRole.ID)
 
-	app := newTestApp(t, db)
+	app, views := newCaptureApp(t, db)
 
 	resp := doGet(t, app, Path)
 
 	defer func() { _ = resp.Body.Close() }()
 
 	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
+
+	data := views.data()
+	g.Expect(data).NotTo(gomega.BeNil())
+	g.Expect(data).To(gomega.HaveKey("GroupRoles"))
+
+	groupRoles, ok := data["GroupRoles"].(map[uint64][]string)
+	g.Expect(ok).To(gomega.BeTrue(), "GroupRoles should be map[uint64][]string")
+	// The group role equals the direct role, so nothing extra should be advertised.
+	g.Expect(groupRoles[localAdmin.ID]).To(gomega.BeEmpty())
 }
 
 // --- Delete guard for group-inherited admin ---

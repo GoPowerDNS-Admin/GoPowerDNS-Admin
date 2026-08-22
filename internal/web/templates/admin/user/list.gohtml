@@ -73,13 +73,20 @@
                                             <td>{{ .Username }}</td>
                                             <td>{{ .DisplayName }}</td>
                                             <td>{{ .Email }}</td>
-                                            <td><span class="badge text-bg-info">{{ .Role.Name }}</span></td>
+                                            <td>
+                                                <span class="badge text-bg-info">{{ .Role.Name }}</span>
+                                                {{ range index $.GroupRoles .ID }}
+                                                    <span class="badge text-bg-warning text-dark" title="Role inherited via group membership">+{{ . }} via group</span>
+                                                {{ end }}
+                                            </td>
                                             <td><span class="badge text-bg-secondary">{{ .AuthSource }}</span></td>
                                             <td>{{ .CreatedAt }}</td>
                                             <td class="text-end">
                                                 <a href="/admin/user/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
                                                 {{ $isCurrentUser := eq .ID $.CurrentUserID }}
                                                 {{ $isAdmin := eq .Role.Name "admin" }}
+                                                {{ $groupRoles := index $.GroupRoles .ID }}
+                                                {{ range $groupRoles }}{{ if eq . "admin" }}{{ $isAdmin = true }}{{ end }}{{ end }}
                                                 {{ if or $isCurrentUser $isAdmin }}
                                                     <button type="button" class="btn btn-sm btn-outline-danger" disabled title="{{ if $isCurrentUser }}Cannot delete yourself{{ else }}Cannot delete admin users{{ end }}">Delete</button>
                                                 {{ else }}

@@ -3,6 +3,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
@@ -136,6 +137,8 @@ func (s *Service) List(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
+	groupRoles := loadGroupRoles(s.db, users)
+
 	// Get current user ID from the session
 	var currentUserID uint64
 
@@ -149,6 +152,7 @@ func (s *Service) List(c fiber.Ctx) error {
 	return c.Render(TemplateList, fiber.Map{
 		"Navigation":    nav,
 		"Users":         users,
+		"GroupRoles":    groupRoles,
 		"CurrentUserID": currentUserID,
 		"Search":        search,
 		"Page":          page,
@@ -509,15 +513,21 @@ func (s *Service) Delete(c fiber.Ctx) error {
 		}, handler.BaseLayout)
 	}
 
-	// Prevent deleting admin users
-	if user.Role.Name == "admin" {
-		nav := navigation.NewContext("Users", "admin", "user").
-			AddBreadcrumb("Home", dashboard.Path, false).
-			AddBreadcrumb("Admin", "#", false).
-			AddBreadcrumb("Users", Path, true)
+	// Prevent deleting admin users, whether the admin role is assigned directly
+	// or inherited via a group mapping (mirrors the disabled Delete button in the UI).
+	inheritedAdmin, errRole := hasGroupRole(s.db, user.ID, "admin")
+	if errRole != nil {
+		// Fail closed: if the inherited-admin check cannot be verified, refuse the
+		// deletion rather than risk removing a privileged account on a query failure.
+		return c.Status(fiber.StatusInternalServerError).Render(TemplateList, fiber.Map{
+			"Navigation": usersListNav(),
+			"Error":      "Could not verify user permissions; deletion aborted.",
+		}, handler.BaseLayout)
+	}
 
+	if user.Role.Name == "admin" || inheritedAdmin {
 		return c.Status(fiber.StatusForbidden).Render(TemplateList, fiber.Map{
-			"Navigation": nav,
+			"Navigation": usersListNav(),
 			"Error":      "Cannot delete admin users.",
 		}, handler.BaseLayout)
 	}
@@ -629,4 +639,95 @@ func syncUserTags(db *gorm.DB, userID uint64, tagIDs []uint) {
 	for _, tagID := range tagIDs {
 		db.Create(&models.UserTag{UserID: userID, TagID: tagID})
 	}
+}
+
+// userGroupRole is a projection used by loadGroupRoles to map a user ID to a role name
+// inherited via group membership.
+type userGroupRole struct {
+	UserID   uint64
+	RoleName string
+}
+
+// loadGroupRoles returns a map of user ID → distinct role names inherited via group mappings.
+// Only roles that differ from the user's direct role are included, so the template only
+// shows a badge when there is genuinely additional access to communicate.
+func loadGroupRoles(db *gorm.DB, users []models.User) map[uint64][]string {
+	if len(users) == 0 {
+		return nil
+	}
+
+	userIDs := make([]uint64, len(users))
+	directRoleByUserID := make(map[uint64]string, len(users))
+
+	for i := range users {
+		userIDs[i] = users[i].ID
+		directRoleByUserID[users[i].ID] = users[i].Role.Name
+	}
+
+	var rows []userGroupRole
+
+	err := db.Table("roles").
+		Select("user_groups.user_id AS user_id, roles.name AS role_name").
+		Joins("JOIN group_mappings ON group_mappings.role_id = roles.id").
+		Joins("JOIN user_groups ON user_groups.group_id = group_mappings.group_id").
+		Where("user_groups.user_id IN ?", userIDs).
+		Order("roles.name ASC").
+		Scan(&rows).Error
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load group roles for user list")
+		return nil
+	}
+
+	result := make(map[uint64][]string)
+
+	for _, row := range rows {
+		if row.RoleName == directRoleByUserID[row.UserID] {
+			continue
+		}
+
+		seen := result[row.UserID]
+		duplicate := false
+
+		for _, existing := range seen {
+			if existing == row.RoleName {
+				duplicate = true
+				break
+			}
+		}
+
+		if !duplicate {
+			result[row.UserID] = append(result[row.UserID], row.RoleName)
+		}
+	}
+
+	return result
+}
+
+// usersListNav builds the breadcrumb/navigation context for the users list page.
+func usersListNav() *navigation.Context {
+	return navigation.NewContext("Users", "admin", "user").
+		AddBreadcrumb("Home", dashboard.Path, false).
+		AddBreadcrumb("Admin", "#", false).
+		AddBreadcrumb("Users", Path, true)
+}
+
+// hasGroupRole reports whether the user inherits the named role via any group mapping.
+// The error must be handled by the caller: for security guards, treat an error as
+// "cannot verify" and fail closed rather than assuming the role is absent.
+func hasGroupRole(db *gorm.DB, userID uint64, roleName string) (bool, error) {
+	var count int64
+
+	err := db.Table("roles").
+		Joins("JOIN group_mappings ON group_mappings.role_id = roles.id").
+		Joins("JOIN user_groups ON user_groups.group_id = group_mappings.group_id").
+		Where("user_groups.user_id = ? AND roles.name = ?", userID, roleName).
+		Count(&count).Error
+	if err != nil {
+		log.Error().Err(err).Uint64("user_id", userID).Str("role", roleName).
+			Msg("failed to check group role")
+
+		return false, fmt.Errorf("check group role: %w", err)
+	}
+
+	return count > 0, nil
 }

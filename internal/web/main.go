@@ -285,8 +285,8 @@ func New(cfg *config.Config, db *gorm.DB) *Service {
 		return c.Next()
 	})
 
-	// basic auth middleware
-	app.Use(authmiddleware.Middleware)
+	// basic auth middleware (revalidates the session user against the DB)
+	app.Use(authmiddleware.New(db))
 
 	// Initialize auth service
 	authService := auth.NewService(db)

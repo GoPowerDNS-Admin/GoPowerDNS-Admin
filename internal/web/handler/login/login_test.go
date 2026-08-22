@@ -216,10 +216,10 @@ func TestAuthenticate_Local(t *testing.T) {
 	}
 }
 
-func performPost(t *testing.T, app *fiber.App, target string, form url.Values) *http.Response {
+func performPost(t *testing.T, app *fiber.App, form url.Values) *http.Response {
 	t.Helper()
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, target, strings.NewReader(form.Encode()))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, Path+"/", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := app.Test(req)
@@ -254,7 +254,7 @@ func TestPost_Local_Success_SetsCookieAndRedirects(t *testing.T) {
 		"password":  {"s3cr3t"},
 		"auth_type": {"local"},
 	}
-	resp := performPost(t, app, Path+"/", form)
+	resp := performPost(t, app, form)
 
 	if resp.StatusCode != http.StatusSeeOther {
 		t.Fatalf("expected 303 See Other, got %d", resp.StatusCode)
@@ -302,7 +302,7 @@ func TestPost_Local_Success_DevModeDisablesSecure(t *testing.T) {
 		"password":  {"pass"},
 		"auth_type": {"local"},
 	}
-	resp := performPost(t, app, Path+"/", form)
+	resp := performPost(t, app, form)
 
 	defer func() {
 		_ = resp.Body.Close()
@@ -352,6 +352,110 @@ func TestPost_InvalidForm_RendersError(t *testing.T) {
 	}
 }
 
+func findCookie(cookies []*http.Cookie, name string) *http.Cookie {
+	for _, c := range cookies {
+		if c.Name == name {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// TestPost_Local_SetsAuthTypeCookie verifies that a successful local login
+// sets the auth_type cookie to "local".
+func TestPost_Local_SetsAuthTypeCookie(t *testing.T) {
+	db := newTestDB(t)
+	cfg := newTestConfig()
+	app := newTestApp()
+
+	initSessionStore()
+
+	var s Service
+	s.Init(app, cfg, db)
+
+	lp := auth.NewLocalProvider(db)
+	if _, err := lp.CreateUser("dave", "dave@example.com", "pass", "Dave Doe", 0); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	form := url.Values{
+		"username":  {"dave"},
+		"password":  {"pass"},
+		"auth_type": {"local"},
+	}
+	resp := performPost(t, app, form)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d", resp.StatusCode)
+	}
+
+	c := findCookie(resp.Cookies(), AuthTypeCookie)
+	if c == nil {
+		t.Fatalf("auth_type cookie not set")
+	}
+
+	if c.Value != "local" {
+		t.Fatalf("expected auth_type=local, got %q", c.Value)
+	}
+
+	if c.MaxAge != authTypeCookieMaxAge {
+		t.Fatalf("expected MaxAge=%d, got %d", authTypeCookieMaxAge, c.MaxAge)
+	}
+}
+
+// TestGet_ReturnsAuthTypeCookieAsTemplateVar verifies that GET /login passes the
+// auth_type cookie value to the template via the "auth_type" key, so the select
+// can be pre-selected.
+func TestGet_ReturnsAuthTypeCookieAsTemplateVar(t *testing.T) {
+	db := newTestDB(t)
+	cfg := newTestConfig()
+	cfg.Auth.LocalDB.Enabled = true
+	cfg.Auth.LDAP.Enabled = true
+
+	// Use a views engine that renders the auth_type value so we can assert it.
+	app := fiber.New(fiber.Config{Views: authTypeViews{}})
+
+	initSessionStore()
+
+	var s Service
+	s.Init(app, cfg, db)
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, Path+"/", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: AuthTypeCookie, Value: "ldap"})
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	body, _ := io.ReadAll(resp.Body)
+
+	if !strings.Contains(string(body), "ldap") {
+		t.Fatalf("expected auth_type=ldap in rendered output, got %q", string(body))
+	}
+}
+
+// authTypeViews is a test Views engine that writes the auth_type template variable
+// to the output so TestGet_ReturnsAuthTypeCookieAsTemplateVar can assert on it.
+type authTypeViews struct{}
+
+func (authTypeViews) Load() error { return nil }
+
+func (authTypeViews) Render(w io.Writer, _ string, data interface{}, _ ...string) error {
+	if m, ok := data.(fiber.Map); ok {
+		if v, ok := m["auth_type"]; ok {
+			_, _ = io.WriteString(w, v.(string))
+		}
+	}
+
+	return nil
+}
+
 func TestPost_LocalDisabled_RendersError(t *testing.T) {
 	db := newTestDB(t)
 	cfg := newTestConfig()
@@ -369,7 +473,7 @@ func TestPost_LocalDisabled_RendersError(t *testing.T) {
 		"password":  {"whatever"},
 		"auth_type": {"local"},
 	}
-	resp := performPost(t, app, Path+"/", form)
+	resp := performPost(t, app, form)
 
 	defer func() {
 		_ = resp.Body.Close()

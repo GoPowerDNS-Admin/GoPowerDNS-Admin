@@ -6,13 +6,15 @@
 //
 // The middleware performs the following tasks:
 //   - Validates session cookies and redirects to login if invalid
+//   - Revalidates the session user against the database, forcing logout when
+//     the account has been deleted or deactivated
 //   - Adds current user information to fiber.Locals for template access
 //   - Allows public access to login and logout pages
 //   - Prevents redirect loops on authentication pages
 //
 // Usage:
 //
-//	app.Use(authmiddleware.Middleware)
+//	app.Use(authmiddleware.New(db))
 //
 // The middleware expects sessions to be managed by the session package
 // and will redirect unauthenticated users to the login handler path.

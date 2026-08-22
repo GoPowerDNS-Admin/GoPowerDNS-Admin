@@ -22,10 +22,11 @@ type Group struct {
 	// ID is the unique identifier for the group.
 	ID uint `gorm:"primaryKey"`
 	// Name is the display name of the group as it appears in the system.
-	Name string `gorm:"size:100;not null"`
+	Name string `gorm:"size:255;not null"`
 	// ExternalID is the external identifier for the group (DN for LDAP, claim value for OIDC).
-	// Combined with Source, this forms a unique constraint.
-	ExternalID string `gorm:"size:255;uniqueIndex:idx_source_external"`
+	// Combined with Source, this forms a unique constraint. Sized to accommodate long
+	// LDAP distinguished names while staying within composite-index key limits.
+	ExternalID string `gorm:"size:512;uniqueIndex:idx_source_external"`
 	// Source indicates where the group originates from (local, oidc, or ldap).
 	Source GroupSource `gorm:"type:varchar(20);not null;uniqueIndex:idx_source_external"`
 	// Description provides a human-readable explanation of the group's purpose.

@@ -110,11 +110,46 @@ func newTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open in-memory sqlite: %v", err)
 	}
 
-	if err := db.AutoMigrate(&models.User{}, &models.Role{}, &models.Tag{}, &models.UserTag{}); err != nil {
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Role{},
+		&models.Tag{},
+		&models.UserTag{},
+		&models.Group{},
+		&models.UserGroup{},
+		&models.GroupMapping{},
+	); err != nil {
 		t.Fatalf("automigrate: %v", err)
 	}
 
 	return db
+}
+
+func createGroup(t *testing.T, db *gorm.DB, name string, source models.GroupSource) models.Group {
+	t.Helper()
+
+	g := models.Group{Name: name, ExternalID: name, Source: source}
+	if err := db.Create(&g).Error; err != nil {
+		t.Fatalf("create group %q: %v", name, err)
+	}
+
+	return g
+}
+
+func addUserToGroup(t *testing.T, db *gorm.DB, userID uint64, groupID uint) {
+	t.Helper()
+
+	if err := db.Create(&models.UserGroup{UserID: userID, GroupID: groupID}).Error; err != nil {
+		t.Fatalf("add user %d to group %d: %v", userID, groupID, err)
+	}
+}
+
+func mapGroupToRole(t *testing.T, db *gorm.DB, groupID, roleID uint) {
+	t.Helper()
+
+	if err := db.Create(&models.GroupMapping{GroupID: groupID, RoleID: roleID}).Error; err != nil {
+		t.Fatalf("map group %d to role %d: %v", groupID, roleID, err)
+	}
 }
 
 func newTestConfig() *config.Config {
@@ -148,6 +183,55 @@ func newTestApp(t *testing.T, db *gorm.DB) *fiber.App {
 	app.Post(Path+"/:id/disable-totp", s.DisableTOTP)
 
 	return app
+}
+
+// captureViews records the data map passed to Render so tests can assert on the
+// exact values a handler hands to the template (e.g. GroupRoles).
+type captureViews struct {
+	mu       sync.Mutex
+	lastName string
+	lastData any
+}
+
+func (v *captureViews) Load() error { return nil }
+
+func (v *captureViews) Render(w io.Writer, name string, data any, _ ...string) error {
+	v.mu.Lock()
+	v.lastName = name
+	v.lastData = data
+	v.mu.Unlock()
+
+	_, _ = io.WriteString(w, name)
+
+	return nil
+}
+
+func (v *captureViews) data() fiber.Map {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	m, _ := v.lastData.(fiber.Map)
+
+	return m
+}
+
+// newCaptureApp builds an app whose List route uses a capturing Views engine, so
+// tests can inspect the render data map instead of only the HTTP status.
+func newCaptureApp(t *testing.T, db *gorm.DB) (*fiber.App, *captureViews) {
+	t.Helper()
+
+	views := &captureViews{}
+	app := fiber.New(fiber.Config{Views: views})
+
+	s := &Service{
+		cfg:       newTestConfig(),
+		db:        db,
+		validator: validator.New(),
+	}
+
+	app.Get(Path, s.List)
+
+	return app, views
 }
 
 // newSessionApp builds a Service + app for tests that need a real session
@@ -683,4 +767,308 @@ func TestDisableTOTP_NoopWhenNotEnabled(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
+}
+
+// --- loadGroupRoles ---
+
+func TestLoadGroupRoles_EmptyUsers_ReturnsNil(t *testing.T) {
+	db := newTestDB(t)
+
+	result := loadGroupRoles(db, nil)
+
+	if result != nil {
+		t.Fatalf("expected nil for empty user slice, got %v", result)
+	}
+}
+
+func TestLoadGroupRoles_UserWithNoGroups_ReturnsEmptyMap(t *testing.T) {
+	db := newTestDB(t)
+
+	viewerRole := createRole(t, db, "viewer")
+	u := createUser(t, db, "nogroups", viewerRole.ID)
+
+	// Preload the role so loadGroupRoles has directRoleByUserID populated correctly.
+	if err := db.Preload("Role").First(&u, u.ID).Error; err != nil {
+		t.Fatalf("preload: %v", err)
+	}
+
+	result := loadGroupRoles(db, []models.User{u})
+
+	if len(result) != 0 {
+		t.Fatalf("expected no group roles, got %v", result)
+	}
+}
+
+func TestLoadGroupRoles_UserWithGroupRole_DifferentFromDirect(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	viewerRole := createRole(t, db, "viewer")
+	adminRole := createRole(t, db, "admin")
+
+	u := createUser(t, db, "ldapuser", viewerRole.ID, func(u *models.User) {
+		u.AuthSource = models.AuthSourceLDAP
+	})
+
+	grp := createGroup(t, db, "cn=dns-admins,ou=groups,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, u.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, adminRole.ID)
+
+	if err := db.Preload("Role").First(&u, u.ID).Error; err != nil {
+		t.Fatalf("preload: %v", err)
+	}
+
+	result := loadGroupRoles(db, []models.User{u})
+
+	g.Expect(result[u.ID]).To(gomega.ConsistOf("admin"))
+}
+
+func TestLoadGroupRoles_UserWithGroupRoleSameAsDirect_NotDuplicated(t *testing.T) {
+	db := newTestDB(t)
+
+	adminRole := createRole(t, db, "admin")
+
+	u := createUser(t, db, "localadmin", adminRole.ID)
+
+	grp := createGroup(t, db, "admins", models.GroupSourceLocal)
+	addUserToGroup(t, db, u.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, adminRole.ID)
+
+	if err := db.Preload("Role").First(&u, u.ID).Error; err != nil {
+		t.Fatalf("preload: %v", err)
+	}
+
+	result := loadGroupRoles(db, []models.User{u})
+
+	// The group-inherited role is identical to the direct role — no badge needed.
+	if len(result[u.ID]) != 0 {
+		t.Fatalf("expected no extra group roles when group role matches direct role, got %v", result[u.ID])
+	}
+}
+
+func TestLoadGroupRoles_MultipleUsers_IndependentResults(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	viewerRole := createRole(t, db, "viewer")
+	adminRole := createRole(t, db, "admin")
+
+	ldapUser := createUser(t, db, "ldapuser2", viewerRole.ID, func(u *models.User) {
+		u.AuthSource = models.AuthSourceLDAP
+	})
+	localUser := createUser(t, db, "localuser", viewerRole.ID)
+
+	grp := createGroup(t, db, "cn=dns-admins2,ou=groups,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, ldapUser.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, adminRole.ID)
+
+	var users []models.User
+	if err := db.Preload("Role").Find(&users).Error; err != nil {
+		t.Fatalf("preload: %v", err)
+	}
+
+	result := loadGroupRoles(db, users)
+
+	g.Expect(result[ldapUser.ID]).To(gomega.ConsistOf("admin"))
+	g.Expect(result[localUser.ID]).To(gomega.BeEmpty())
+}
+
+func TestLoadGroupRoles_DeduplicatesRolesFromMultipleGroups(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	viewerRole := createRole(t, db, "viewer")
+	adminRole := createRole(t, db, "admin")
+
+	u := createUser(t, db, "multigroup", viewerRole.ID, func(u *models.User) {
+		u.AuthSource = models.AuthSourceLDAP
+	})
+
+	// Two separate LDAP groups both mapping to the same admin role.
+	grp1 := createGroup(t, db, "cn=admins1,dc=example,dc=com", models.GroupSourceLDAP)
+	grp2 := createGroup(t, db, "cn=admins2,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, u.ID, grp1.ID)
+	addUserToGroup(t, db, u.ID, grp2.ID)
+	mapGroupToRole(t, db, grp1.ID, adminRole.ID)
+	mapGroupToRole(t, db, grp2.ID, adminRole.ID)
+
+	if err := db.Preload("Role").First(&u, u.ID).Error; err != nil {
+		t.Fatalf("preload: %v", err)
+	}
+
+	result := loadGroupRoles(db, []models.User{u})
+
+	// Should appear exactly once despite two groups granting it.
+	g.Expect(result[u.ID]).To(gomega.ConsistOf("admin"))
+}
+
+// --- List with GroupRoles ---
+
+// TestList_GroupRoles_PopulatedForLDAPUser verifies the List handler passes a
+// GroupRoles map to the template containing the LDAP user's inherited admin role.
+func TestList_GroupRoles_PopulatedForLDAPUser(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	initSessionStore()
+
+	viewerRole := createRole(t, db, "viewer")
+	adminRole := createRole(t, db, "admin")
+
+	ldapUser := createUser(t, db, "testuser", viewerRole.ID, func(u *models.User) {
+		u.AuthSource = models.AuthSourceLDAP
+		u.ExternalID = "uid=testuser,ou=users,dc=example,dc=com"
+	})
+
+	grp := createGroup(t, db, "cn=dns-admins,ou=groups,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, ldapUser.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, adminRole.ID)
+
+	app, views := newCaptureApp(t, db)
+
+	resp := doGet(t, app, Path)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
+
+	data := views.data()
+	g.Expect(data).NotTo(gomega.BeNil())
+	g.Expect(data).To(gomega.HaveKey("GroupRoles"))
+
+	groupRoles, ok := data["GroupRoles"].(map[uint64][]string)
+	g.Expect(ok).To(gomega.BeTrue(), "GroupRoles should be map[uint64][]string")
+	g.Expect(groupRoles[ldapUser.ID]).To(gomega.ConsistOf("admin"))
+}
+
+func TestList_GroupRoles_NotShownWhenGroupRoleMatchesDirect(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	initSessionStore()
+
+	adminRole := createRole(t, db, "admin")
+
+	localAdmin := createUser(t, db, "localadmin2", adminRole.ID)
+
+	grp := createGroup(t, db, "admins-local", models.GroupSourceLocal)
+	addUserToGroup(t, db, localAdmin.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, adminRole.ID)
+
+	app, views := newCaptureApp(t, db)
+
+	resp := doGet(t, app, Path)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusOK))
+
+	data := views.data()
+	g.Expect(data).NotTo(gomega.BeNil())
+	g.Expect(data).To(gomega.HaveKey("GroupRoles"))
+
+	groupRoles, ok := data["GroupRoles"].(map[uint64][]string)
+	g.Expect(ok).To(gomega.BeTrue(), "GroupRoles should be map[uint64][]string")
+	// The group role equals the direct role, so nothing extra should be advertised.
+	g.Expect(groupRoles[localAdmin.ID]).To(gomega.BeEmpty())
+}
+
+// --- Delete guard for group-inherited admin ---
+
+func TestDelete_PreventsGroupAdminDelete(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	initSessionStore()
+
+	viewerRole := createRole(t, db, "viewer")
+	adminRole := createRole(t, db, "admin")
+
+	// LDAP user whose direct role is viewer but inherits admin via a group mapping.
+	ldapUser := createUser(t, db, "ldapadmin", viewerRole.ID, func(u *models.User) {
+		u.AuthSource = models.AuthSourceLDAP
+		u.ExternalID = "uid=ldapadmin,ou=users,dc=example,dc=com"
+	})
+
+	grp := createGroup(t, db, "cn=dns-admins,ou=groups,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, ldapUser.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, adminRole.ID)
+
+	app := newTestApp(t, db)
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d/delete", Path, ldapUser.ID), nil)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	// A user who inherits admin via a group must be protected server-side, not just
+	// by the disabled button in the UI.
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusForbidden))
+
+	// The user must still exist.
+	var count int64
+	db.Model(&models.User{}).Where("id = ?", ldapUser.ID).Count(&count)
+	g.Expect(count).To(gomega.Equal(int64(1)))
+}
+
+// TestDelete_FailsClosedWhenGroupRoleCheckErrors ensures that if the inherited-admin
+// lookup fails (e.g. a transient DB/query error), deletion is aborted rather than
+// permitted, so the admin-protection guard cannot be bypassed.
+func TestDelete_FailsClosedWhenGroupRoleCheckErrors(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	initSessionStore()
+
+	viewerRole := createRole(t, db, "viewer")
+	u := createUser(t, db, "unverifiable", viewerRole.ID)
+
+	// Break the group-role lookup by removing a table the join depends on.
+	if err := db.Migrator().DropTable("group_mappings"); err != nil {
+		t.Fatalf("drop table: %v", err)
+	}
+
+	app := newTestApp(t, db)
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d/delete", Path, u.ID), nil)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	// The guard cannot verify inherited admin rights, so it must fail closed.
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusInternalServerError))
+
+	var count int64
+	db.Model(&models.User{}).Where("id = ?", u.ID).Count(&count)
+	g.Expect(count).To(gomega.Equal(int64(1)))
+}
+
+// TestDelete_AllowsNonAdminGroupRoleDelete ensures the group-role guard only blocks
+// admin inheritance, not any group role — a viewer-via-group user is still deletable.
+func TestDelete_AllowsNonAdminGroupRoleDelete(t *testing.T) {
+	g := gomega.NewWithT(t)
+	db := newTestDB(t)
+
+	initSessionStore()
+
+	viewerRole := createRole(t, db, "viewer")
+	editorRole := createRole(t, db, "editor")
+
+	ldapUser := createUser(t, db, "ldapeditor", viewerRole.ID, func(u *models.User) {
+		u.AuthSource = models.AuthSourceLDAP
+	})
+
+	grp := createGroup(t, db, "cn=dns-editors,ou=groups,dc=example,dc=com", models.GroupSourceLDAP)
+	addUserToGroup(t, db, ldapUser.ID, grp.ID)
+	mapGroupToRole(t, db, grp.ID, editorRole.ID)
+
+	app := newTestApp(t, db)
+
+	resp := doPost(t, app, fmt.Sprintf("%s/%d/delete", Path, ldapUser.ID), nil)
+
+	defer func() { _ = resp.Body.Close() }()
+
+	g.Expect(resp.StatusCode).To(gomega.Equal(http.StatusSeeOther))
+
+	var count int64
+	db.Model(&models.User{}).Where("id = ?", ldapUser.ID).Count(&count)
+	g.Expect(count).To(gomega.BeZero())
 }

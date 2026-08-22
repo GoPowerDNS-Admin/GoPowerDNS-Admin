@@ -23,6 +23,15 @@ const (
 
 	// TemplateName is the name of the login template.
 	TemplateName = "login/login"
+
+	// AuthTypeCookie is the name of the long-lived cookie that remembers the
+	// last authentication method the user chose (e.g. "local" or "ldap").
+	// It is set on every successful login and persists across sessions so the
+	// login page can pre-select the same method after logout.
+	AuthTypeCookie = "auth_type"
+
+	// authTypeCookieMaxAge is one year in seconds.
+	authTypeCookieMaxAge = 365 * 24 * 60 * 60
 )
 
 // Service is the login handler service.
@@ -116,6 +125,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"ldap_enabled":     s.cfg.Auth.LDAP.Enabled,
 		"oidc_enabled":     s.cfg.Auth.OIDC.Enabled,
 		"version":          version.Get(),
+		"auth_type":        c.Cookies(AuthTypeCookie),
 	})
 }
 
@@ -172,7 +182,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 	// TOTP only applies to local accounts
 	if authenticatedUser.AuthSource == models.AuthSourceLocal && authenticatedUser.TOTPEnabled {
-		if err := s.createPendingSessionAndSetCookie(c, authenticatedUser); err != nil {
+		if err := s.createPendingSessionAndSetCookie(c, authenticatedUser, authType); err != nil {
 			return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
 		}
 
@@ -180,7 +190,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 	}
 
 	if authenticatedUser.AuthSource == models.AuthSourceLocal && authenticatedUser.TOTPRequired {
-		if err := s.createPendingSessionAndSetCookie(c, authenticatedUser); err != nil {
+		if err := s.createPendingSessionAndSetCookie(c, authenticatedUser, authType); err != nil {
 			return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
 		}
 
@@ -188,7 +198,7 @@ func (s *Service) Post(c fiber.Ctx) error {
 	}
 
 	// Standard login — no TOTP needed
-	if err := s.createSessionAndSetCookie(c, authenticatedUser); err != nil {
+	if err := s.createSessionAndSetCookie(c, authenticatedUser, authType); err != nil {
 		return s.renderError(c, form.Username, form.AuthType, ErrInternalServerError.Error())
 	}
 
@@ -273,7 +283,9 @@ func (s *Service) authenticate(authType, username, password string) (*models.Use
 
 // createSessionAndSetCookie creates a user session, writes it to the store,
 // and sets the corresponding session cookie on the response.
-func (s *Service) createSessionAndSetCookie(c fiber.Ctx, user *models.User) error {
+// It also sets a long-lived auth_type cookie so the login page can pre-select
+// the same authentication method after the user logs out.
+func (s *Service) createSessionAndSetCookie(c fiber.Ctx, user *models.User, authType string) error {
 	sessionID, err := session.GenerateSessionID()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to generate session ID")
@@ -286,25 +298,33 @@ func (s *Service) createSessionAndSetCookie(c fiber.Ctx, user *models.User) erro
 		return err
 	}
 
-	cookieSettings := &fiber.Cookie{
+	secure := !s.cfg.DevMode
+
+	c.Cookie(&fiber.Cookie{
 		Name:     "session",
 		Value:    sessionID,
 		MaxAge:   int(s.cfg.Webserver.Session.ExpiryTime.Seconds()),
-		Secure:   true,
+		Secure:   secure,
 		HTTPOnly: true,
 		SameSite: "Lax",
-	}
-	if s.cfg.DevMode {
-		cookieSettings.Secure = false
-	}
+	})
 
-	c.Cookie(cookieSettings)
+	c.Cookie(&fiber.Cookie{
+		Name:     AuthTypeCookie,
+		Value:    authType,
+		MaxAge:   authTypeCookieMaxAge,
+		Secure:   secure,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
 
 	return nil
 }
 
 // createPendingSessionAndSetCookie creates a TOTP-pending session.
-func (s *Service) createPendingSessionAndSetCookie(c fiber.Ctx, user *models.User) error {
+// It also sets a long-lived auth_type cookie so the login page can pre-select
+// the same authentication method after the user logs out.
+func (s *Service) createPendingSessionAndSetCookie(c fiber.Ctx, user *models.User, authType string) error {
 	sessionID, err := session.GenerateSessionID()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to generate session ID")
@@ -317,19 +337,25 @@ func (s *Service) createPendingSessionAndSetCookie(c fiber.Ctx, user *models.Use
 		return err
 	}
 
-	cookieSettings := &fiber.Cookie{
+	secure := !s.cfg.DevMode
+
+	c.Cookie(&fiber.Cookie{
 		Name:     "session",
 		Value:    sessionID,
 		MaxAge:   int(s.cfg.Webserver.Session.ExpiryTime.Seconds()),
-		Secure:   true,
+		Secure:   secure,
 		HTTPOnly: true,
 		SameSite: "Lax",
-	}
-	if s.cfg.DevMode {
-		cookieSettings.Secure = false
-	}
+	})
 
-	c.Cookie(cookieSettings)
+	c.Cookie(&fiber.Cookie{
+		Name:     AuthTypeCookie,
+		Value:    authType,
+		MaxAge:   authTypeCookieMaxAge,
+		Secure:   secure,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
 
 	return nil
 }

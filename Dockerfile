@@ -1,5 +1,5 @@
 # ─── Builder ─────────────────────────────────────────────────────────────────
-FROM golang:1.26.4-alpine AS builder
+FROM golang:1.27.4-alpine AS builder
 
 ARG VERSION=dev
 

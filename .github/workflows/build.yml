@@ -36,7 +36,7 @@ jobs:
     needs: validate-pr-title
     runs-on: ["self-hosted", "Linux"]
     container:
-      image: golang:1.26.4-bookworm
+      image: golang:1.27.4-bookworm
       env:
         GOPATH: /github/workspace/go
         GOCACHE: /github/workspace/go-cache
@@ -79,7 +79,7 @@ jobs:
     needs: validate-pr-title
     runs-on: ["self-hosted", "Linux"]
     container:
-      image: golang:1.26.4-bookworm
+      image: golang:1.27.4-bookworm
       env:
         GOPATH: /github/workspace/go
         GOCACHE: /github/workspace/go-cache

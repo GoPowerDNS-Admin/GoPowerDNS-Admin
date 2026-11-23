@@ -1,6 +1,6 @@
 module github.com/GoPowerDNS-Admin/GoPowerDNS-Admin
 
-go 1.26
+go 1.27
 
 require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.64.0

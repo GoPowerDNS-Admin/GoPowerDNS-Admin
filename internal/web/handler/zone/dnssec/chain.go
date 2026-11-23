@@ -32,10 +32,17 @@ func (r *realExchanger) Exchange(m *dns.Msg, server string) (*dns.Msg, time.Dura
 	return r.c.Exchange(m, server)
 }
 
+// Status values of a ChainLink.
+const (
+	linkStatusOK      = "ok"
+	linkStatusMissing = "missing"
+	linkStatusError   = "error"
+)
+
 // ChainLink represents one delegation level in the DNSSEC trust chain.
 type ChainLink struct {
 	Zone   string `json:"zone"`
-	Status string `json:"status"` // "ok", "missing", "error"
+	Status string `json:"status"`
 	Detail string `json:"detail"`
 }
 
@@ -102,7 +109,7 @@ func walkChain(ctx context.Context, zoneName string, ex exchanger) ChainResult {
 		link, nextResolver := checkDelegation(ctx, child, parent, resolver, ex)
 		links = append(links, link)
 
-		if link.Status != "ok" {
+		if link.Status != linkStatusOK {
 			return ChainResult{
 				Valid:  false,
 				Links:  links,
@@ -130,7 +137,7 @@ func checkDelegation(ctx context.Context, child, parent, resolver string, ex exc
 	// Step 1: find an authoritative NS for the parent zone.
 	authNS, err := findAuthNS(ctx, parent, resolver, ex)
 	if err != nil {
-		link.Status = "error"
+		link.Status = linkStatusError
 		link.Detail = fmt.Sprintf("could not find authoritative NS for %s: %v", parent, err)
 
 		return link, ""
@@ -139,14 +146,14 @@ func checkDelegation(ctx context.Context, child, parent, resolver string, ex exc
 	// Step 2: query that NS directly for the child DS record.
 	ds, err := queryDS(ctx, child, authNS, ex)
 	if err != nil {
-		link.Status = "error"
+		link.Status = linkStatusError
 		link.Detail = fmt.Sprintf("DS query to %s for %s failed: %v", authNS, child, err)
 
 		return link, ""
 	}
 
 	if len(ds) == 0 {
-		link.Status = "missing"
+		link.Status = linkStatusMissing
 		link.Detail = fmt.Sprintf("no DS record for %s found at parent %s (queried %s)", child, parent, authNS)
 
 		return link, ""
@@ -159,7 +166,7 @@ func checkDelegation(ctx context.Context, child, parent, resolver string, ex exc
 		dsStrings = append(dsStrings, r.String())
 	}
 
-	link.Status = "ok"
+	link.Status = linkStatusOK
 	link.Detail = strings.Join(dsStrings, " | ")
 
 	// Step 3: find an authoritative NS for the child zone to use next.

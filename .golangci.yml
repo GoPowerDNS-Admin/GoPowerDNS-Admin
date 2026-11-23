@@ -37,7 +37,7 @@ linters:
     - gocritic # Comprehensive Go linter
     - gocyclo # Check cyclomatic complexity
     - godot # Check comments end in period
-    - gomodguard # Check blocked modules
+    - gomodguard_v2 # Check blocked modules
     - goprintffuncname # Check printf-like functions are named correctly
     - gosec # Security-focused linter
     - intrange # Find places where for loops could use integer range
@@ -85,6 +85,10 @@ linters:
           - goconst
           - errcheck
           - dupl
+      - path: _test\.go
+        linters:
+          - gosec
+        text: G124
 
   settings:
     errcheck:
@@ -110,6 +114,9 @@ linters:
     goconst:
       min-len: 3
       min-occurrences: 3
+      exclude-types:
+        - Call
+        - CompositeLit
 
     gocritic:
       enabled-tags:

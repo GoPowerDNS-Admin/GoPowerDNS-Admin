@@ -9,6 +9,11 @@ import (
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 )
 
+// apiRectify makes PowerDNS rectify the zone after every API change. Sending
+// false stores API-RECTIFY=0 on the zone, and records added later are then
+// missing from its DNSSEC NSEC chain.
+const apiRectify = true
+
 // resolveZoneName sets form.Name based on the zone type.
 // For reverse zones it computes the name from the CIDR; for forward zones it
 // ensures a trailing dot.
@@ -59,14 +64,14 @@ func createZone(ctx context.Context, form *ZoneForm) error {
 	case ZoneKindNative:
 		_, err := powerdns.Engine.Zones.AddNative(
 			ctx, form.Name,
-			false, "", false, "", soaEditAPIStr, false, nil,
+			false, "", false, "", soaEditAPIStr, apiRectify, nil,
 		)
 
 		return err
 	case ZoneKindMaster:
 		_, err := powerdns.Engine.Zones.AddMaster(
 			ctx, form.Name,
-			false, "", false, "", soaEditAPIStr, false, nil,
+			false, "", false, "", soaEditAPIStr, apiRectify, nil,
 		)
 
 		return err

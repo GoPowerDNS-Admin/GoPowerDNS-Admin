@@ -2,8 +2,15 @@ package zoneadd
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+
+	pdnsapi "github.com/joeig/go-powerdns/v3"
+
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/powerdns"
 )
 
 func TestResolveZoneName_Forward_AddsTrailingDot(t *testing.T) {
@@ -80,5 +87,38 @@ func TestCreateZone_UnknownKind(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "Unknown") {
 		t.Errorf("expected error to mention kind name, got %q", err.Error())
+	}
+}
+
+func TestCreateZone_EnablesAPIRectify(t *testing.T) {
+	for _, kind := range []ZoneKind{ZoneKindNative, ZoneKindMaster} {
+		t.Run(string(kind), func(t *testing.T) {
+			got := make(chan map[string]any, 1)
+
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var body map[string]any
+
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				got <- body
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{"name":"example.com."}`))
+			}))
+			defer srv.Close()
+
+			powerdns.Engine.Client = pdnsapi.New(srv.URL, "localhost")
+
+			t.Cleanup(func() { powerdns.Engine.Client = nil })
+
+			form := &ZoneForm{Kind: kind, Name: "example.com.", SOAEditAPI: SOAEditAPIDefault}
+			if err := createZone(context.Background(), form); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if body := <-got; body["api_rectify"] != true {
+				t.Errorf("expected api_rectify true, got %v", body["api_rectify"])
+			}
+		})
 	}
 }

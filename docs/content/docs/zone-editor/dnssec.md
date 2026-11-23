@@ -15,6 +15,8 @@ DNSSEC signing is managed from the **DNSSEC** card on the zone editor page. The 
 
 PowerDNS generates a Combined Signing Key (CSK) using the server's default algorithm (ECDSAP256SHA256 unless overridden in `pdns.conf`). The key is immediately active and published.
 
+Zones created in GoPowerDNS-Admin have API rectify turned on, so PowerDNS rectifies them after every record change. Zones created by older versions have it turned off. Turn it on for them with `pdnsutil set-meta <zone> API-RECTIFY 1`.
+
 ## Cryptokey table
 
 Once DNSSEC is enabled the card shows a table of all cryptokeys for the zone:

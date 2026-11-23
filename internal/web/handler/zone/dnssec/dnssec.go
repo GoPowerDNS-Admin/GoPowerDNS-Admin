@@ -148,15 +148,7 @@ func (s *Service) Enable(c fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	keyType := "csk"
-	active := true
-	published := true
-
-	key, err := powerdns.Engine.Cryptokeys.Create(ctx, zoneName, pdnsapi.Cryptokey{
-		KeyType:   &keyType,
-		Active:    &active,
-		Published: &published,
-	})
+	key, warning, err := enableDNSSEC(ctx, zoneName)
 	if err != nil {
 		log.Error().Err(err).Str("zone", zoneName).Msg("failed to enable DNSSEC")
 
@@ -179,7 +171,40 @@ func (s *Service) Enable(c fiber.Ctx) error {
 		IPAddress:    c.IP(),
 	})
 
-	return c.JSON(fiber.Map{"success": true, "key": cryptokeyToView(key)})
+	resp := fiber.Map{"success": true, "key": cryptokeyToView(key)}
+	if warning != "" {
+		resp["warning"] = warning
+	}
+
+	return c.JSON(resp)
+}
+
+// enableDNSSEC creates a CSK for the zone and then rectifies it. Creating the
+// key does not rectify, so records that existed before DNSSEC would stay out
+// of the NSEC chain. A failed rectify leaves DNSSEC on and is returned as a
+// warning for the user.
+func enableDNSSEC(ctx context.Context, zoneName string) (*pdnsapi.Cryptokey, string, error) {
+	keyType := "csk"
+	active := true
+	published := true
+
+	key, err := powerdns.Engine.Cryptokeys.Create(ctx, zoneName, pdnsapi.Cryptokey{
+		KeyType:   &keyType,
+		Active:    &active,
+		Published: &published,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	if _, err := powerdns.Engine.Zones.Rectify(ctx, zoneName); err != nil {
+		log.Error().Err(err).Str("zone", zoneName).Msg("failed to rectify zone after enabling DNSSEC")
+
+		return key, fmt.Sprintf("DNSSEC is enabled, but rectifying the zone failed: %v. "+
+			"Run \"pdnsutil rectify-zone %s\" on the PowerDNS server.", err, zoneName), nil
+	}
+
+	return key, "", nil
 }
 
 // Disable removes all cryptokeys from a zone, effectively disabling DNSSEC.

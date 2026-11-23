@@ -55,7 +55,11 @@ function dnssecManager(zoneName, initialEnabled) {
                 const r = await fetch(`${this.baseUrl()}/enable`, { method: 'POST' });
                 const data = await r.json();
                 if (!data.success) throw new Error(data.message || 'Unknown error');
-                showToast('DNSSEC enabled successfully.', 'success');
+                if (data.warning) {
+                    showToast(data.warning, 'warning', 15000);
+                } else {
+                    showToast('DNSSEC enabled successfully.', 'success');
+                }
                 await this.loadKeys();
             } catch (e) {
                 showToast('Failed to enable DNSSEC: ' + e.message, 'danger');

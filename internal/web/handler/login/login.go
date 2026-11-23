@@ -32,6 +32,9 @@ const (
 
 	// authTypeCookieMaxAge is one year in seconds.
 	authTypeCookieMaxAge = 365 * 24 * 60 * 60
+
+	authTypeLocal = "local"
+	authTypeLDAP  = "ldap"
 )
 
 // Service is the login handler service.
@@ -224,29 +227,29 @@ func (s *Service) renderError(c fiber.Ctx, username, authType, errorMsg string) 
 func (s *Service) pickAuthType(requested string) (string, error) {
 	if requested == "" {
 		if s.cfg.Auth.LocalDB.Enabled {
-			return "local", nil
+			return authTypeLocal, nil
 		}
 
 		if s.cfg.Auth.LDAP.Enabled {
-			return "ldap", nil
+			return authTypeLDAP, nil
 		}
 
 		return "", ErrNoAuthMethod
 	}
 
 	switch requested {
-	case "local":
+	case authTypeLocal:
 		if !s.cfg.Auth.LocalDB.Enabled {
 			return "", ErrLocalAuthDisabled
 		}
 
-		return "local", nil
-	case "ldap":
+		return authTypeLocal, nil
+	case authTypeLDAP:
 		if !s.cfg.Auth.LDAP.Enabled || s.ldapAuth == nil {
 			return "", ErrLDAPAuthDisabled
 		}
 
-		return "ldap", nil
+		return authTypeLDAP, nil
 	default:
 		return "", ErrInvalidAuthMethod
 	}
@@ -256,7 +259,7 @@ func (s *Service) pickAuthType(requested string) (string, error) {
 // It also takes care of LDAP group synchronization when applicable.
 func (s *Service) authenticate(authType, username, password string) (*models.User, error) {
 	switch authType {
-	case "local":
+	case authTypeLocal:
 		user, err := s.localAuth.Authenticate(username, password)
 		if err != nil {
 			log.Error().Err(err).Str("username", username).Msg("Local authentication failed")
@@ -264,7 +267,7 @@ func (s *Service) authenticate(authType, username, password string) (*models.Use
 		}
 
 		return user, nil
-	case "ldap":
+	case authTypeLDAP:
 		user, groups, err := s.ldapAuth.Authenticate(username, password)
 		if err != nil {
 			log.Error().Err(err).Str("username", username).Msg("LDAP authentication failed")

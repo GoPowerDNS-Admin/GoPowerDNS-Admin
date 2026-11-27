@@ -7,7 +7,8 @@ on:
     inputs:
       tag:
         description: "Tag to release (e.g. v0.2.0)"
-        required: true
+        required: false
+        default: ""
 
 env:
   RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
@@ -22,11 +23,26 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
       owner: ${{ steps.tag.outputs.owner }}
     steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history required by git-cliff
+
+      - name: Install git-cliff
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          curl --silent --show-error --fail --location --output /tmp/git-cliff.tar.gz \
+            "https://github.com/orhun/git-cliff/releases/download/v2.14.2/git-cliff-2.14.2-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xf /tmp/git-cliff.tar.gz -C /tmp
+          mv "/tmp/git-cliff-2.14.2/git-cliff" /usr/local/bin/git-cliff
+
       - id: tag
         env:
           RAW_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         run: |
           TAG="${RAW_TAG// /}"
+          if [ -z "$TAG" ]; then
+            TAG="$(git-cliff --bumped-version)"
+          fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 

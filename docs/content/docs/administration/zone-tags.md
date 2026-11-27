@@ -22,7 +22,7 @@ Tags are assigned to users via **Admin → Users → Edit** and to groups via **
 
 ## Access resolution
 
-1. A user whose own role is `admin` sees every zone. A role granted through a group does not count for this.
+1. A user with the `admin` role sees every zone. This holds whether the role is the user's own or comes from a [group mapping](/docs/administration/group-mappings).
 2. A user with no tags, directly or through a group, sees every zone, tagged or not.
 3. Any other user sees only zones that carry at least one of their tags. Zones without tags are hidden from them.
 

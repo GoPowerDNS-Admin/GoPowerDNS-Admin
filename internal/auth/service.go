@@ -54,6 +54,30 @@ func (s *Service) HasPermission(userID uint64, permission string) (bool, error) 
 	return count > 0, nil
 }
 
+// HasRole reports whether the user has the named role, either as their own
+// role or through a group mapping.
+func (s *Service) HasRole(userID uint64, roleName string) (bool, error) {
+	var user models.User
+	if err := s.db.Preload("Role").First(&user, userID).Error; err != nil {
+		return false, fmt.Errorf("load user: %w", err)
+	}
+
+	if user.Role.Name == roleName {
+		return true, nil
+	}
+
+	var count int64
+	if err := s.db.Table("roles").
+		Joins("JOIN group_mappings ON group_mappings.role_id = roles.id").
+		Joins("JOIN user_groups ON user_groups.group_id = group_mappings.group_id").
+		Where("user_groups.user_id = ? AND roles.name = ?", userID, roleName).
+		Count(&count).Error; err != nil {
+		return false, fmt.Errorf("check group role: %w", err)
+	}
+
+	return count > 0, nil
+}
+
 // HasAnyPermission checks if a user has at least one of the given permissions.
 func (s *Service) HasAnyPermission(userID uint64, permissions []string) (bool, error) {
 	if len(permissions) == 0 {

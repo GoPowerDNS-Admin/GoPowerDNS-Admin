@@ -8,18 +8,17 @@ import (
 
 // GetAccessibleZoneIDs returns the set of zone IDs the user may access.
 //
-// Returns nil when access is unrestricted (admin role, or the user/groups have
-// no tag assignments at all — backward-compatible default).
+// Returns nil when access is unrestricted (admin role, own or through a group,
+// or the user/groups have no tag assignments at all — backward-compatible default).
 // Returns a non-nil map (possibly empty) when tag restrictions are in effect;
 // only zones whose ID appears in the map are accessible.
 func (s *Service) GetAccessibleZoneIDs(userID uint64) (map[string]bool, error) {
-	// Admin role always has unrestricted access.
-	var user models.User
-	if err := s.db.Preload("Role").First(&user, userID).Error; err != nil {
-		return nil, fmt.Errorf("zone access: load user: %w", err)
+	isAdmin, err := s.HasRole(userID, "admin")
+	if err != nil {
+		return nil, fmt.Errorf("zone access: %w", err)
 	}
 
-	if user.Role.Name == "admin" {
+	if isAdmin {
 		return nil, nil //nolint:nilnil // nil map intentionally signals unrestricted access
 	}
 

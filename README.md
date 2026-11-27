@@ -187,6 +187,16 @@ TOTP is only available for local accounts. OIDC and LDAP users rely on their ide
 
 OIDC and LDAP users are created with the **viewer** role on their first login. Their groups are synced at login. More roles come from group mappings under **Admin → Groups**.
 
+Mappings can also be listed in the config. They are created at startup, so a setup without local login still gets its first admin. `group` is the exact value the provider sends: the claim value for OIDC, the full group DN for LDAP.
+
+```toml
+[[auth.OIDC.group_roles]]
+group = "dns-admins"
+role  = "admin"
+```
+
+A mapping removed in the admin UI comes back at the next start. To revoke it for good, delete the config entry. See the [group mappings docs](https://docs.gopowerdnsadmin.org/docs/administration/group-mappings/) for details.
+
 See `internal/config/structs.go` for available configuration fields.
 
 ## Zone Editor

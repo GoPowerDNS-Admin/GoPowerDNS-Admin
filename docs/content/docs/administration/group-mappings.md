@@ -41,9 +41,11 @@ group = "dns-admins"
 role  = "admin"
 ```
 
-A mapping is only created when the group has none yet. Changes made in the
-admin UI are kept. See [OpenID Connect](/docs/authentication/oidc#in-the-config-file)
-and [LDAP](/docs/authentication/ldap#in-the-config-file) for details.
+A mapping is only created when the group has none. A role changed in the admin
+UI is kept. A mapping removed in the admin UI comes back at the next start, so
+to revoke a role for good, delete the entry from the config. See
+[OpenID Connect](/docs/authentication/oidc#in-the-config-file) and
+[LDAP](/docs/authentication/ldap#in-the-config-file) for details.
 
 ## Example
 

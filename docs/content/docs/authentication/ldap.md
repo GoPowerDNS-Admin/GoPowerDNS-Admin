@@ -70,14 +70,14 @@ from `username_attr`). The user is assigned the default **viewer** role.
 
 ## Group → role mapping
 
-When the group attributes are configured (`group_base_dn`, `group_filter`,
-`group_member_attr`, `group_name_attr`), the user's LDAP groups are extracted on
-each login and synchronized to their group memberships. Roles are then granted
-through **group mappings**.
+When `group_base_dn` is set, the user's LDAP groups are looked up on each login
+with `group_filter` and synchronized to their group memberships. Roles are then
+granted through **group mappings**.
 
 A group is matched by its full DN, for example
-`cn=dns-admins,ou=groups,dc=example,dc=com`. The `group_name_attr` value is
-only used as the display name.
+`cn=dns-admins,ou=groups,dc=example,dc=com`. Its display name is the first part
+of the DN (`dns-admins`). `group_member_attr` and `group_name_attr` are accepted
+but not used.
 
 ### In the config file
 
@@ -93,8 +93,13 @@ role  = "admin"
 ```
 
 `role` is the name of a built-in role (`admin`, `user`, `viewer`) or a custom
-role. A mapping is only created when the group has none yet. A mapping changed
-under **Admin → Groups** is kept, and the startup log shows a warning.
+role. The entries are applied on every start:
+
+- A group without a mapping gets one. This also brings back a mapping that was
+  removed under **Admin → Groups**. To revoke a role for good, delete the entry
+  from the config.
+- A group that maps to a different role keeps it, and the startup log shows a
+  warning.
 
 ### In the admin UI
 

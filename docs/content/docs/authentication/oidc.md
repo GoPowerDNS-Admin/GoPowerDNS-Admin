@@ -79,8 +79,13 @@ role  = "user"
 ```
 
 `role` is the name of a built-in role (`admin`, `user`, `viewer`) or a custom
-role. A mapping is only created when the group has none yet. A mapping changed
-under **Admin → Groups** is kept, and the startup log shows a warning.
+role. The entries are applied on every start:
+
+- A group without a mapping gets one. This also brings back a mapping that was
+  removed under **Admin → Groups**. To revoke a role for good, delete the entry
+  from the config.
+- A group that maps to a different role keeps it, and the startup log shows a
+  warning.
 
 ### In the admin UI
 

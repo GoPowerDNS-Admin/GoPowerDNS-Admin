@@ -240,7 +240,7 @@ Zone tags limit which zones a user can see. The limit is set on the user, not on
 
 - A user with no tags (directly or through a group) sees every zone.
 - A user with at least one tag sees only zones that carry one of those tags. Zones without tags are hidden from that user.
-- Users whose own role is `admin` always see every zone.
+- Users with the `admin` role always see every zone, whether the role is their own or comes from a group.
 
 - Create tags at `/admin/tag`, then assign them to zones at `/admin/zone-tag`; the list is searchable and paginated (configurable rows per page)
 - Zones are sorted alphabetically

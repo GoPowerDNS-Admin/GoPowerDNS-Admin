@@ -32,6 +32,38 @@ Click **Add Record**. The modal adapts to the selected type:
 Every record type also supports an optional **comment** (up to 255 characters)
 and a **Disabled** toggle that marks the record inactive in PowerDNS without deleting it.
 
+## ALIAS records
+
+An ALIAS record lets a name point to another hostname, even at the zone apex,
+where a CNAME is not allowed. PowerDNS looks up the target and answers with its
+A/AAAA addresses. ALIAS is disabled by default; enable it under the zone record
+type settings.
+
+PowerDNS only resolves ALIAS records when the server has both settings:
+
+```ini
+expand-alias=yes
+resolver=192.0.2.53
+```
+
+Without them, the name returns no address at all. GoPowerDNS-Admin therefore
+checks the server configuration before it saves an ALIAS record:
+
+- If `expand-alias` is off or no `resolver` is set, the save is rejected and
+  the message names the missing setting. The help text for the ALIAS type in
+  the record modal shows the same warning.
+- If the configuration cannot be read, the save is rejected as well, because
+  the result cannot be verified.
+- An ALIAS record cannot share a name with an A, AAAA or CNAME record. Delete
+  those records in the same change to replace them with an ALIAS.
+
+{{< callout type="warning" >}}
+The check reads the configuration of the PowerDNS server behind the configured
+API only. In a setup with several servers that share one database, each server
+resolves ALIAS records with its own settings. Set `expand-alias` and `resolver`
+on every server.
+{{< /callout >}}
+
 ## Editing a record
 
 Click the **edit** icon on any row. The modal pre-fills with the current values, including the comment and disabled state. The SOA record can be viewed and edited via its dedicated modal — it cannot be deleted.

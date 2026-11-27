@@ -234,6 +234,8 @@ func (s *Service) Get(c fiber.Ctx) error {
 		return allowedRecordTypes[i].Type < allowedRecordTypes[j].Type
 	})
 
+	allowedRecordTypes = annotateAliasHelp(listCtx, allowedRecordTypes)
+
 	// Resolve records page size preference.
 	currentUser, hasUser := c.Locals("CurrentUser").(models.User)
 	recordsPageSize := DefaultRecordsPageSize
@@ -508,6 +510,20 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": fmt.Sprintf("failed to fetch zone: %v", err),
+		})
+	}
+
+	if errAlias := checkAliasChanges(ctx, currentZone.RRsets, request.Changes); errAlias != nil {
+		status := fiber.StatusBadRequest
+		if errors.Is(errAlias, errAliasUnverified) {
+			status = fiber.StatusBadGateway
+		}
+
+		log.Warn().Err(errAlias).Str("zone_name", zoneName).Msg("rejected ALIAS record change")
+
+		return c.Status(status).JSON(fiber.Map{
+			"success": false,
+			"message": errAlias.Error(),
 		})
 	}
 

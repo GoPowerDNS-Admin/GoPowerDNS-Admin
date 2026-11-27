@@ -962,6 +962,11 @@ function zoneEditor(initData) {
                         showToast('Auto-PTR: no reverse zone found for ' + ips, 'warning', 10000);
                         reloadDelay = 5000;
                     }
+                    if (data.ptr_no_access && data.ptr_no_access.length > 0) {
+                        const ips = data.ptr_no_access.join(', ');
+                        showToast('Auto-PTR: PTR not changed for ' + ips + ' — you have no access to the reverse zone', 'warning', 10000);
+                        reloadDelay = 5000;
+                    }
                     setTimeout(() => location.reload(), reloadDelay);
                 } else {
                     showToast('Error: ' + (data.message || `HTTP ${res.status}`), 'danger');

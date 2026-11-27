@@ -553,11 +553,12 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 	userID, username := currentUserFromSession(c)
 
 	// Auto-create PTR records if enabled for this zone (forward zones only).
-	var ptrNoReverseZone []string
+	var ptrResult autoPTRResult
 
 	if !zoneIsReverse(zoneName) {
 		if zs := loadZoneSettings(s.db, zoneName); zs.AutoPTR {
-			ptrNoReverseZone = s.applyAutoPTR(ctx, currentZone, request.Changes, userID, username, c.IP())
+			ptrResult = s.applyAutoPTR(ctx, currentZone, request.Changes, s.zoneAccessFunc(c),
+				userID, username, c.IP())
 		}
 	}
 
@@ -578,7 +579,8 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"success":               true,
 		"message":               "Records updated successfully",
-		"ptr_no_reverse_zone":   ptrNoReverseZone,
+		"ptr_no_reverse_zone":   ptrResult.NoReverseZone,
+		"ptr_no_access":         ptrResult.NoAccess,
 	})
 }
 
@@ -786,21 +788,27 @@ func (s *Service) userHasPermission(c fiber.Ctx, permission string) bool {
 // given zone is not in the user's accessible set. Returns true for admin users
 // and for any user with no tag assignments (unrestricted).
 func (s *Service) canAccessZone(c fiber.Ctx, zoneName string) bool {
+	return s.zoneAccessFunc(c)(zoneName)
+}
+
+// zoneAccessFunc returns the zone access check for the current user. It loads
+// the user's tag restrictions once, so the check can run for many zones.
+func (s *Service) zoneAccessFunc(c fiber.Ctx) func(zoneName string) bool {
 	user, ok := c.Locals("CurrentUser").(models.User)
 	if !ok || user.ID == 0 {
-		return false
+		return func(string) bool { return false }
 	}
 
 	if s.authService == nil {
-		return true
+		return func(string) bool { return true }
 	}
 
 	accessible, err := s.authService.GetAccessibleZoneIDs(user.ID)
 	if err != nil || accessible == nil {
-		return true
+		return func(string) bool { return true }
 	}
 
-	return accessible[zoneName]
+	return func(zoneName string) bool { return accessible[zoneName] }
 }
 
 // buildZoneLists queries the PowerDNS zone list and splits the results into

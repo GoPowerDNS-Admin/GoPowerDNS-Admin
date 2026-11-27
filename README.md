@@ -226,6 +226,7 @@ When **Auto-PTR** is enabled for a forward zone (toggle in the Zone Settings car
 - **Create / update** — when a new IP is added, a PTR record pointing to the record's FQDN is created (or replaced) in the most-specific matching reverse zone.
 - **Delete** — when an IP is removed, its PTR record is deleted. If the PTR was manually changed to point to a different name, it is left untouched.
 - **No reverse zone** — if no reverse zone exists in PowerDNS for the IP, a warning toast is shown after saving so the issue is visible.
+- **Zone tags** — PTR records are only changed in reverse zones the user can access. Otherwise they are left as they are, and a warning toast is shown.
 - Auto-PTR is silently disabled for reverse zones and Slave zones where it does not apply.
 - All PTR changes are recorded in the activity log.
 

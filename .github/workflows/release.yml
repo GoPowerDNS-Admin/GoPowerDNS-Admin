@@ -263,11 +263,11 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.CHANGELOG_PAT || github.token }}
-          commit-message: "chore(changelog): update for ${{ env.RELEASE_TAG }} [skip ci]"
-          branch: chore/changelog-${{ env.RELEASE_TAG }}
+          commit-message: "chore(changelog): update for ${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }} [skip ci]"
+          branch: chore/changelog/${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}
           base: main
-          title: "chore(changelog): update for ${{ env.RELEASE_TAG }}"
-          body: "Automated changelog update for release `${{ env.RELEASE_TAG }}`."
+          title: "chore(changelog): update for ${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}"
+          body: "Automated changelog update for release `${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}`."
           add-paths: CHANGELOG.md
           labels: automated
 
@@ -283,17 +283,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          RELEASE_VERSION="${{ steps.cliff.outputs.version }}"
           PRERELEASE=""
-          if echo "${{ env.RELEASE_TAG }}" | grep -qE '-(alpha|beta|rc)'; then
+          if echo "$RELEASE_VERSION" | grep -qE '-(alpha|beta|rc)'; then
             PRERELEASE="--prerelease"
           fi
-          gh release create "${{ env.RELEASE_TAG }}" \
+          gh release create "$RELEASE_VERSION" \
             --target "$GITHUB_SHA" \
-            --title "${{ env.RELEASE_TAG }}" \
+            --title "$RELEASE_VERSION" \
             --notes-file RELEASE_NOTES.md \
             $PRERELEASE
 
       - name: Upload artifacts
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ env.RELEASE_TAG }}" dist/* --clobber
+        run: gh release upload "${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}" dist/* --clobber

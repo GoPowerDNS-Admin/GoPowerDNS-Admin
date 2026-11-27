@@ -607,12 +607,12 @@ func (s *Service) Update(c fiber.Ctx) error {
 	}
 
 	// Update or create group mapping; RoleID == 0 means remove any existing mapping.
-	if errMapping := s.reconcileGroupMapping(c, tx, g.ID, input.RoleID); errMapping != nil {
-		return errMapping
+	if errMapping := s.reconcileGroupMapping(tx, g.ID, input.RoleID); errMapping != nil {
+		return abortGroupSave(c, tx, errMapping)
 	}
 
-	if errGMS := s.reconcileMembershipForUpdate(c, tx, g.ID, wasExternal, isExternal, &input); errGMS != nil {
-		return errGMS
+	if errGMS := s.reconcileMembershipForUpdate(tx, g.ID, wasExternal, isExternal, &input); errGMS != nil {
+		return abortGroupSave(c, tx, errGMS)
 	}
 
 	if err = tx.Commit().Error; err != nil {

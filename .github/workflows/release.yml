@@ -234,23 +234,13 @@ jobs:
         with:
           fetch-depth: 0 # full history required by git-cliff
 
-      # On workflow_dispatch the release/tag does not exist yet — the "Create
-      # release" step below creates it. git-cliff (run before that) would
-      # therefore not see this version and would file the new commits under
-      # [unreleased] and emit the *previous* release's notes. Create the tag
-      # locally first (not pushed; the API tag is created later at the same
-      # SHA) so git-cliff attributes the commits to RELEASE_TAG.
-      - name: Tag locally for git-cliff
-        if: github.event_name == 'workflow_dispatch'
-        run: git tag "$RELEASE_TAG" "$GITHUB_SHA"
-
       - name: Generate release notes
         if: github.event_name == 'workflow_dispatch'
         uses: orhun/git-cliff-action@v4
         id: cliff
         with:
           config: cliff.toml
-          args: --verbose --latest --strip header
+          args: --verbose --unreleased --bump --strip header
         env:
           OUTPUT: RELEASE_NOTES.md
 
@@ -258,7 +248,7 @@ jobs:
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --verbose
+          args: ${{ github.event_name == 'workflow_dispatch' && '--verbose --unreleased --bump' || '--verbose' }}
         env:
           OUTPUT: CHANGELOG.md
 
@@ -273,11 +263,11 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.CHANGELOG_PAT || github.token }}
-          commit-message: "chore(changelog): update for ${{ env.RELEASE_TAG }} [skip ci]"
-          branch: chore/changelog-${{ env.RELEASE_TAG }}
+          commit-message: "chore(changelog): update for ${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }} [skip ci]"
+          branch: chore/changelog/${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}
           base: main
-          title: "chore(changelog): update for ${{ env.RELEASE_TAG }}"
-          body: "Automated changelog update for release `${{ env.RELEASE_TAG }}`."
+          title: "chore(changelog): update for ${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}"
+          body: "Automated changelog update for release `${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}`."
           add-paths: CHANGELOG.md
           labels: automated
 
@@ -293,17 +283,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          RELEASE_VERSION="${{ steps.cliff.outputs.version }}"
           PRERELEASE=""
-          if echo "${{ env.RELEASE_TAG }}" | grep -qE '-(alpha|beta|rc)'; then
+          if echo "$RELEASE_VERSION" | grep -qE '-(alpha|beta|rc)'; then
             PRERELEASE="--prerelease"
           fi
-          gh release create "${{ env.RELEASE_TAG }}" \
+          gh release create "$RELEASE_VERSION" \
             --target "$GITHUB_SHA" \
-            --title "${{ env.RELEASE_TAG }}" \
+            --title "$RELEASE_VERSION" \
             --notes-file RELEASE_NOTES.md \
             $PRERELEASE
 
       - name: Upload artifacts
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ env.RELEASE_TAG }}" dist/* --clobber
+        run: gh release upload "${{ github.event_name == 'workflow_dispatch' && steps.cliff.outputs.version || env.RELEASE_TAG }}" dist/* --clobber

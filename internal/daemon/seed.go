@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
+	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/auth"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/config"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/pdnsserver"
 	"github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/db/controller/setting"
@@ -23,6 +24,9 @@ func seed(cfg *config.Config, db *gorm.DB) {
 
 	// Seed role-permission mappings
 	seedRolePermissions(db)
+
+	// Seed group → role mappings from the OIDC and LDAP config
+	seedGroupRoles(cfg, db)
 
 	// Seed default admin user
 	seedUsers(db)
@@ -614,6 +618,39 @@ func seedPDNSServer(cfg *config.Config, db *gorm.DB) {
 	}
 
 	log.Info().Str("url", cfg.PDNS.APIServerURL).Msg("seeded PowerDNS server settings from config")
+}
+
+// seedGroupRoles maps the groups listed under group_roles in the OIDC and LDAP
+// config to their roles. It lets an OIDC-only or LDAP-only setup grant the
+// first admin without logging in locally.
+func seedGroupRoles(cfg *config.Config, db *gorm.DB) {
+	authService := auth.NewService(db)
+
+	if cfg.Auth.OIDC.Enabled {
+		seedProviderGroupRoles(authService, models.GroupSourceOIDC, cfg.Auth.OIDC.GroupRoles)
+	}
+
+	if cfg.Auth.LDAP.Enabled {
+		seedProviderGroupRoles(authService, models.GroupSourceLDAP, cfg.Auth.LDAP.GroupRoles)
+	}
+}
+
+func seedProviderGroupRoles(authService *auth.Service, source models.GroupSource, groupRoles []config.GroupRole) {
+	for _, gr := range groupRoles {
+		logger := log.With().Str("source", string(source)).Str("group", gr.Group).Str("role", gr.Role).Logger()
+
+		mappedRole, created, err := authService.EnsureGroupRole(source, gr.Group, gr.Role)
+
+		switch {
+		case err != nil:
+			logger.Error().Err(err).Msg("failed to seed group role mapping from config")
+		case created:
+			logger.Info().Msg("seeded group role mapping from config")
+		case mappedRole != gr.Role:
+			logger.Warn().Str("mapped_role", mappedRole).
+				Msg("group already maps to another role; config role not applied, change it under Admin > Groups")
+		}
+	}
 }
 
 // seedUsers creates the default admin user.

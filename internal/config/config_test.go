@@ -321,6 +321,48 @@ func TestConfigValidation(t *testing.T) {
 			wantErr: ErrLDAPMissingBaseDN,
 		},
 		{
+			name: "OIDC group roles valid",
+			config: func() Config {
+				c := validBase()
+				c.Auth.OIDC = OIDCAuth{
+					Enabled: true, ProviderURL: "https://idp", ClientID: "id", ClientSecret: "secret",
+					RedirectURL: "http://x",
+					GroupRoles:  []GroupRole{{Group: "/dns-admins", Role: "admin"}, {Group: "/dns-ops", Role: "user"}},
+				}
+
+				return c
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "OIDC group role missing role",
+			config: func() Config {
+				c := validBase()
+				c.Auth.OIDC = OIDCAuth{
+					Enabled: true, ProviderURL: "https://idp", ClientID: "id", ClientSecret: "secret",
+					RedirectURL: "http://x",
+					GroupRoles:  []GroupRole{{Group: "/dns-admins"}},
+				}
+
+				return c
+			}(),
+			wantErr: ErrGroupRoleIncomplete,
+		},
+		{
+			name: "LDAP group role listed twice",
+			config: func() Config {
+				c := validBase()
+				dn := "cn=dns-admins,ou=groups,dc=example,dc=com"
+				c.Auth.LDAP = LDAPAuth{
+					Enabled: true, Host: "ldap.example.com", Port: 389, BaseDN: "dc=example,dc=com",
+					GroupRoles: []GroupRole{{Group: dn, Role: "admin"}, {Group: dn, Role: "viewer"}},
+				}
+
+				return c
+			}(),
+			wantErr: ErrGroupRoleDuplicate,
+		},
+		{
 			name: "reverse proxy enabled with trusted IPs",
 			config: func() Config {
 				c := validBase()
@@ -460,6 +502,51 @@ func TestReadConfigWithOverlayFile(t *testing.T) {
 	// Fields not in the overlay must still come from main.toml.
 	if cfg.Webserver.Port == 0 {
 		t.Error("Webserver.Port should be set from main.toml")
+	}
+}
+
+func TestReadConfigGroupRolesKeepGroupNames(t *testing.T) {
+	projectRoot, err := filepath.Abs("../../")
+	if err != nil {
+		t.Fatalf("failed to get project root: %v", err)
+	}
+
+	overlayDir := filepath.Join(projectRoot, "etc", "local")
+	if err = os.MkdirAll(overlayDir, 0o750); err != nil {
+		t.Fatalf("failed to create overlay dir: %v", err)
+	}
+
+	overlay := `
+[[auth.OIDC.group_roles]]
+group = "/DNS-Admins"
+role  = "admin"
+
+[[auth.OIDC.group_roles]]
+group = "dns.operators"
+role  = "user"
+`
+
+	overlayFile := filepath.Join(overlayDir, "test-group-roles.toml")
+	if err = os.WriteFile(overlayFile, []byte(overlay), 0o600); err != nil {
+		t.Fatalf("failed to write overlay file: %v", err)
+	}
+
+	t.Cleanup(func() { _ = os.Remove(overlayFile) })
+
+	cfg, err := ReadConfig(overlayFile)
+	if err != nil {
+		t.Fatalf("ReadConfig() error = %v", err)
+	}
+
+	want := []GroupRole{{Group: "/DNS-Admins", Role: "admin"}, {Group: "dns.operators", Role: "user"}}
+	if len(cfg.Auth.OIDC.GroupRoles) != len(want) {
+		t.Fatalf("GroupRoles = %+v, want %+v", cfg.Auth.OIDC.GroupRoles, want)
+	}
+
+	for i := range want {
+		if cfg.Auth.OIDC.GroupRoles[i] != want[i] {
+			t.Errorf("GroupRoles[%d] = %+v, want %+v", i, cfg.Auth.OIDC.GroupRoles[i], want[i])
+		}
 	}
 }
 

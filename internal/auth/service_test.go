@@ -135,3 +135,117 @@ func TestSyncUserGroups_PreservesLongDN(t *testing.T) {
 	require.Equal(t, dn, group.ExternalID)
 	require.Equal(t, "platform-engineering-oncall-secondary-responders-primary-escalation", group.Name)
 }
+
+func TestEnsureGroupRole_CreatesGroupAndMapping(t *testing.T) {
+	db := newServiceTestDB(t)
+	require.NoError(t, db.AutoMigrate(&models.Permission{}, &models.RolePermission{}))
+	svc := NewService(db)
+
+	viewer := models.Role{Name: "viewer"}
+	admin := models.Role{Name: "admin"}
+
+	require.NoError(t, db.Create(&viewer).Error)
+	require.NoError(t, db.Create(&admin).Error)
+
+	perm := models.Permission{Name: PermAdminUsers, Resource: "admin", Action: "users"}
+	require.NoError(t, db.Create(&perm).Error)
+	require.NoError(t, db.Create(&models.RolePermission{RoleID: admin.ID, PermissionID: perm.ID}).Error)
+
+	mappedRole, created, err := svc.EnsureGroupRole(models.GroupSourceOIDC, "/DNS-Admins", "admin")
+	require.NoError(t, err)
+	require.True(t, created)
+	require.Equal(t, "admin", mappedRole)
+
+	mappedRole, created, err = svc.EnsureGroupRole(models.GroupSourceOIDC, "/DNS-Admins", "admin")
+	require.NoError(t, err)
+	require.False(t, created)
+	require.Equal(t, "admin", mappedRole)
+
+	user := models.User{
+		Username:   "oidcuser@example.com",
+		Email:      "oidcuser@example.com",
+		AuthSource: models.AuthSourceOIDC,
+		Active:     true,
+		RoleID:     viewer.ID,
+	}
+	require.NoError(t, db.Create(&user).Error)
+	require.NoError(t, svc.SyncUserGroups(user.ID, []string{"/DNS-Admins"}, models.GroupSourceOIDC))
+
+	var groupCount int64
+	require.NoError(t, db.Model(&models.Group{}).Count(&groupCount).Error)
+	require.Equal(t, int64(1), groupCount, "login must reuse the seeded group")
+
+	has, err := svc.HasPermission(user.ID, PermAdminUsers)
+	require.NoError(t, err)
+	require.True(t, has, "a member of the seeded group must inherit the mapped role")
+}
+
+func TestEnsureGroupRole_KeepsExistingMapping(t *testing.T) {
+	db := newServiceTestDB(t)
+	svc := NewService(db)
+
+	viewer := models.Role{Name: "viewer"}
+	admin := models.Role{Name: "admin"}
+
+	require.NoError(t, db.Create(&viewer).Error)
+	require.NoError(t, db.Create(&admin).Error)
+
+	_, _, err := svc.EnsureGroupRole(models.GroupSourceLDAP, "cn=dns-admins,ou=groups,dc=example,dc=com", "viewer")
+	require.NoError(t, err)
+
+	mappedRole, created, err := svc.EnsureGroupRole(
+		models.GroupSourceLDAP, "cn=dns-admins,ou=groups,dc=example,dc=com", "admin")
+	require.NoError(t, err)
+	require.False(t, created)
+	require.Equal(t, "viewer", mappedRole)
+
+	var mapping models.GroupMapping
+	require.NoError(t, db.First(&mapping).Error)
+	require.Equal(t, viewer.ID, mapping.RoleID)
+}
+
+func TestEnsureGroupRole_UnknownRole(t *testing.T) {
+	db := newServiceTestDB(t)
+	svc := NewService(db)
+
+	_, created, err := svc.EnsureGroupRole(models.GroupSourceOIDC, "dns-admins", "superuser")
+	require.ErrorIs(t, err, ErrRoleNotFound)
+	require.False(t, created)
+
+	var groupCount int64
+	require.NoError(t, db.Model(&models.Group{}).Count(&groupCount).Error)
+	require.Zero(t, groupCount)
+}
+
+func TestRenamedExternalGroupIsStillFound(t *testing.T) {
+	db := newServiceTestDB(t)
+	svc := NewService(db)
+
+	admin := models.Role{Name: "admin"}
+
+	require.NoError(t, db.Create(&admin).Error)
+
+	renamed := models.Group{Name: "Renamed in UI", ExternalID: "dns-admins", Source: models.GroupSourceOIDC}
+	require.NoError(t, db.Create(&renamed).Error)
+
+	mappedRole, created, err := svc.EnsureGroupRole(models.GroupSourceOIDC, "dns-admins", "admin")
+	require.NoError(t, err)
+	require.True(t, created)
+	require.Equal(t, "admin", mappedRole)
+
+	user := models.User{
+		Username:   "oidcuser@example.com",
+		Email:      "oidcuser@example.com",
+		AuthSource: models.AuthSourceOIDC,
+		Active:     true,
+		RoleID:     admin.ID,
+	}
+	require.NoError(t, db.Create(&user).Error)
+	require.NoError(t, svc.SyncUserGroups(user.ID, []string{"dns-admins"}, models.GroupSourceOIDC))
+
+	var groups []models.Group
+	require.NoError(t, db.Find(&groups).Error)
+	require.Len(t, groups, 1)
+	require.Equal(t, renamed.ID, groups[0].ID)
+	require.Equal(t, "Renamed in UI", groups[0].Name, "the name set in the UI must be kept")
+}

@@ -157,35 +157,47 @@ type LocalDBAuth struct {
 
 // OIDCAuth holds OIDC authentication settings.
 type OIDCAuth struct {
-	Enabled      bool     `mapstructure:"enabled"`
-	ProviderURL  string   `mapstructure:"provider_url"`
-	ClientID     string   `mapstructure:"client_id"`
-	ClientSecret string   `mapstructure:"client_secret"`
-	RedirectURL  string   `mapstructure:"redirect_url"`
-	Scopes       []string `mapstructure:"scopes"`
-	GroupsClaim  string   `mapstructure:"groups_claim"`
+	Enabled      bool        `mapstructure:"enabled"`
+	ProviderURL  string      `mapstructure:"provider_url"`
+	ClientID     string      `mapstructure:"client_id"`
+	ClientSecret string      `mapstructure:"client_secret"`
+	RedirectURL  string      `mapstructure:"redirect_url"`
+	Scopes       []string    `mapstructure:"scopes"`
+	GroupsClaim  string      `mapstructure:"groups_claim"`
+	GroupRoles   []GroupRole `mapstructure:"group_roles"`
+}
+
+// GroupRole maps an external group to a role. Group is the exact value the
+// provider sends: the group claim value for OIDC, the group DN for LDAP.
+//
+// It is a list entry rather than a map key because Viper lowercases map keys
+// and splits them on dots, which would change group names.
+type GroupRole struct {
+	Group string `mapstructure:"group"`
+	Role  string `mapstructure:"role"`
 }
 
 // LDAPAuth holds LDAP authentication settings.
 type LDAPAuth struct {
-	Enabled         bool     `mapstructure:"enabled"`
-	Host            string   `mapstructure:"host"`
-	Port            int      `mapstructure:"port"`
-	UseSSL          bool     `mapstructure:"use_ssl"`
-	UseTLS          bool     `mapstructure:"use_tls"`
-	SkipVerify      bool     `mapstructure:"skip_verify"`
-	BindDN          string   `mapstructure:"bind_dn"`
-	BindPassword    string   `mapstructure:"bind_password"`
-	BaseDN          string   `mapstructure:"base_dn"`
-	UserFilter      string   `mapstructure:"user_filter"`
-	GroupBaseDN     string   `mapstructure:"group_base_dn"`
-	GroupFilter     string   `mapstructure:"group_filter"`
-	GroupMemberAttr string   `mapstructure:"group_member_attr"`
-	UsernameAttr    string   `mapstructure:"username_attr"`
-	EmailAttr       string   `mapstructure:"email_attr"`
-	FirstNameAttr   string   `mapstructure:"first_name_attr"`
-	LastNameAttr    string   `mapstructure:"last_name_attr"`
-	GroupNameAttr   string   `mapstructure:"group_name_attr"`
-	Timeout         int      `mapstructure:"timeout"`
-	SearchAttrs     []string `mapstructure:"search_attrs"`
+	Enabled         bool        `mapstructure:"enabled"`
+	Host            string      `mapstructure:"host"`
+	Port            int         `mapstructure:"port"`
+	UseSSL          bool        `mapstructure:"use_ssl"`
+	UseTLS          bool        `mapstructure:"use_tls"`
+	SkipVerify      bool        `mapstructure:"skip_verify"`
+	BindDN          string      `mapstructure:"bind_dn"`
+	BindPassword    string      `mapstructure:"bind_password"`
+	BaseDN          string      `mapstructure:"base_dn"`
+	UserFilter      string      `mapstructure:"user_filter"`
+	GroupBaseDN     string      `mapstructure:"group_base_dn"`
+	GroupFilter     string      `mapstructure:"group_filter"`
+	GroupMemberAttr string      `mapstructure:"group_member_attr"`
+	UsernameAttr    string      `mapstructure:"username_attr"`
+	EmailAttr       string      `mapstructure:"email_attr"`
+	FirstNameAttr   string      `mapstructure:"first_name_attr"`
+	LastNameAttr    string      `mapstructure:"last_name_attr"`
+	GroupNameAttr   string      `mapstructure:"group_name_attr"`
+	Timeout         int         `mapstructure:"timeout"`
+	SearchAttrs     []string    `mapstructure:"search_attrs"`
+	GroupRoles      []GroupRole `mapstructure:"group_roles"`
 }

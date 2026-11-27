@@ -164,6 +164,10 @@ Note the section names are `[auth.LocalDB]`, `[auth.OIDC]`, and `[auth.LDAP]`,
 and the keys inside them are `snake_case`.
 {{< /callout >}}
 
+If you disable `[auth.LocalDB]`, list at least one admin group under
+`group_roles` in `[auth.OIDC]` or `[auth.LDAP]`. Otherwise nobody can reach the
+admin pages. See [Group Mappings](/docs/administration/group-mappings#mapping-groups-in-the-config-file).
+
 ## `[pdns]`
 
 Optionally bootstrap the PowerDNS connection on first startup. When all three

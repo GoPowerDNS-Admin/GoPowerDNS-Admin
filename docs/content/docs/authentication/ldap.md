@@ -28,6 +28,10 @@ first_name_attr   = "givenName"
 last_name_attr    = "sn"
 group_name_attr   = "cn"
 timeout           = 10
+
+[[auth.LDAP.group_roles]]
+group = "cn=dns-admins,ou=groups,dc=example,dc=com"
+role  = "admin"
 ```
 
 | Key             | Description                                                              |
@@ -39,6 +43,7 @@ timeout           = 10
 | `bind_dn` / `bind_password` | Service account used to search for users                   |
 | `base_dn`       | Search base for user lookups                                           |
 | `user_filter`   | User search filter; `{username}` is replaced with the login name       |
+| `group_roles`   | Optional. Group → role mappings created at startup (see below)         |
 
 ## TLS
 
@@ -65,13 +70,42 @@ from `username_attr`). The user is assigned the default **viewer** role.
 
 ## Group → role mapping
 
-When the group attributes are configured (`group_base_dn`, `group_filter`,
-`group_member_attr`, `group_name_attr`), the user's LDAP groups are extracted on
-each login and synchronized to their group memberships. Roles are then granted
-through **group mappings**:
+When `group_base_dn` is set, the user's LDAP groups are looked up on each login
+with `group_filter` and synchronized to their group memberships. Roles are then
+granted through **group mappings**.
 
-1. Create a local **group** whose name matches the LDAP group name (`group_name_attr`).
-2. Map that group to a **role** under **Admin → Groups**.
-3. Members of the matching LDAP group receive that role automatically on their next login.
+A group is matched by its full DN, for example
+`cn=dns-admins,ou=groups,dc=example,dc=com`. Its display name is the first part
+of the DN (`dns-admins`). `group_member_attr` and `group_name_attr` are accepted
+but not used.
+
+### In the config file
+
+List the mappings under `group_roles`. On every startup, each listed group is
+created if it is missing and mapped to its role. This is how an LDAP-only setup
+gets its first admin: the local `admin` account can't log in when
+`[auth.LocalDB]` is disabled.
+
+```toml
+[[auth.LDAP.group_roles]]
+group = "cn=dns-admins,ou=groups,dc=example,dc=com"
+role  = "admin"
+```
+
+`role` is the name of a built-in role (`admin`, `user`, `viewer`) or a custom
+role. The entries are applied on every start:
+
+- A group without a mapping gets one. This also brings back a mapping that was
+  removed under **Admin → Groups**. To revoke a role for good, delete the entry
+  from the config.
+- A group that maps to a different role keeps it, and the startup log shows a
+  warning.
+
+### In the admin UI
+
+1. Go to **Admin → Groups** and create a group.
+2. Set **Source** to **LDAP** and **External ID** to the group's full DN.
+3. Pick the **role** the group grants.
+4. Members of the LDAP group receive that role on their next login.
 
 See [Roles & Permissions](/docs/administration/rbac) for details.

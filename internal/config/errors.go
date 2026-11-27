@@ -56,6 +56,14 @@ var (
 	// ErrLDAPMissingBaseDN is returned when LDAP is enabled, but BaseDN is empty.
 	ErrLDAPMissingBaseDN = errors.New("auth.ldap.base_dn is required when LDAP is enabled")
 
+	// ErrGroupRoleIncomplete is returned when a group_roles entry lacks a group
+	// or a role.
+	ErrGroupRoleIncomplete = errors.New("each group_roles entry needs both a group and a role")
+
+	// ErrGroupRoleDuplicate is returned when group_roles lists the same group
+	// twice. A group maps to exactly one role.
+	ErrGroupRoleDuplicate = errors.New("group is listed more than once in group_roles")
+
 	// ErrDBMissingEngine is returned when no database engine is configured.
 	ErrDBMissingEngine = errors.New("db.gormengine is required (sqlite, mysql, or postgres)")
 

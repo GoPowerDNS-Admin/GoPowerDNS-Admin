@@ -22,6 +22,9 @@ var (
 	// ErrUserNotFound is returned when a user cannot be found in the database or directory.
 	ErrUserNotFound = errors.New("user not found")
 
+	// ErrRoleNotFound is returned when a role name does not exist in the database.
+	ErrRoleNotFound = errors.New("role not found")
+
 	// ErrMultipleUsersFound is returned when a query expected one user but found multiple.
 	// This typically indicates a misconfigured LDAP filter or duplicate entries.
 	ErrMultipleUsersFound = errors.New("multiple users found")

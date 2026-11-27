@@ -113,6 +113,12 @@ redirect_url = "http://localhost:8080/auth/oidc/callback"
 scopes = ["openid", "profile", "email", "groups"]
 groups_claim = "groups"  # Claim name for groups in ID token
 
+# Optional: map IdP groups to roles at startup. `group` is the exact claim value.
+# Use this to get a first admin when local login is disabled.
+# [[auth.OIDC.group_roles]]
+# group = "dns-admins"
+# role  = "admin"
+
 [auth.LDAP]
 enabled = false
 host = "ldap.example.com"
@@ -133,6 +139,11 @@ first_name_attr = "givenName"
 last_name_attr = "sn"
 group_name_attr = "cn"
 timeout = 10
+
+# Optional: map LDAP groups to roles at startup. `group` is the full group DN.
+# [[auth.LDAP.group_roles]]
+# group = "cn=dns-admins,ou=groups,dc=example,dc=com"
+# role  = "admin"
 
 # DNS record type definitions are built into the application (internal/daemon/seed.go)
 # and seeded into the database on the first startup.

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-ldap/ldap/v3"
@@ -199,6 +200,58 @@ func (s *Service) SyncUserGroups(userID uint64, externalGroups []string, source 
 
 		return nil
 	})
+}
+
+// EnsureGroupRole makes sure an external group exists and maps to a role.
+// It creates the mapping only when the group has none, so a mapping changed
+// in the admin UI is kept. It returns the role the group maps to after the
+// call and whether this call created the mapping.
+func (s *Service) EnsureGroupRole(
+	source models.GroupSource, externalGroup, roleName string,
+) (mappedRole string, created bool, err error) {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		var role models.Role
+		if errRole := tx.Where("name = ?", roleName).First(&role).Error; errRole != nil {
+			if errors.Is(errRole, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("%w: %s", ErrRoleNotFound, roleName)
+			}
+
+			return fmt.Errorf("failed to find role %s: %w", roleName, errRole)
+		}
+
+		var group models.Group
+		if errGroup := tx.Where("external_id = ? AND source = ?", externalGroup, source).
+			FirstOrCreate(&group, models.Group{
+				Name:       groupDisplayName(externalGroup, source),
+				ExternalID: externalGroup,
+				Source:     source,
+			}).Error; errGroup != nil {
+			return fmt.Errorf("failed to create/get group %s: %w", externalGroup, errGroup)
+		}
+
+		var mapping models.GroupMapping
+
+		errMapping := tx.Preload("Role").Where("group_id = ?", group.ID).First(&mapping).Error
+		if errMapping == nil {
+			mappedRole = mapping.Role.Name
+
+			return nil
+		}
+
+		if !errors.Is(errMapping, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("failed to find mapping for group %s: %w", externalGroup, errMapping)
+		}
+
+		if errCreate := tx.Create(&models.GroupMapping{GroupID: group.ID, RoleID: role.ID}).Error; errCreate != nil {
+			return fmt.Errorf("failed to map group %s to role %s: %w", externalGroup, roleName, errCreate)
+		}
+
+		mappedRole, created = role.Name, true
+
+		return nil
+	})
+
+	return mappedRole, created, err
 }
 
 // AssignRoleToUser assigns a role to a user (for local users).

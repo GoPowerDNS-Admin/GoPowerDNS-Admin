@@ -16,18 +16,34 @@ place.
 - Each **group** can be mapped to exactly one **role**.
 - A user's effective permissions are the union of their directly-assigned roles
   and the roles of every group they belong to.
-- When a user logs in via OIDC or LDAP, their external group names are
-  synchronized to local groups **by name**. If a matching local group exists, the
-  user inherits that group's mapped role.
+- When a user logs in via OIDC or LDAP, their external groups are synchronized
+  to groups with the same **source** and **external ID**. For OIDC the external
+  ID is the value in the `groups_claim`. For LDAP it is the group's full DN.
+  Missing groups are created, and the user inherits each group's mapped role.
 
 ## Mapping a group to a role
 
 1. Navigate to **Admin → Groups**.
-2. Create or edit a group, giving it a **name** that matches the group name your
-   identity provider sends (for OIDC, the value in the `groups_claim`; for LDAP,
-   the `group_name_attr`).
+2. Create or edit a group. Set its **Source** to OIDC or LDAP, and its
+   **External ID** to the exact value your identity provider sends.
 3. Select the **role** the group should grant.
 4. Save. Members of that group receive the role on their next login.
+
+## Mapping groups in the config file
+
+Mappings can also be listed under `group_roles` in `[auth.OIDC]` or
+`[auth.LDAP]`. They are created at startup, so an OIDC-only or LDAP-only setup
+has an admin from the first login:
+
+```toml
+[[auth.OIDC.group_roles]]
+group = "dns-admins"
+role  = "admin"
+```
+
+A mapping is only created when the group has none yet. Changes made in the
+admin UI are kept. See [OpenID Connect](/docs/authentication/oidc#in-the-config-file)
+and [LDAP](/docs/authentication/ldap#in-the-config-file) for details.
 
 ## Example
 

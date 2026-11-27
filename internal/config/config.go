@@ -219,35 +219,77 @@ func validateAuth(c *Config) error {
 	}
 
 	if c.Auth.OIDC.Enabled {
-		if c.Auth.OIDC.ProviderURL == "" {
-			return ErrOIDCMissingProviderURL
-		}
-
-		if c.Auth.OIDC.ClientID == "" {
-			return ErrOIDCMissingClientID
-		}
-
-		if c.Auth.OIDC.ClientSecret == "" {
-			return ErrOIDCMissingClientSecret
-		}
-
-		if c.Auth.OIDC.RedirectURL == "" {
-			return ErrOIDCMissingRedirectURL
+		if err := validateOIDC(&c.Auth.OIDC); err != nil {
+			return err
 		}
 	}
 
 	if c.Auth.LDAP.Enabled {
-		if c.Auth.LDAP.Host == "" {
-			return ErrLDAPMissingHost
+		if err := validateLDAP(&c.Auth.LDAP); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateOIDC(o *OIDCAuth) error {
+	if o.ProviderURL == "" {
+		return ErrOIDCMissingProviderURL
+	}
+
+	if o.ClientID == "" {
+		return ErrOIDCMissingClientID
+	}
+
+	if o.ClientSecret == "" {
+		return ErrOIDCMissingClientSecret
+	}
+
+	if o.RedirectURL == "" {
+		return ErrOIDCMissingRedirectURL
+	}
+
+	if err := validateGroupRoles(o.GroupRoles); err != nil {
+		return errors.Wrap(err, "auth.oidc.group_roles")
+	}
+
+	return nil
+}
+
+func validateLDAP(l *LDAPAuth) error {
+	if l.Host == "" {
+		return ErrLDAPMissingHost
+	}
+
+	if l.Port == 0 {
+		return ErrLDAPMissingPort
+	}
+
+	if l.BaseDN == "" {
+		return ErrLDAPMissingBaseDN
+	}
+
+	if err := validateGroupRoles(l.GroupRoles); err != nil {
+		return errors.Wrap(err, "auth.ldap.group_roles")
+	}
+
+	return nil
+}
+
+func validateGroupRoles(groupRoles []GroupRole) error {
+	seen := make(map[string]bool, len(groupRoles))
+
+	for _, gr := range groupRoles {
+		if gr.Group == "" || gr.Role == "" {
+			return ErrGroupRoleIncomplete
 		}
 
-		if c.Auth.LDAP.Port == 0 {
-			return ErrLDAPMissingPort
+		if seen[gr.Group] {
+			return errors.Wrap(ErrGroupRoleDuplicate, gr.Group)
 		}
 
-		if c.Auth.LDAP.BaseDN == "" {
-			return ErrLDAPMissingBaseDN
-		}
+		seen[gr.Group] = true
 	}
 
 	return nil

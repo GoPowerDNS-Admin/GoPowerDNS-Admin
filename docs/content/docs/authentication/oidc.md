@@ -17,6 +17,10 @@ client_secret = "your-client-secret"
 redirect_url  = "https://pdns.example.com/auth/oidc/callback"
 scopes        = ["openid", "profile", "email", "groups"]
 groups_claim  = "groups"
+
+[[auth.OIDC.group_roles]]
+group = "dns-admins"
+role  = "admin"
 ```
 
 | Key             | Description                                                                   |
@@ -27,6 +31,7 @@ groups_claim  = "groups"
 | `redirect_url`  | Must be `https://<your-domain>/auth/oidc/callback`                            |
 | `scopes`        | Scopes requested at login                                                     |
 | `groups_claim`  | ID-token claim that contains the user's group names (for group → role mapping)|
+| `group_roles`   | Optional. Group → role mappings created at startup (see below)                |
 
 ## Provider setup
 
@@ -50,11 +55,42 @@ ID token are synchronized to the user's group memberships on every login. Roles
 (and therefore permissions) are then granted through **group mappings**: each
 local group can be mapped to one role under **Admin → Groups**.
 
-To grant roles based on your IdP's groups:
+A group is matched by the exact value in the claim. Case matters, and so does a
+leading `/`. Most providers, such as Authentik, send the plain group name
+(`dns-admins`). Keycloak sends the path (`/dns-admins`) when **Full group path**
+is on. To see the exact value, log in once and look up the group's
+**External ID** under **Admin → Groups**.
 
-1. Create a local **group** whose name matches the group name your IdP sends.
-2. Map that group to the desired **role** when creating or editing it.
-3. Members of the matching IdP group receive that role automatically on their next login.
+### In the config file
+
+List the mappings under `group_roles`. On every startup, each listed group is
+created if it is missing and mapped to its role. This is how an OIDC-only setup
+gets its first admin: the local `admin` account can't log in when
+`[auth.LocalDB]` is disabled.
+
+```toml
+[[auth.OIDC.group_roles]]
+group = "dns-admins"
+role  = "admin"
+
+[[auth.OIDC.group_roles]]
+group = "dns-operators"
+role  = "user"
+```
+
+`role` is the name of a built-in role (`admin`, `user`, `viewer`) or a custom
+role. A mapping is only created when the group has none yet. A mapping changed
+under **Admin → Groups** is kept, and the startup log shows a warning.
+
+### In the admin UI
+
+1. Go to **Admin → Groups** and create a group.
+2. Set **Source** to **OIDC** and **External ID** to the exact claim value.
+3. Pick the **role** the group grants.
+4. Members of the IdP group receive that role on their next login.
+
+A group also appears in the list on its own after the first login of one of
+its members. You can then edit it and pick a role.
 
 See [Roles & Permissions](/docs/administration/rbac) for the available roles and how
 group mappings resolve to permissions.

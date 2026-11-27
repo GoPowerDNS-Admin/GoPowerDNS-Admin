@@ -481,11 +481,13 @@ func (s *Service) PostRecords(c fiber.Ctx) error {
 
 	// ensure only allowed record types are being modified
 	if errValidateRecordTypes := s.validateRecordsUpdateAreValidTypes(
-		c,
 		zoneName,
 		&request,
 		zoneIsReverse(zoneName)); errValidateRecordTypes != nil {
-		return errValidateRecordTypes
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": errValidateRecordTypes.Error(),
+		})
 	}
 
 	// Check if the PowerDNS client is initialized

@@ -1,7 +1,6 @@
 package zoneedit
 
 import (
-	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 
 	zonesettings "github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/internal/web/handler/admin/settings/zone"
@@ -35,9 +34,19 @@ func (s *Service) loadAllowedRecordTypes(reverse bool) []RecordTypeOption {
 	return allowedRecordTypes
 }
 
-// validateRecordsUpdateAreValidTypes checks if all provided record types are allowed.
+// disallowedTypeError reports a change to a record type that is not enabled
+// in the zone record settings.
+type disallowedTypeError struct {
+	recordType string
+}
+
+func (e *disallowedTypeError) Error() string {
+	return "Modification of record type " + e.recordType + " is not allowed"
+}
+
+// validateRecordsUpdateAreValidTypes checks if all provided record types are
+// allowed. It returns a *disallowedTypeError for the first type that is not.
 func (s *Service) validateRecordsUpdateAreValidTypes(
-	c fiber.Ctx,
 	zoneName string,
 	request *RecordsUpdateRequest,
 	reverse bool) error {
@@ -59,10 +68,7 @@ func (s *Service) validateRecordsUpdateAreValidTypes(
 			log.Warn().Str("zone_name", zoneName).Str("record_type", change.Type).
 				Msg("attempt to modify disallowed record type")
 
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"success": false,
-				"message": "Modification of record type " + change.Type + " is not allowed",
-			})
+			return &disallowedTypeError{recordType: change.Type}
 		}
 	}
 

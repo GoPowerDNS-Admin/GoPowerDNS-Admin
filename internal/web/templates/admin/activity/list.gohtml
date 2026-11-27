@@ -160,7 +160,7 @@
                                                 {{ else if eq .Action "zone_deleted_undone" }}
                                                     <span class="badge text-bg-secondary">zone restored</span>
                                                 {{ else }}
-                                                    <span class="badge text-bg-light text-dark">{{ .Action }}</span>
+                                                    <span class="badge bg-body-tertiary text-body">{{ .Action }}</span>
                                                 {{ end }}
                                             </td>
                                             <td>
@@ -232,7 +232,7 @@
                                                             ">
                                                                 <div class="d-flex align-items-center gap-1 mb-1">
                                                                     <code class="text-body">{{ .Name }}</code>
-                                                                    <span class="badge text-bg-light text-dark">{{ .Type }}</span>
+                                                                    <span class="badge bg-body-tertiary text-body">{{ .Type }}</span>
                                                                     {{ if eq .Action "added"    }}<span class="badge text-bg-success">added</span>{{ end }}
                                                                     {{ if eq .Action "modified" }}<span class="badge text-bg-warning text-dark">modified</span>{{ end }}
                                                                     {{ if eq .Action "deleted"  }}<span class="badge text-bg-danger">deleted</span>{{ end }}

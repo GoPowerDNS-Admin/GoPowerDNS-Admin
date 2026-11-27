@@ -1,16 +1,10 @@
 
 <link rel="stylesheet" href="/static/vendor/adminlte-v4/css/adminlte.min.css">
-<!--begin::DataTables-->
-<link rel="stylesheet" href="/static/vendor/datatables-2.3.7/css/dataTables.bootstrap5.min.css"/>
-<!--end::DataTables-->
 <!--begin::Fonts-->
-<link rel="stylesheet" href="/static/vendor/source-sans-3-5.2.9/index.css"/>
+<link rel="stylesheet" href="/static/vendor/source-sans-3-5.3.1/index.css"/>
 <!--end::Fonts-->
-<!--begin::Third Party Plugin(OverlayScrollbars)-->
-<link rel="stylesheet" href="/static/vendor/overlayscrollbars-2.14.0/styles/overlayscrollbars.min.css"/>
-<!--end::Third Party Plugin(OverlayScrollbars)-->
 <!--begin::Third Party Plugin(Bootstrap Icons)-->
-<link rel="stylesheet" href="/static/vendor/bootstrap-icons-1.13.1/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="/static/vendor/bootstrap-icons-1.13.2/font/bootstrap-icons.min.css"/>
 <!--end::Third Party Plugin(Bootstrap Icons)-->
 <style>
     /* Card collapse icon toggling — AdminLTE4 does not handle data-lte-icon for card-collapse */
@@ -48,4 +42,17 @@
        Lift the menu above the header here; zone-edit.js pairs this with a Popper
        `fixed` strategy so the menu also escapes the table's overflow clipping. */
     #zone-editor .dropdown-menu { --bs-dropdown-zindex: 1031; }
+    /* Bootstrap's .btn-light keeps its near-white fill in dark mode, which turns
+       the row action buttons into bright squares. Map it to the theme surfaces. */
+    [data-bs-theme="dark"] .btn-light {
+        --bs-btn-color: var(--bs-body-color);
+        --bs-btn-bg: var(--bs-tertiary-bg);
+        --bs-btn-border-color: var(--bs-border-color);
+        --bs-btn-hover-color: var(--bs-emphasis-color);
+        --bs-btn-hover-bg: var(--bs-secondary-bg);
+        --bs-btn-hover-border-color: var(--bs-border-color);
+        --bs-btn-active-color: var(--bs-emphasis-color);
+        --bs-btn-active-bg: var(--bs-secondary-bg);
+        --bs-btn-active-border-color: var(--bs-border-color);
+    }
 </style>

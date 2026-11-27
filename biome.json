@@ -7,7 +7,7 @@
     ]
   },
   "javascript": {
-    "globals": ["Alpine", "bootstrap", "jQuery", "$"]
+    "globals": ["Alpine", "bootstrap"]
   },
   "linter": {
     "enabled": true,

@@ -104,7 +104,7 @@ func recordMenuTestPage(t *testing.T) string {
 <html>
 <head>
 <meta charset="UTF-8">
-<link rel="stylesheet" href="/static/vendor/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="/static/vendor/bootstrap-5.3.9-dist/css/bootstrap.min.css">
 ` + maincssStyle(t) + `
 </head>
 <body>
@@ -175,9 +175,9 @@ func recordMenuTestPage(t *testing.T) string {
   </div>
 </div>
 
-<script src="/static/vendor/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/vendor/bootstrap-5.3.9-dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/zone-edit.js"></script>
-<script src="/static/vendor/alpinejs-3.14.9/alpine.min.js" defer></script>
+<script src="/static/vendor/alpinejs-3.17.5/alpine.min.js" defer></script>
 </body>
 </html>`
 }

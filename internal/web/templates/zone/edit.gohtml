@@ -260,7 +260,7 @@
                                                     <tr>
                                                         <td x-text="key.id" class="text-muted small align-middle"></td>
                                                         <td class="align-middle">
-                                                            <span class="badge bg-light text-dark border text-uppercase" x-text="key.key_type"></span>
+                                                            <span class="badge bg-body-tertiary text-body border text-uppercase" x-text="key.key_type"></span>
                                                         </td>
                                                         <td class="align-middle" x-text="key.algorithm"></td>
                                                         <td class="align-middle" x-text="key.bits || '—'"></td>
@@ -561,7 +561,7 @@
                                                 <tr :id="'rec-' + CSS.escape(record.name)" :class="recordRowClass(record)">
                                                     <td class="record-name" x-text="record.display_name"></td>
                                                     <td class="record-type">
-                                                        <span class="badge bg-light text-dark border" x-text="record.type"></span>
+                                                        <span class="badge bg-body-tertiary text-body border" x-text="record.type"></span>
                                                     </td>
                                                     <td class="record-ttl text-nowrap" x-text="record.ttl"></td>
                                                     <td class="record-status">
@@ -571,13 +571,13 @@
                                                     <td class="record-content" style="max-width:220px;">
                                                         <span class="d-inline-block text-truncate mw-100 align-bottom" :title="record.content" x-text="record.content"></span>
                                                         <template x-if="ptrZoneLink(record)">
-                                                            <a :href="ptrZoneLink(record)" class="badge bg-light text-secondary border text-decoration-none ms-1 small"
+                                                            <a :href="ptrZoneLink(record)" class="badge bg-body-tertiary text-secondary border text-decoration-none ms-1 small"
                                                                title="Open PTR record in reverse zone">
                                                                 <i class="bi bi-arrow-left-right me-1"></i>PTR
                                                             </a>
                                                         </template>
                                                         <template x-if="forwardZoneLink(record)">
-                                                            <a :href="forwardZoneLink(record)" class="badge bg-light text-secondary border text-decoration-none ms-1 small"
+                                                            <a :href="forwardZoneLink(record)" class="badge bg-body-tertiary text-secondary border text-decoration-none ms-1 small"
                                                                title="Open forward zone">
                                                                 <i class="bi bi-arrow-left-right me-1"></i>fwd
                                                             </a>
@@ -698,7 +698,7 @@
                                                     </select>
                                                     <!-- Edit mode: read-only badge (type cannot change) -->
                                                     <div x-show="recordForm.isEditing" class="form-control-plaintext">
-                                                        <span class="badge bg-light text-dark border fs-6" x-text="recordForm.type"></span>
+                                                        <span class="badge bg-body-tertiary text-body border fs-6" x-text="recordForm.type"></span>
                                                     </div>
                                                 </div>
                                                 <div class="col">
@@ -893,7 +893,7 @@
                                         {{range .Records}}
                                         <tr>
                                             <td>{{.Name}}</td>
-                                            <td><span class="badge bg-light text-dark border">{{.Type}}</span></td>
+                                            <td><span class="badge bg-body-tertiary text-body border">{{.Type}}</span></td>
                                             <td class="text-nowrap">{{.TTL}}</td>
                                             <td>
                                                 {{if .Disabled}}

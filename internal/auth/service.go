@@ -166,16 +166,9 @@ func (s *Service) SyncUserGroups(userID uint64, externalGroups []string, source 
 		var groupIDs []uint
 
 		for _, externalGroup := range externalGroups {
-			var group models.Group
-
-			err := tx.Where("external_id = ? AND source = ?", externalGroup, source).
-				FirstOrCreate(&group, models.Group{
-					Name:       groupDisplayName(externalGroup, source),
-					ExternalID: externalGroup,
-					Source:     source,
-				}).Error
+			group, err := findOrCreateGroup(tx, source, externalGroup)
 			if err != nil {
-				return fmt.Errorf("failed to create/get group %s: %w", externalGroup, err)
+				return err
 			}
 
 			groupIDs = append(groupIDs, group.ID)
@@ -202,10 +195,31 @@ func (s *Service) SyncUserGroups(userID uint64, externalGroups []string, source 
 	})
 }
 
+// findOrCreateGroup returns the group with the given source and external ID,
+// creating it when missing. The display name is only a creation default, so a
+// group renamed in the admin UI is still found.
+func findOrCreateGroup(tx *gorm.DB, source models.GroupSource, externalGroup string) (models.Group, error) {
+	var group models.Group
+
+	err := tx.Where("external_id = ? AND source = ?", externalGroup, source).
+		Attrs(models.Group{
+			Name:       groupDisplayName(externalGroup, source),
+			ExternalID: externalGroup,
+			Source:     source,
+		}).
+		FirstOrCreate(&group).Error
+	if err != nil {
+		return group, fmt.Errorf("failed to create/get group %s: %w", externalGroup, err)
+	}
+
+	return group, nil
+}
+
 // EnsureGroupRole makes sure an external group exists and maps to a role.
-// It creates the mapping only when the group has none, so a mapping changed
-// in the admin UI is kept. It returns the role the group maps to after the
-// call and whether this call created the mapping.
+// It creates the mapping only when the group has none, so a role changed in
+// the admin UI is kept. A mapping removed in the UI is created again. It
+// returns the role the group maps to after the call and whether this call
+// created the mapping.
 func (s *Service) EnsureGroupRole(
 	source models.GroupSource, externalGroup, roleName string,
 ) (mappedRole string, created bool, err error) {
@@ -219,14 +233,9 @@ func (s *Service) EnsureGroupRole(
 			return fmt.Errorf("failed to find role %s: %w", roleName, errRole)
 		}
 
-		var group models.Group
-		if errGroup := tx.Where("external_id = ? AND source = ?", externalGroup, source).
-			FirstOrCreate(&group, models.Group{
-				Name:       groupDisplayName(externalGroup, source),
-				ExternalID: externalGroup,
-				Source:     source,
-			}).Error; errGroup != nil {
-			return fmt.Errorf("failed to create/get group %s: %w", externalGroup, errGroup)
+		group, errGroup := findOrCreateGroup(tx, source, externalGroup)
+		if errGroup != nil {
+			return errGroup
 		}
 
 		var mapping models.GroupMapping

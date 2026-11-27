@@ -216,3 +216,36 @@ func TestEnsureGroupRole_UnknownRole(t *testing.T) {
 	require.NoError(t, db.Model(&models.Group{}).Count(&groupCount).Error)
 	require.Zero(t, groupCount)
 }
+
+func TestRenamedExternalGroupIsStillFound(t *testing.T) {
+	db := newServiceTestDB(t)
+	svc := NewService(db)
+
+	admin := models.Role{Name: "admin"}
+
+	require.NoError(t, db.Create(&admin).Error)
+
+	renamed := models.Group{Name: "Renamed in UI", ExternalID: "dns-admins", Source: models.GroupSourceOIDC}
+	require.NoError(t, db.Create(&renamed).Error)
+
+	mappedRole, created, err := svc.EnsureGroupRole(models.GroupSourceOIDC, "dns-admins", "admin")
+	require.NoError(t, err)
+	require.True(t, created)
+	require.Equal(t, "admin", mappedRole)
+
+	user := models.User{
+		Username:   "oidcuser@example.com",
+		Email:      "oidcuser@example.com",
+		AuthSource: models.AuthSourceOIDC,
+		Active:     true,
+		RoleID:     admin.ID,
+	}
+	require.NoError(t, db.Create(&user).Error)
+	require.NoError(t, svc.SyncUserGroups(user.ID, []string{"dns-admins"}, models.GroupSourceOIDC))
+
+	var groups []models.Group
+	require.NoError(t, db.Find(&groups).Error)
+	require.Len(t, groups, 1)
+	require.Equal(t, renamed.ID, groups[0].ID)
+	require.Equal(t, "Renamed in UI", groups[0].Name, "the name set in the UI must be kept")
+}

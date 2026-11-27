@@ -14,10 +14,10 @@ enabled = true
 
 ## Password policy
 
-Passwords are hashed with [Argon2id](https://en.wikipedia.org/wiki/Argon2). There is no enforced minimum length in the current release — set a strong password manually.
+Passwords are hashed with [Argon2id](https://en.wikipedia.org/wiki/Argon2). When users change their own password under **Profile**, it must have at least 8 characters. Passwords set by an admin under **Admin → Users** have no minimum length, so set a strong one.
 
 {{< callout >}}
-The `Argon2Salt` key under `[webserver]` is used for session/cookie cryptography, **not** for password hashing — Argon2id generates a per-password salt automatically.
+Argon2id generates a random salt for each password. The `Argon2Salt` key under `[webserver]` is not used for password hashing. It is only checked at startup.
 {{< /callout >}}
 
 ## TOTP (two-factor authentication)

@@ -7,7 +7,7 @@ next: /docs/zone-editor/records
 
 ## Creating a zone
 
-Navigate to **Zones → Add Zone**. Fill in:
+Click **Add Zone** in the sidebar (needs the `zone.create` permission). Fill in:
 
 | Field            | Description                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------------- |
@@ -32,6 +32,18 @@ Duplicate zones are detected before creation and a direct link to the existing z
 
 Each zone has a collapsible **Zone Settings** card at the top of the editor. Changes here (kind, SOA-EDIT-API, masters, Auto-PTR) are saved independently of record changes and redirect back to the same zone with a success notification.
 
+Secondary (Slave) zones show their records as a read-only table, because they come from the master server. They have no DNSSEC card.
+
+## Who can do what
+
+| Action                                          | Permission    |
+| ----------------------------------------------- | ------------- |
+| Open a zone and see its records and DNSSEC keys | `zone.read`   |
+| Change settings, records, and DNSSEC            | `zone.update` |
+| Delete the zone                                 | `zone.delete` |
+
+Users with `zone.read` but not `zone.update` see the zone read-only. The settings fields are greyed out, the records card shows a **Read-Only** badge, and the add, edit, save, delete, and DNSSEC actions are hidden. Zone tags can further limit which zones a user sees — see [Zone Tags](/docs/administration/zone-tags).
+
 ## Deleting a zone
 
-Click **Delete Zone** in the zone settings card. A confirmation dialog requires you to type the zone name before deletion proceeds. The full zone snapshot is saved to the activity log and can be restored via **Undo**.
+Click **Delete Zone** in the zone settings card. A confirmation dialog requires you to type the zone name before deletion proceeds. A snapshot of the zone (kind, SOA-EDIT-API, masters, and all records) is saved to the activity log and can be restored via **Undo**. The undo brings all records back enabled, and it does not restore record comments or DNSSEC keys.

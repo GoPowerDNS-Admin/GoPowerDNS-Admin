@@ -16,7 +16,7 @@ proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
 
 | Field         | Default           | Description                                                                                     |
 | ------------- | ----------------- | ----------------------------------------------------------------------------------------------- |
-| `enabled`     | `false`           | Activates trusted-proxy IP checking. When `false`, the proxy header is trusted unconditionally. |
+| `enabled`     | `false`           | Reads the client IP from `proxyheader`, but only for requests from `trustedips`. When `false`, the header is ignored and the connection's IP is used. |
 | `trustedips`  | _(none)_          | Required when `enabled = true`. IPv4/IPv6 addresses or CIDR ranges of your upstream proxies.    |
 | `proxyheader` | `X-Forwarded-For` | HTTP header used to read the real client IP.                                                    |
 

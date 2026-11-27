@@ -8,10 +8,12 @@ prev: /docs/zone-editor/zones
 
 ## Record list
 
-The record table shows all non-DNSSEC records in the zone. DNSSEC-managed types (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits.
+The record table shows all non-DNSSEC records in the zone. DNSSEC-managed types (RRSIG, NSEC, NSEC3, NSEC3PARAM, and PowerDNS-internal `TYPE<n>` records) are automatically hidden to prevent accidental edits.
+
+Adding and editing records needs the `zone.update` permission. Without it, the table is read-only: the Add, Save, and Discard buttons and the row menus are hidden.
 
 - **Search** — filters by name, content, or comment
-- **Type filter** — pills above the table narrow to a single record type
+- **Type filter** — a dropdown above the table narrows the list to a single record type
 - **Pagination** — configurable page size (saved per user); your current page is preserved when you save or discard changes
 - **Sorting** — click any column header; apex (`@`) records always sort first
 - **Sticky toolbar** — the records header (search, type filter, and the Add / Save / Discard actions) stays pinned to the top as you scroll, so the actions are always reachable in long zones

@@ -6,7 +6,11 @@ prev: /docs/administration/rbac
 next: /docs/administration/activity-log
 ---
 
-Zone tags restrict which users and groups can see a zone. Zones without any tags are accessible to all authenticated users.
+Zone tags limit which zones a user can see. The limit is set on the user, not on the zone: as soon as a user has a tag, they only see zones that carry one of their tags.
+
+## Creating tags
+
+Create tags first under **Admin → Tags** (needs the `admin.tags` permission).
 
 ## Assigning tags to zones
 
@@ -14,13 +18,12 @@ Navigate to **Admin → Zone Tags**. The list is searchable and paginated. Assig
 
 ## Assigning tags to users / groups
 
-Tags are assigned to users via **Admin → Users → Edit** and to groups via **Admin → Groups → Edit**.
+Tags are assigned to users via **Admin → Users → Edit** and to groups via **Admin → Groups → Edit**. Leaving all tags unchecked gives unrestricted access.
 
 ## Access resolution
 
-A user can access a zone if:
+1. A user whose own role is `admin` sees every zone. A role granted through a group does not count for this.
+2. A user with no tags, directly or through a group, sees every zone, tagged or not.
+3. Any other user sees only zones that carry at least one of their tags. Zones without tags are hidden from them.
 
-1. The zone has no tags (unrestricted), **or**
-2. The user has at least one tag that matches any of the zone's tags (directly or via a group).
-
-Admin users bypass tag restrictions and can always see all zones.
+Tags do not filter the activity log. It shows entries for all zones.

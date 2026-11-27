@@ -12,7 +12,7 @@ Release images are published to the GitHub Container Registry on every tagged re
 ```bash
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 # or pin to a specific release:
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.2.0
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.5.0
 ```
 
 Supported platforms: `linux/amd64`, `linux/arm64`, `linux/arm/v7`.
@@ -23,6 +23,11 @@ Supported platforms: `linux/amd64`, `linux/arm64`, `linux/arm/v7`.
 | ------------------- | ------------------------------------------------------------------ |
 | `/etc/go-pdns/`     | Configuration — mount your `main.toml` here (read-only)            |
 | `/var/lib/go-pdns/` | Persistent data — SQLite database files and ACME certificate cache |
+
+The image ships no `main.toml`. Without one mounted at `/etc/go-pdns/`, the
+container exits at startup. Start from
+[`etc/main.toml`](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/blob/main/etc/main.toml)
+in the repository.
 
 ## Run
 
@@ -71,7 +76,16 @@ volumes:
 ```
 
 The `GPDNS_PDNS_*` environment variables bootstrap the PowerDNS connection on
-first startup; `APIKEY` must match the `--api-key` you pass to PowerDNS.
+first startup; `APIKEY` must match the `--api-key` you pass to PowerDNS. They
+only take effect when `./etc/main.toml` has a `[pdns]` section with all three
+keys, even with empty values:
+
+```toml
+[pdns]
+apiserverurl = ""
+apikey       = ""
+vhost        = ""
+```
 
 ## Build locally
 

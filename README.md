@@ -67,13 +67,13 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 - Full DNSSEC lifecycle management per zone (Native and Master zones): enable/disable signing, view and copy DS records, toggle active/published state per key, delete individual keys — all from the zone editor
   - DS records modal with per-digest-type badges (SHA-1 deprecated warning, SHA-256 recommended) and best-practice guidance so operators know exactly which record to submit to their registrar
   - **Trust chain verification** — one-click full chain walk from the DNS root down to the zone, querying authoritative nameservers directly (bypasses caches); each delegation level reported as ok / missing / error with the DS record detail
-- DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) automatically hidden from the zone editor and dashboard to prevent accidental edits
+- DNSSEC-managed records (RRSIG, NSEC, NSEC3, NSEC3PARAM, and PowerDNS-internal `TYPE<n>` records) automatically hidden from the zone editor to prevent accidental edits
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
 - Go backend with server-rendered templates
 - Health check endpoint (`GET /health`) for load balancer and container probes
-- Update check — periodically queries the GitHub releases API and shows a hint in the footer (to admins) when a newer version is available; opt out via `[update] enabled = false`
+- Update check — periodically queries the GitHub releases API and shows a hint in the footer when a newer version is available (to users with the `admin.server.config` permission); the sample config turns it on, opt out via `[update] enabled = false`
 - Native TLS (manual cert/key) and automatic TLS via Let's Encrypt / ACME
 - Reverse proxy support (HAProxy, nginx, Traefik) with configurable trusted IP allowlist and proxy header
 - Security headers on all responses: `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, `Referrer-Policy`, and more
@@ -104,54 +104,64 @@ Optional contributor tooling (required only for `make linter*` / `make pre-commi
 
 2. Configure the app:
 
-   Review the sample configuration in `etc/main.toml` (or the copy under `internal/db/controller/setting/etc/main.toml`).
-   For local testing, copy and adjust the sample into `etc/local/main.toml` — this directory is gitignored and any TOML files placed there override the settings in `etc/main.toml`:
+   Review the sample configuration in `etc/main.toml`. For local testing, create an overlay file in `etc/local/`. This directory is gitignored. The overlay only needs the keys you want to change:
 
    ```bash
    mkdir -p etc/local
-   cp etc/main.toml etc/local/main.toml
-   # edit etc/local/main.toml to match your local setup
+   cp etc/main.toml etc/local/dev.toml
+   # edit etc/local/dev.toml to match your local setup
    ```
 
-   Adjust webserver, database, authentication, and record settings as needed.
+   The sample stores SQLite at `/var/lib/go-pdns/go-pdns.db`. The app does not create that folder, so for local runs set `Name = "./go-pdns.db"` under `[DB]` in your overlay.
+
+   The overlay is only read when you pass it with `-c`. The app then loads `etc/main.toml` first and merges the overlay on top. Without `-c`, the app reads `etc/main.toml` only.
 
 3. Build and run:
 
    Quick run (embedded templates and static assets):
 
    ```bash
-   go run . start
+   go run . start -c etc/local/dev.toml
    ```
 
    Build with version and branch baked in:
 
    ```bash
    make build
-   ./gopowerdns-admin start
+   ./gopowerdns-admin start -c etc/local/dev.toml
    ```
 
-   Development mode (templates reloaded from local filesystem on each request):
+   Development mode (templates reloaded from the local filesystem on each request; static files stay embedded):
 
    ```bash
-   go run . start --dev
+   go run . start -c etc/local/dev.toml --dev
    ```
+
+   On the first start, a local admin account is created: `admin` / `changeme`. Change the password after your first login.
 
    Check the version:
 
    ```bash
    ./gopowerdns-admin --version
-   # gopowerdns-admin version v0.2.0-5-gabc1234-dirty (main)
+   # go-powerdns-admin version v0.5.0-5-gabc1234-dirty (main)
    ```
+
+   Other flags: `--dump-config` prints the merged configuration as JSON, and `start --browse` turns on static file browsing (development only).
 
 ## Project Structure (high level)
 
+- `app/` — command-line entry point (`start`, flags)
 - `internal/web` — HTTP handlers, templates, static assets
+- `internal/auth` — authentication providers, permissions, zone-tag access
+- `internal/daemon` — startup, database migration, and seeding
 - `internal/db` — models and controllers (GORM)
 - `internal/powerdns` — PowerDNS API integration
 - `internal/activitylog` — activity log recording and diff helpers
-- `internal/config` — configuration structs
+- `internal/config` — configuration structs, loading, and validation
 - `etc/` — example configuration
 - `docker/` — Docker/Compose helpers (including PDNS and LDAP setups)
+- `deploy/` — demo deployment
+- `docs/` — documentation site (Hugo)
 
 ## Database Support
 
@@ -175,6 +185,8 @@ Three authentication methods are supported and can be enabled independently:
 
 TOTP is only available for local accounts. OIDC and LDAP users rely on their identity provider for MFA. Admins can enforce TOTP per user; they can also disable it on behalf of a user (e.g. when a user loses their authenticator), unless TOTP is currently required for that account.
 
+OIDC and LDAP users are created with the **viewer** role on their first login. Their groups are synced at login. More roles come from group mappings under **Admin → Groups**.
+
 See `internal/config/structs.go` for available configuration fields.
 
 ## Zone Editor
@@ -184,7 +196,7 @@ The zone editor provides a full-featured DNS record management interface:
 - Reactive UI powered by Alpine.js — no page reloads for record add/edit/delete
 - Unified record modal for all record types with type-specific fields (MX priority, TXT chunking, DS algorithm badge)
 - TXT records: monospace textarea with automatic RFC-compliant 255-byte chunking and quote handling
-- Live search and per-type filter pills to quickly find records
+- Live search and a record-type filter dropdown to quickly find records
 - Apex (`@`) records sorted first within each name group
 - Inline zone metadata (kind, serial, DNSSEC status) in the record list header
 - Sticky records toolbar — search, the type filter, and the Add / Save / Discard actions stay pinned to the top while scrolling long record lists, so saving is always one click away
@@ -192,7 +204,8 @@ The zone editor provides a full-featured DNS record management interface:
 - Record table scrolls horizontally on narrow screens instead of overflowing; long values (e.g. large TXT records) truncate with the full value on hover
 - Collapsible zone settings card (SOA-EDIT-API, kind, masters, Auto-PTR toggle)
 - SOA-EDIT-API selector (INCREASE / EPOCH / OFF) with a warning when set to **OFF**, since PowerDNS then will not auto-update the zone serial
-- DNSSEC-managed records (RRSIG, NSEC, NSEC3, DNSKEY, CDS, CDNSKEY) are automatically hidden to prevent accidental edits
+- DNSSEC-managed records (RRSIG, NSEC, NSEC3, NSEC3PARAM, and PowerDNS-internal `TYPE<n>` records) are automatically hidden to prevent accidental edits
+- Read-only view for users without the `zone.update` permission: settings are greyed out, and the add, edit, delete, and DNSSEC actions are hidden
 - SOA record is protected — it can be viewed but not deleted or overwritten via the record modal
 - Admin-configurable TTL presets available as a dropdown in the record modal (see TTL Presets below)
 
@@ -212,13 +225,27 @@ Admins can configure a list of TTL presets at `/admin/settings/ttl-presets`. Pre
 
 ## Zone Tag Access Control
 
-Zone tags restrict which users and groups can see a zone. Zones without any tags are accessible to all authenticated users.
+Zone tags limit which zones a user can see. The limit is set on the user, not on the zone:
 
-- Assign tags to zones at `/admin/zone-tag`; the list is searchable and paginated (configurable rows per page)
+- A user with no tags (directly or through a group) sees every zone.
+- A user with at least one tag sees only zones that carry one of those tags. Zones without tags are hidden from that user.
+- Users whose own role is `admin` always see every zone.
+
+- Create tags at `/admin/tag`, then assign them to zones at `/admin/zone-tag`; the list is searchable and paginated (configurable rows per page)
 - Zones are sorted alphabetically
 - Assign tags to users and groups to grant access to matching zones
 
 ## Roles & Permissions
+
+Three roles are built in:
+
+| Role     | Permissions                                                                                   |
+| -------- | --------------------------------------------------------------------------------------------- |
+| `admin`  | Everything                                                                                    |
+| `user`   | Dashboard, create/read/update/delete zones, activity log                                      |
+| `viewer` | Dashboard, read zones (read-only zone view), activity log, PowerDNS server configuration page |
+
+A user's permissions are the union of their own role and the roles mapped to their groups. Custom roles can be created in the admin UI.
 
 The role editor groups permissions by resource with icon badges and tri-state toggles:
 
@@ -237,15 +264,15 @@ Set these live from the admin UI at **Settings → Branding** (`/admin/settings/
 
 ## Activity Log & Undo
 
-All significant user actions (login, logout, zone create/update/delete, record changes) are recorded in the activity log, accessible at `/admin/activity`. Each entry stores a before/after diff. Admins can:
+All significant user actions (login, logout, zone create/update/delete, record changes, DNSSEC changes) are recorded in the activity log, accessible at `/admin/activity`. Each entry stores a before/after diff. Users with the `admin.activity.log` permission (all built-in roles) can read the log; undo needs `admin.activity.log.undo` (admins only). The log covers all zones; zone tags do not filter it.
 
 - Filter the list by action, username, zone (with autocomplete of seen zone names), and date range; filters and pagination state are preserved when opening an entry's detail view and clicking **Back**
 - Configurable rows per page (10 / 25 / 50 / 100); the choice is persisted in the user's profile (`users.activity_log_page_size`)
 - Windowed pager that scales to large logs — shows first, last, and a window around the current page with ellipses for the gaps; pagers appear above and below the table
-- Long diffs are truncated with a fade and a link to the detail page
+- Long diffs are cut off with a fade; open the entry to see the full diff
 - Open a full detail page (`/admin/activity/:id`) showing the complete diff and an **Undo** button
 - **Undo record changes** — restores a zone's RRsets to their previous state
-- **Undo zone deletes** — recreates the zone including all RRsets from a full snapshot taken at delete time
+- **Undo zone deletes** — recreates the zone with its kind, SOA-EDIT-API, masters, and RRsets from a snapshot taken at delete time. Records come back enabled, and record comments and DNSSEC keys are not restored.
 
 ## Health Check
 
@@ -316,11 +343,11 @@ trustedips  = ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
 proxyheader = "X-Forwarded-For"   # or "X-Real-IP" for nginx
 ```
 
-| Field         | Default           | Description                                                                                  |
-| ------------- | ----------------- | -------------------------------------------------------------------------------------------- |
-| `enabled`     | `false`           | Activates trusted-proxy IP checking. When `false`, `proxyheader` is trusted unconditionally. |
-| `trustedips`  | _(none)_          | Required when `enabled = true`. IPv4/IPv6 addresses or CIDR ranges of your upstream proxies. |
-| `proxyheader` | `X-Forwarded-For` | HTTP header used to read the real client IP.                                                 |
+| Field         | Default           | Description                                                                                                                                           |
+| ------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`     | `false`           | Reads the client IP from `proxyheader`, but only for requests from `trustedips`. When `false`, the header is ignored and the connection's IP is used. |
+| `trustedips`  | _(none)_          | Required when `enabled = true`. IPv4/IPv6 addresses or CIDR ranges of your upstream proxies.                                                          |
+| `proxyheader` | `X-Forwarded-For` | HTTP header used to read the real client IP.                                                                                                          |
 
 > **Note:** `trustedips` must not be empty when `enabled = true`; the application will refuse to start otherwise.
 
@@ -333,7 +360,7 @@ A multi-stage `Dockerfile` is included. The final image is based on Alpine, cont
 Release images are published to the GitHub Container Registry on every tagged release:
 
 ```bash
-docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.3.1
+docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:v0.5.0
 # or latest stable (not set for pre-releases):
 docker pull ghcr.io/gopowerdns-admin/gopowerdns-admin:latest
 ```
@@ -376,11 +403,12 @@ make docker-push IMAGE_NAME=ghcr.io/myorg/gopowerdns-admin IMAGE_TAG=v1.0.0
 
 - **SQLite:** set `Name = "/var/lib/go-pdns/go-pdns.db"` in `main.toml` so the database lands in the persistent volume.
 - **ACME:** set `ACMECacheDir = "/var/lib/go-pdns/acme-cache"` for the same reason.
-- **Port:** defaults to `8080`; override with `GPDNS_WEBSERVER_PORT` (see below).
+- **Port:** the sample config and the image use `8080`; override with `GPDNS_WEBSERVER_PORT` (see below).
+- **Config:** the image ships no `main.toml`. Mount one at `/etc/go-pdns/`, or the container will not start.
 
 ### Environment variable overrides
 
-All config keys can be overridden via environment variables prefixed with `GPDNS_`. The key maps directly to the TOML path with `_` as the separator:
+Config keys can be overridden via environment variables prefixed with `GPDNS_`. The key maps directly to the TOML path with `_` as the separator. An env var only takes effect for a key that also appears in the mounted TOML file, even with an empty value:
 
 ```bash
 docker run -d \
@@ -393,10 +421,10 @@ docker run -d \
 ## Configuration Highlights
 
 - PDNS server settings are stored in the database (key `pdns_server`). See `internal/db/controller/pdnsserver/settings.go`.
-- A `[pdns]` section in `main.toml` (or via `GPDNS_PDNS_*` env vars) can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur.
+- A `[pdns]` section in `main.toml` can bootstrap the PowerDNS connection on first startup — useful for automated or demo deployments where the admin UI is not available for initial setup. All three fields (`APIServerURL`, `APIKey`, `VHost`) must be set for seeding to occur. `GPDNS_PDNS_*` env vars work only if the `[pdns]` keys are present in the TOML file.
 - Authentication supports Local DB, OIDC, and LDAP; see `internal/config/structs.go` for the available fields.
-- Configuration is validated at startup — the app fails fast with a clear error on placeholder or missing secrets, an invalid database or ACME setup, or incomplete OIDC settings.
-- The `[update]` section controls the GitHub version check (`enabled`, `interval`, `repository`). It is on by default with a 24h interval (minimum 1h); set `enabled = false` (or `GPDNS_UPDATE_ENABLED=false`) to disable all outbound checks.
+- Configuration is validated at startup — the app fails fast with a clear error when no auth provider is enabled, on incomplete OIDC or LDAP settings, a missing database engine, a half-configured TLS or ACME setup, or a reverse proxy without trusted IPs.
+- The `[update]` section controls the GitHub version check (`enabled`, `interval`, `repository`). It is off unless enabled; the sample config turns it on with a 24h interval. An interval below 1h falls back to 24h. Set `enabled = false` (or `GPDNS_UPDATE_ENABLED=false`) to disable all outbound checks.
 
 ## Contributing
 

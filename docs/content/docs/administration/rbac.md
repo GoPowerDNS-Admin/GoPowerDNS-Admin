@@ -15,7 +15,10 @@ Three roles are seeded on first run:
 | -------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `admin`  | Full access to all features and settings | Every permission                                                                                   |
 | `user`   | Can manage zones and records             | `dashboard.view`, `zone.create`, `zone.read`, `zone.update`, `zone.delete`, `zone.list`, `admin.activity.log` |
-| `viewer` | Read-only access to zones and records    | `dashboard.view`, `zone.read`, `zone.list`, `admin.server.config`, `admin.activity.log`            |
+| `viewer` | Read-only access to zones and records, plus the PowerDNS server configuration page | `dashboard.view`, `zone.read`, `zone.list`, `admin.server.config`, `admin.activity.log`            |
+
+Users with `zone.read` but not `zone.update` see the zone editor read-only. See
+[Managing Zones](/docs/zone-editor/zones#who-can-do-what).
 
 ## Role editor
 
@@ -40,6 +43,10 @@ Permissions follow the pattern `resource.action`. The full set:
 The actions are `read` and `update` — not `view`/`edit`. So a read-only grant is
 `zone.read`, and editing records is `zone.update`.
 {{< /callout >}}
+
+`zone.list`, `admin.settings`, and `admin.group.mappings` exist, but no page
+checks them yet. Group-to-role mappings are edited on the group page, which needs
+`admin.groups`.
 
 ## Groups
 

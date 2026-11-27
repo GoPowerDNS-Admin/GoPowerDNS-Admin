@@ -51,7 +51,7 @@ address from the ID token as the username. The user is assigned the default
 ## Group → role mapping
 
 If you request a groups scope and set `groups_claim`, the group names from the
-ID token are synchronized to the user's group memberships on every login. Roles
+ID token are synchronized to the user's group memberships on every login that carries at least one group. A token without groups leaves the existing memberships unchanged. Roles
 (and therefore permissions) are then granted through **group mappings**: each
 local group can be mapped to one role under **Admin → Groups**.
 

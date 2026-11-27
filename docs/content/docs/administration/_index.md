@@ -4,4 +4,4 @@ description: "Administer GoPowerDNS-Admin: role-based access control, activity l
 weight: 5
 ---
 
-Administrative features are available to users with the `admin` role under the **Admin** menu.
+Each administration page needs its own permission, and the sidebar only shows the pages a user may open. With the built-in roles, admins see every page. All three roles see the activity log, and viewers also see the server configuration page. See [Roles & Permissions](/docs/administration/rbac).

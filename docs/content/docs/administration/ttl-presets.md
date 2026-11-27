@@ -15,7 +15,7 @@ Navigate to **Admin → TTL Presets**. Each preset has:
 - **Label** — displayed in the drop-down (e.g. `5 minutes`)
 - **Value** — TTL in seconds (e.g. `300`)
 
-Presets are sorted by value in ascending order.
+Presets are shown in the order they were added. A new preset goes to the end of the list.
 
 ## Default presets
 
@@ -37,4 +37,4 @@ The following presets are seeded on first run:
 | 2 days     | 172800  |
 | 1 week     | 604800  |
 
-You can delete, rename, or add presets at any time.
+You can add or delete presets at any time. To change a preset, delete it and add it again.

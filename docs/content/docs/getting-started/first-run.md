@@ -26,9 +26,11 @@ Make sure your PowerDNS server has its API enabled and reachable first — see
 If you did not set the `[pdns]` bootstrap section in `main.toml`, connect via the UI:
 
 1. Log in as `admin`
-2. Go to **Admin → PowerDNS Server Settings**
+2. Go to **Settings → PDNS Server** in the sidebar (`/admin/settings/pdns-server`)
 3. Enter your PowerDNS API URL, API key, and virtual host
-4. Click **Save** — the connection is tested immediately
+4. Click **Save**. The connection is tested in the background, and a failed
+   test only shows up in the application log. Open the dashboard to confirm that
+   your zones load.
 
 ## Health check
 

@@ -19,7 +19,7 @@ Users can enable TOTP for their own account:
 ## Admin enforcement
 
 Enforcement is **per-user**, not a global config option. An admin can require a
-specific user to use TOTP by enabling the **TOTP Required** flag when creating or
+specific user to use TOTP by enabling the **Require TOTP** flag when creating or
 editing that user under **Admin → Users → Edit**.
 
 When the flag is set, the user is redirected to the enrollment page on their next
@@ -28,4 +28,4 @@ cannot disable TOTP on their own account while the flag is enforced.
 
 ## Recovery
 
-If a user loses access to their authenticator, an admin can disable TOTP for their account via **Admin → Users → Edit**.
+If a user loses access to their authenticator, an admin can disable TOTP for their account via **Admin → Users → Edit**. If **Require TOTP** is set for that user, untick it and save first. The disable button is not offered while TOTP is required.

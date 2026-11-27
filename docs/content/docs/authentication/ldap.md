@@ -65,8 +65,8 @@ Set `skip_verify = true` only for testing against a self-signed certificate.
 
 ## User provisioning
 
-On first LDAP login, a local user record is created automatically (username taken
-from `username_attr`). The user is assigned the default **viewer** role.
+On first LDAP login, a local user record is created automatically. Its username is
+the name typed at login. The user is assigned the default **viewer** role.
 
 ## Group → role mapping
 

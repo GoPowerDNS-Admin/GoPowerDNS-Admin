@@ -37,13 +37,18 @@ details on the volumes, see [Deployment → Docker](/docs/deployment/docker).
 ## Option B — Prebuilt binary
 
 Every [release](https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/releases)
-ships static binaries for Linux, macOS, and FreeBSD (amd64/arm64/armv7). Download
-the one for your platform, make it executable, and run it:
+ships static binaries for Linux (amd64, arm64, armv7), macOS (amd64, arm64), and
+FreeBSD (amd64, aarch64). The release contains only the binary, so also fetch the
+sample config. The app reads `etc/main.toml` from the working directory unless
+you pass another folder with `-c`:
 
 ```bash
 # example: Linux amd64 — adjust the asset name for your platform
 curl -LO https://github.com/GoPowerDNS-Admin/GoPowerDNS-Admin/releases/latest/download/gopowerdns-admin-linux-amd64
 chmod +x gopowerdns-admin-linux-amd64
+mkdir -p etc
+curl -L -o etc/main.toml https://raw.githubusercontent.com/GoPowerDNS-Admin/GoPowerDNS-Admin/main/etc/main.toml
+# edit etc/main.toml, at least the [DB] Name path, then:
 ./gopowerdns-admin-linux-amd64 start
 ```
 
@@ -72,13 +77,13 @@ The version string, branch, and commit hash are baked in at build time:
 
 ```bash
 ./gopowerdns-admin --version
-# gopowerdns-admin version v0.3.3-5-gabc1234 (main)
+# go-powerdns-admin version v0.5.0-5-gabc1234 (main)
 ```
 
 ### Development mode
 
-Templates and static assets are reloaded from the filesystem on each request —
-no rebuild needed:
+Templates are reloaded from the filesystem on each request — no rebuild needed.
+Static assets (JavaScript, CSS) stay embedded, so changes to them need a restart:
 
 ```bash
 go run . start --dev
@@ -93,4 +98,8 @@ develop against:
 docker compose up -d
 ```
 
-This starts PowerDNS with the API enabled on `http://localhost:8081`.
+This starts PowerDNS with the API enabled on `http://localhost:8081`. PowerDNS
+also binds port 53 on the host. The same file starts MariaDB, PostgreSQL,
+OpenLDAP (with test users from `docker/ldap/bootstrap.ldif`), and an LDAP web UI
+on port 8090. Name a service to start only that one, e.g.
+`docker compose up -d pdns-server`.

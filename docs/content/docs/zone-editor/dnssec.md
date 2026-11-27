@@ -7,6 +7,8 @@ prev: /docs/zone-editor/auto-ptr
 
 DNSSEC signing is managed from the **DNSSEC** card on the zone editor page. The card is available for `Native` and `Master` zones.
 
+Viewing the key table, the DS records, and the trust chain check needs the `zone.read` permission. Enabling or disabling DNSSEC and the per-key actions need `zone.update`; without it, those buttons are hidden.
+
 ## Enabling DNSSEC
 
 1. Open the zone in the editor.

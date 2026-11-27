@@ -119,8 +119,8 @@ type Webserver struct {
 
 // ReverseProxy holds settings for running behind a reverse proxy (HAProxy, nginx, etc.).
 type ReverseProxy struct {
-	// Enabled activates trusted-proxy IP checking. When false, the proxy header
-	// is trusted unconditionally (less secure; only suitable for local setups).
+	// Enabled reads the client IP from ProxyHeader for requests from TrustedIPs.
+	// When false, the header is ignored and the connection's IP is used.
 	Enabled bool `mapstructure:"enabled"`
 	// TrustedIPs is the list of upstream proxy IP addresses or CIDR ranges to
 	// trust. Only used when Enabled is true. Accepts IPv4/IPv6 and CIDR notation

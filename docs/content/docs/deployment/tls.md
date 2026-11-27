@@ -34,6 +34,8 @@ ACMEEmail    = "admin@example.com"
 ACMECacheDir = "/var/lib/go-pdns/acme-cache"
 ```
 
+`ACMEDomain`, `ACMEEmail`, and `ACMECacheDir` are all required; startup fails if one is missing. The app answers the challenge on port 80 and serves HTTPS on `Port` (8080 in the sample config). Set `Port = 443` or forward 443 to it.
+
 Renewed certificates are picked up on the next TLS handshake — no restart required.
 
 {{< callout type="warning" >}}

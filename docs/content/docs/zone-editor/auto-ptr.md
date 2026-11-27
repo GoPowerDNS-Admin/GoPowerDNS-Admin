@@ -43,6 +43,8 @@ If several addresses lack a reverse zone, they are listed together, comma-separa
 Auto-PTR: no reverse zone found for 192.0.2.1, 192.0.2.2
 ```
 
+No PTR record is created in this case. Create the appropriate reverse zone first, then re-save the A/AAAA record.
+
 ## Zone tag access
 
 Auto-PTR only changes PTR records in reverse zones you can access. If [zone tags](/docs/administration/zone-tags) hide the reverse zone from you, the PTR record is left as it is, and a warning toast lists the addresses:
@@ -50,8 +52,6 @@ Auto-PTR only changes PTR records in reverse zones you can access. If [zone tags
 ```
 Auto-PTR: PTR not changed for 192.0.2.1 — you have no access to the reverse zone
 ```
-
-No PTR record is created in this case. Create the appropriate reverse zone first, then re-save the A/AAAA record.
 
 ## Example
 

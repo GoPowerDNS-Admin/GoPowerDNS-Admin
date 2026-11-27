@@ -270,9 +270,10 @@ func (s *Service) applyAutoPTR(
 	ctx context.Context,
 	currentZone *pdnsapi.Zone,
 	changes []RecordChange,
+	canAccess func(zoneName string) bool,
 	userID *uint64,
 	username, ipAddress string,
-) []string {
+) autoPTRResult {
 	// Cache fetched reverse zones to avoid redundant API calls when multiple
 	// IPs share the same reverse zone.
 	rzCache := make(map[string]*pdnsapi.Zone)
@@ -295,7 +296,7 @@ func (s *Service) applyAutoPTR(
 		return z
 	}
 
-	var noReverseZoneIPs []string
+	var result autoPTRResult
 
 	for _, change := range changes {
 		if change.Type != "A" && change.Type != rrTypeAAAA {
@@ -329,49 +330,83 @@ func (s *Service) applyAutoPTR(
 		// Delete PTR records for IPs that are being removed.
 		for ip := range oldIPSet {
 			if !newIPSet[ip] {
-				s.deleteAutoPTR(ctx, fetchReverseZone, fqdn, ip, change.Type, userID, username, ipAddress)
+				result.add(s.deleteAutoPTR(ctx, fetchReverseZone, canAccess, fqdn, ip, change.Type,
+					userID, username, ipAddress), ip)
 			}
 		}
 
 		// Create/replace PTR records for all IPs in the new state.
 		for ip := range newIPSet {
-			if !s.createAutoPTR(ctx, fqdn, ip, change.Type, change.TTL, userID, username, ipAddress) {
-				noReverseZoneIPs = append(noReverseZoneIPs, ip)
-			}
+			result.add(s.createAutoPTR(ctx, canAccess, fqdn, ip, change.Type, change.TTL,
+				userID, username, ipAddress), ip)
 		}
 	}
 
-	return noReverseZoneIPs
+	return result
 }
+
+// autoPTRResult lists the IPs whose PTR record Auto-PTR left unchanged, so the
+// UI can warn about them.
+type autoPTRResult struct {
+	NoReverseZone []string
+	NoAccess      []string
+}
+
+func (r *autoPTRResult) add(outcome ptrOutcome, ip string) {
+	switch outcome {
+	case ptrNoReverseZone:
+		r.NoReverseZone = append(r.NoReverseZone, ip)
+	case ptrNoAccess:
+		r.NoAccess = append(r.NoAccess, ip)
+	case ptrDone:
+	}
+}
+
+type ptrOutcome int
+
+const (
+	ptrDone ptrOutcome = iota
+	ptrNoReverseZone
+	ptrNoAccess
+)
 
 // deleteAutoPTR removes the PTR record for ip if it still points to fqdn.
 // It is a no-op if no reverse zone is found, the PTR does not exist, or the
-// PTR was manually changed to a different target.
+// PTR was manually changed to a different target. It returns ptrNoAccess when
+// the user may not access the reverse zone.
 func (s *Service) deleteAutoPTR(
 	ctx context.Context,
 	fetchReverseZone func(string) *pdnsapi.Zone,
+	canAccess func(zoneName string) bool,
 	fqdn, ip, rrType string,
 	userID *uint64,
 	username, ipAddress string,
-) {
+) ptrOutcome {
 	ptrName, err := ptrNameForIP(ip, rrType)
 	if err != nil {
 		log.Warn().Err(err).Str("ip", ip).Msg("auto-PTR: skipping invalid IP on delete")
 
-		return
+		return ptrDone
 	}
 
 	reverseZone, err := findBestReverseZone(ctx, ptrName)
 	if err != nil {
 		log.Warn().Err(err).Str("ptr_name", ptrName).Msg("auto-PTR: error finding reverse zone")
 
-		return
+		return ptrDone
 	}
 
 	if reverseZone == "" {
 		log.Debug().Str("ptr_name", ptrName).Msg("auto-PTR: no reverse zone found for deletion")
 
-		return
+		return ptrDone
+	}
+
+	if !canAccess(reverseZone) {
+		log.Info().Str("ptr_name", ptrName).Str("reverse_zone", reverseZone).
+			Msg("auto-PTR: skipping delete — user may not access the reverse zone")
+
+		return ptrNoAccess
 	}
 
 	// Fetch the current PTR value. If it no longer points to our fqdn
@@ -380,7 +415,7 @@ func (s *Service) deleteAutoPTR(
 
 	currentPTR := ptrContentFromZone(rz, ptrName)
 	if currentPTR == "" {
-		return
+		return ptrDone
 	}
 
 	if currentPTR != fqdn {
@@ -390,45 +425,55 @@ func (s *Service) deleteAutoPTR(
 			Str("expected_target", fqdn).
 			Msg("auto-PTR: skipping delete — PTR was manually changed")
 
-		return
+		return ptrDone
 	}
 
 	s.patchPTR(ctx, reverseZone, ptrName, currentPTR, 0, true, userID, username, ipAddress)
+
+	return ptrDone
 }
 
 // createAutoPTR creates or replaces the PTR record for ip pointing to fqdn.
-// It returns true if a suitable reverse zone was found (PTR was attempted), or
-// false if no reverse zone exists for the IP.
+// It returns ptrNoReverseZone if no reverse zone exists for the IP, and
+// ptrNoAccess if the user may not access the reverse zone.
 func (s *Service) createAutoPTR(
 	ctx context.Context,
+	canAccess func(zoneName string) bool,
 	fqdn, ip, rrType string,
 	ttl uint32,
 	userID *uint64,
 	username, ipAddress string,
-) bool {
+) ptrOutcome {
 	ptrName, err := ptrNameForIP(ip, rrType)
 	if err != nil {
 		log.Warn().Err(err).Str("ip", ip).Msg("auto-PTR: skipping invalid IP on create")
 
-		return false
+		return ptrNoReverseZone
 	}
 
 	reverseZone, err := findBestReverseZone(ctx, ptrName)
 	if err != nil {
 		log.Warn().Err(err).Str("ptr_name", ptrName).Msg("auto-PTR: error finding reverse zone")
 
-		return false
+		return ptrNoReverseZone
 	}
 
 	if reverseZone == "" {
 		log.Debug().Str("ptr_name", ptrName).Msg("auto-PTR: no reverse zone found, skipping")
 
-		return false
+		return ptrNoReverseZone
+	}
+
+	if !canAccess(reverseZone) {
+		log.Info().Str("ptr_name", ptrName).Str("reverse_zone", reverseZone).
+			Msg("auto-PTR: skipping create — user may not access the reverse zone")
+
+		return ptrNoAccess
 	}
 
 	s.patchPTR(ctx, reverseZone, ptrName, fqdn, ttl, false, userID, username, ipAddress)
 
-	return true
+	return ptrDone
 }
 
 // ptrContentFromZone returns the first PTR record content for ptrName in zone,

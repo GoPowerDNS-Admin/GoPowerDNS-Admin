@@ -52,3 +52,12 @@ curl http://localhost:8080/health
 ```
 
 A `powerdns: "not_configured"` response means the PowerDNS connection has not been set up yet — this does not affect overall status.
+
+## Light and dark mode
+
+The switch in the top bar, next to the user menu, sets the colour mode:
+
+- **Light** and **Dark** always use that mode.
+- **Auto** follows your operating system and changes with it.
+
+Until you pick one, the UI follows your operating system. The choice is saved in your browser, so each browser keeps its own setting. The login page uses it too.

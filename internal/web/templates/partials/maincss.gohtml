@@ -42,4 +42,17 @@
        Lift the menu above the header here; zone-edit.js pairs this with a Popper
        `fixed` strategy so the menu also escapes the table's overflow clipping. */
     #zone-editor .dropdown-menu { --bs-dropdown-zindex: 1031; }
+    /* Bootstrap's .btn-light keeps its near-white fill in dark mode, which turns
+       the row action buttons into bright squares. Map it to the theme surfaces. */
+    [data-bs-theme="dark"] .btn-light {
+        --bs-btn-color: var(--bs-body-color);
+        --bs-btn-bg: var(--bs-tertiary-bg);
+        --bs-btn-border-color: var(--bs-border-color);
+        --bs-btn-hover-color: var(--bs-emphasis-color);
+        --bs-btn-hover-bg: var(--bs-secondary-bg);
+        --bs-btn-hover-border-color: var(--bs-border-color);
+        --bs-btn-active-color: var(--bs-emphasis-color);
+        --bs-btn-active-bg: var(--bs-secondary-bg);
+        --bs-btn-active-border-color: var(--bs-border-color);
+    }
 </style>

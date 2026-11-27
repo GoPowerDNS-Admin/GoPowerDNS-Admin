@@ -71,6 +71,7 @@ Two sample zones (`example.com` and `example.org`) with a variety of record type
 - Multiple database backends: MySQL/MariaDB, PostgreSQL, SQLite (pure Go — no CGO or C toolchain required)
 - Friendly AdminLTE error pages for server-side failures with contextual action buttons (e.g. direct link to PowerDNS server settings when the server is unreachable)
 - Responsive web UI built on AdminLTE 4 / Bootstrap 5 with Alpine.js for reactive components
+- Light, dark and auto colour modes. Pick one from the switch in the top bar. Auto follows the operating system, and the choice is saved per browser.
 - Go backend with server-rendered templates
 - Health check endpoint (`GET /health`) for load balancer and container probes
 - Update check — periodically queries the GitHub releases API and shows a hint in the footer when a newer version is available (to users with the `admin.server.config` permission); the sample config turns it on, opt out via `[update] enabled = false`

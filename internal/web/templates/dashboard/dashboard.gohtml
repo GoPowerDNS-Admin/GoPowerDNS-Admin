@@ -136,7 +136,7 @@
                                                         {{$nextOrder = "desc"}}
                                                     {{end}}
                                                     <a href="?tab={{$activeTab}}&sort=name&order={{$nextOrder}}&page={{$tabData.CurrentPage}}&pageSize={{$tabData.PageSize}}{{if $tabData.SearchQuery}}&search={{$tabData.SearchQuery}}{{end}}{{if $tabData.FilterKind}}&kind={{$tabData.FilterKind}}{{end}}"
-                                                       class="text-decoration-none text-dark d-flex align-items-center">
+                                                       class="text-decoration-none text-body d-flex align-items-center">
                                                         Zone Name
                                                         {{if eq $tabData.SortField "name"}}
                                                             {{if eq $tabData.SortOrder "asc"}}
@@ -155,7 +155,7 @@
                                                         {{$nextOrderKind = "desc"}}
                                                     {{end}}
                                                     <a href="?tab={{$activeTab}}&sort=kind&order={{$nextOrderKind}}&page={{$tabData.CurrentPage}}&pageSize={{$tabData.PageSize}}{{if $tabData.SearchQuery}}&search={{$tabData.SearchQuery}}{{end}}{{if $tabData.FilterKind}}&kind={{$tabData.FilterKind}}{{end}}"
-                                                       class="text-decoration-none text-dark d-flex align-items-center">
+                                                       class="text-decoration-none text-body d-flex align-items-center">
                                                         Kind
                                                         {{if eq $tabData.SortField "kind"}}
                                                             {{if eq $tabData.SortOrder "asc"}}
@@ -174,7 +174,7 @@
                                                         {{$nextOrderSerial = "desc"}}
                                                     {{end}}
                                                     <a href="?tab={{$activeTab}}&sort=serial&order={{$nextOrderSerial}}&page={{$tabData.CurrentPage}}&pageSize={{$tabData.PageSize}}{{if $tabData.SearchQuery}}&search={{$tabData.SearchQuery}}{{end}}{{if $tabData.FilterKind}}&kind={{$tabData.FilterKind}}{{end}}"
-                                                       class="text-decoration-none text-dark d-flex align-items-center">
+                                                       class="text-decoration-none text-body d-flex align-items-center">
                                                         Serial
                                                         {{if eq $tabData.SortField "serial"}}
                                                             {{if eq $tabData.SortOrder "asc"}}
@@ -205,7 +205,7 @@
                                                         {{.Kind}}
                                                     </span>
                                                     {{else}}
-                                                    <span class="badge bg-light text-dark">Unknown</span>
+                                                    <span class="badge bg-body-tertiary text-body">Unknown</span>
                                                     {{end}}
                                                 </td>
                                                 <td>

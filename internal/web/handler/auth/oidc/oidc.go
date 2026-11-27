@@ -169,11 +169,15 @@ func (s *Service) Callback(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("Authentication failed")
 	}
 
-	// Sync OIDC groups
-	if len(groups) > 0 {
-		if err = s.authService.SyncUserGroups(authenticatedUser.ID, groups, models.GroupSourceOIDC); err != nil {
-			log.Error().Err(err).Uint64("user_id", authenticatedUser.ID).Msg("Failed to sync OIDC groups")
-		}
+	// Sync OIDC groups on every login. A token without groups clears the old
+	// OIDC memberships, so a user removed from all IdP groups loses their roles.
+	if len(groups) == 0 {
+		log.Debug().Uint64("user_id", authenticatedUser.ID).
+			Msg("OIDC token carries no groups; clearing OIDC group memberships")
+	}
+
+	if err = s.authService.SyncUserGroups(authenticatedUser.ID, groups, models.GroupSourceOIDC); err != nil {
+		log.Error().Err(err).Uint64("user_id", authenticatedUser.ID).Msg("Failed to sync OIDC groups")
 	}
 
 	// Create session

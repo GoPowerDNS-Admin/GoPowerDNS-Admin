@@ -249,3 +249,31 @@ func TestRenamedExternalGroupIsStillFound(t *testing.T) {
 	require.Equal(t, renamed.ID, groups[0].ID)
 	require.Equal(t, "Renamed in UI", groups[0].Name, "the name set in the UI must be kept")
 }
+
+func TestSyncUserGroups_EmptyListClearsOnlyThatSource(t *testing.T) {
+	db := newServiceTestDB(t)
+	svc := NewService(db)
+
+	role := models.Role{Name: "viewer"}
+
+	require.NoError(t, db.Create(&role).Error)
+
+	user := models.User{
+		Username:   "oidcuser@example.com",
+		Email:      "oidcuser@example.com",
+		AuthSource: models.AuthSourceOIDC,
+		Active:     true,
+		RoleID:     role.ID,
+	}
+	require.NoError(t, db.Create(&user).Error)
+
+	require.NoError(t, svc.SyncUserGroups(user.ID, []string{"dns-admins", "dns-ops"}, models.GroupSourceOIDC))
+	require.NoError(t, svc.SyncUserGroups(user.ID, []string{"cn=ops,dc=example,dc=com"}, models.GroupSourceLDAP))
+
+	require.NoError(t, svc.SyncUserGroups(user.ID, nil, models.GroupSourceOIDC))
+
+	groups, err := svc.GetUserGroups(user.ID)
+	require.NoError(t, err)
+	require.Len(t, groups, 1, "an empty OIDC sync must remove all OIDC memberships")
+	require.Equal(t, models.GroupSourceLDAP, groups[0].Source, "memberships from other sources must stay")
+}

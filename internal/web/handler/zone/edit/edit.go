@@ -151,7 +151,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 
 	// register routes with permission checks
 	app.Get(Path,
-		auth.RequirePermission(authService, auth.PermZoneUpdate),
+		auth.RequirePermission(authService, auth.PermZoneRead),
 		s.Get,
 	)
 	app.Post(Path,
@@ -280,7 +280,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 	}
 
 	// Render form with existing zone data
-	return c.Render(TemplateName, fiber.Map{
+	return s.render(c, fiber.Map{
 		"Navigation":         nav,
 		"Form":               form,
 		"Zone":               zone,
@@ -292,7 +292,7 @@ func (s *Service) Get(c fiber.Ctx) error {
 		"Success":            c.Query("success"),
 		"IsReverse":          zoneIsReverse(zoneName),
 		"ReverseZoneNames":   reverseZoneNames,
-	}, handler.BaseLayout)
+	})
 }
 
 // Post handles the edit zone form submission.
@@ -321,11 +321,11 @@ func (s *Service) Post(c fiber.Ctx) error {
 	if err := c.Bind().Body(form); err != nil {
 		log.Error().Err(err).Msg("failed to parse edit zone form")
 
-		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
+		return s.render(c.Status(fiber.StatusBadRequest), fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
 			"Error":      "Invalid form data",
-		}, handler.BaseLayout)
+		})
 	}
 
 	// Validate form
@@ -340,22 +340,22 @@ func (s *Service) Post(c fiber.Ctx) error {
 
 		log.Error().Err(err).Msg("validation failed for edit zone")
 
-		return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
+		return s.render(c.Status(fiber.StatusBadRequest), fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
 			"Error":      errorMessages,
-		}, handler.BaseLayout)
+		})
 	}
 
 	// Check if the PowerDNS client is initialized
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
+		return s.render(c.Status(fiber.StatusInternalServerError), fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
 			"Error":      powerdns.ErrMsgClientNotInitializedDetailed,
-		}, handler.BaseLayout)
+		})
 	}
 
 	// Update zone via PowerDNS API
@@ -365,11 +365,11 @@ func (s *Service) Post(c fiber.Ctx) error {
 	// Fetch the current zone state before the update so we can compute a diff.
 	currentZone, err := powerdns.Engine.Zones.Get(ctx, zoneName)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
+		return s.render(c.Status(fiber.StatusInternalServerError), fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
 			"Error":      "Failed to fetch zone: " + err.Error(),
-		}, handler.BaseLayout)
+		})
 	}
 
 	// Prepare zone update
@@ -384,11 +384,11 @@ func (s *Service) Post(c fiber.Ctx) error {
 	if form.Kind == "Slave" {
 		masters, mastersErr := parseMasters(form.Masters)
 		if mastersErr != nil {
-			return c.Status(fiber.StatusBadRequest).Render(TemplateName, fiber.Map{
+			return s.render(c.Status(fiber.StatusBadRequest), fiber.Map{
 				"Navigation": nav,
 				"Form":       form,
 				"Error":      mastersErr.Error(),
-			}, handler.BaseLayout)
+			})
 		}
 
 		zoneUpdate.Masters = masters
@@ -401,11 +401,11 @@ func (s *Service) Post(c fiber.Ctx) error {
 			Str("zone_name", zoneName).
 			Msg("failed to update zone")
 
-		return c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
+		return s.render(c.Status(fiber.StatusInternalServerError), fiber.Map{
 			"Navigation": nav,
 			"Form":       form,
 			"Error":      "Failed to update zone: " + err.Error(),
-		}, handler.BaseLayout)
+		})
 	}
 
 	log.Info().
@@ -732,10 +732,10 @@ func (s *Service) getZoneOrRender(c fiber.Ctx, nav *navigation.Context, zoneName
 	if powerdns.Engine.Client == nil {
 		log.Error().Msg(powerdns.ErrMsgClientNotInitialized)
 
-		return nil, c.Status(fiber.StatusInternalServerError).Render(TemplateName, fiber.Map{
+		return nil, s.render(c.Status(fiber.StatusInternalServerError), fiber.Map{
 			"Navigation": nav,
 			"Error":      powerdns.ErrMsgClientNotInitializedDetailed,
-		}, handler.BaseLayout)
+		})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -745,13 +745,41 @@ func (s *Service) getZoneOrRender(c fiber.Ctx, nav *navigation.Context, zoneName
 	if err != nil {
 		log.Error().Err(err).Str("zone_name", zoneName).Msg("failed to fetch zone")
 
-		return nil, c.Status(fiber.StatusNotFound).Render(TemplateName, fiber.Map{
+		return nil, s.render(c.Status(fiber.StatusNotFound), fiber.Map{
 			"Navigation": nav,
 			"Error":      "Zone not found: " + zoneName,
-		}, handler.BaseLayout)
+		})
 	}
 
 	return zone, nil
+}
+
+// render renders the zone edit page. It adds the CanUpdate and CanDelete flags,
+// so users with only zone.read see the zone without the controls that change it.
+func (s *Service) render(c fiber.Ctx, data fiber.Map) error {
+	data["CanUpdate"] = s.userHasPermission(c, auth.PermZoneUpdate)
+	data["CanDelete"] = s.userHasPermission(c, auth.PermZoneDelete)
+
+	return c.Render(TemplateName, data, handler.BaseLayout)
+}
+
+// userHasPermission reports whether the current user holds the given permission.
+// It returns false when there is no user or the check fails.
+func (s *Service) userHasPermission(c fiber.Ctx, permission string) bool {
+	user, ok := c.Locals("CurrentUser").(models.User)
+	if !ok || user.ID == 0 || s.authService == nil {
+		return false
+	}
+
+	has, err := s.authService.HasPermission(user.ID, permission)
+	if err != nil {
+		log.Error().Err(err).Uint64("user_id", user.ID).Str("permission", permission).
+			Msg("failed to check permission")
+
+		return false
+	}
+
+	return has
 }
 
 // canAccessZone returns false when zone-tag restrictions are in effect and the

@@ -79,95 +79,101 @@
                                 <!--end::Alert-->
                                 {{end}}
 
-                                <!--begin::Zone Name (Read-only)-->
-                                <div class="mb-3">
-                                    <label for="zone-name" class="form-label">Zone Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="zone-name" value="{{.Form.Name}}" disabled>
-                                    <div class="form-text">Zone name cannot be changed after creation.</div>
-                                </div>
-                                <!--end::Zone Name-->
-
-                                <!--begin::Zone Type-->
-                                <div class="mb-3">
-                                    <label for="zone-kind" class="form-label">Zone Type <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="zone-kind" name="kind" required>
-                                        <option value="Native" {{if eq .Form.Kind "Native"}}selected{{end}}>Native — Authoritative, no replication</option>
-                                        <option value="Master" {{if eq .Form.Kind "Master"}}selected{{end}}>Primary (Master) — Authoritative with replication</option>
-                                        <option value="Slave" {{if eq .Form.Kind "Slave"}}selected{{end}}>Secondary (Slave) — Replicated from master</option>
-                                    </select>
-                                    <div class="form-text">Changing to/from Slave may require additional configuration.</div>
-                                </div>
-                                <!--end::Zone Type-->
-
-                                <!--begin::Masters (for Slave zones)-->
-                                <div class="mb-3" id="masters-field" style="display: {{if eq .Form.Kind "Slave"}}block{{else}}none{{end}};">
-                                    <label for="masters" class="form-label">Master Servers <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="masters" name="masters"
-                                           placeholder="192.168.1.1, 192.168.1.2" value="{{.Form.Masters}}">
-                                    <div class="form-text">Comma-separated list of master server IP addresses for zone transfers.</div>
-                                </div>
-                                <!--end::Masters-->
-
-                                <!--begin::Auto-PTR (forward non-slave zones only)-->
-                                {{if and (not .IsReverse) (ne .Form.Kind "Slave")}}
-                                <div class="mb-3">
-                                    <label class="form-label">Reverse DNS</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="auto-ptr" name="auto_ptr" value="true"
-                                               {{if .Form.AutoPTR}}checked{{end}}>
-                                        <label class="form-check-label" for="auto-ptr">
-                                            Auto-create PTR records for A / AAAA changes
-                                        </label>
+                                <fieldset {{if not .CanUpdate}}disabled{{end}}>
+                                    <!--begin::Zone Name (Read-only)-->
+                                    <div class="mb-3">
+                                        <label for="zone-name" class="form-label">Zone Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="zone-name" value="{{.Form.Name}}" disabled>
+                                        <div class="form-text">Zone name cannot be changed after creation.</div>
                                     </div>
-                                    <div class="form-text">
-                                        When enabled, saving A or AAAA records automatically creates or updates the
-                                        matching PTR record in the appropriate reverse zone (if one exists in PowerDNS).
-                                        PTR records for removed IPs are deleted automatically.
+                                    <!--end::Zone Name-->
+
+                                    <!--begin::Zone Type-->
+                                    <div class="mb-3">
+                                        <label for="zone-kind" class="form-label">Zone Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="zone-kind" name="kind" required>
+                                            <option value="Native" {{if eq .Form.Kind "Native"}}selected{{end}}>Native — Authoritative, no replication</option>
+                                            <option value="Master" {{if eq .Form.Kind "Master"}}selected{{end}}>Primary (Master) — Authoritative with replication</option>
+                                            <option value="Slave" {{if eq .Form.Kind "Slave"}}selected{{end}}>Secondary (Slave) — Replicated from master</option>
+                                        </select>
+                                        <div class="form-text">Changing to/from Slave may require additional configuration.</div>
                                     </div>
-                                    {{if not .ReverseZoneNames}}
-                                    <div class="callout callout-warning mt-2 small">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>
-                                        No reverse zones found in PowerDNS. PTR records cannot be created until a
-                                        reverse zone (e.g. <code>1.168.192.in-addr.arpa.</code>) is added.
+                                    <!--end::Zone Type-->
+
+                                    <!--begin::Masters (for Slave zones)-->
+                                    <div class="mb-3" id="masters-field" style="display: {{if eq .Form.Kind "Slave"}}block{{else}}none{{end}};">
+                                        <label for="masters" class="form-label">Master Servers <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="masters" name="masters"
+                                               placeholder="192.168.1.1, 192.168.1.2" value="{{.Form.Masters}}">
+                                        <div class="form-text">Comma-separated list of master server IP addresses for zone transfers.</div>
+                                    </div>
+                                    <!--end::Masters-->
+
+                                    <!--begin::Auto-PTR (forward non-slave zones only)-->
+                                    {{if and (not .IsReverse) (ne .Form.Kind "Slave")}}
+                                    <div class="mb-3">
+                                        <label class="form-label">Reverse DNS</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="auto-ptr" name="auto_ptr" value="true"
+                                                   {{if .Form.AutoPTR}}checked{{end}}>
+                                            <label class="form-check-label" for="auto-ptr">
+                                                Auto-create PTR records for A / AAAA changes
+                                            </label>
+                                        </div>
+                                        <div class="form-text">
+                                            When enabled, saving A or AAAA records automatically creates or updates the
+                                            matching PTR record in the appropriate reverse zone (if one exists in PowerDNS).
+                                            PTR records for removed IPs are deleted automatically.
+                                        </div>
+                                        {{if not .ReverseZoneNames}}
+                                        <div class="callout callout-warning mt-2 small">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            No reverse zones found in PowerDNS. PTR records cannot be created until a
+                                            reverse zone (e.g. <code>1.168.192.in-addr.arpa.</code>) is added.
+                                        </div>
+                                        {{end}}
                                     </div>
                                     {{end}}
-                                </div>
-                                {{end}}
-                                <!--end::Auto-PTR-->
+                                    <!--end::Auto-PTR-->
 
-                                <!--begin::SOA-EDIT-API-->
-                                <div class="mb-3">
-                                    <label for="soa-edit-api" class="form-label">SOA-EDIT-API <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="soa-edit-api" name="soa_edit_api" required
-                                            onchange="document.getElementById('soa-edit-api-off-warn').style.display = this.value === 'OFF' ? '' : 'none'">
-                                        <option value="DEFAULT" {{if eq .Form.SOAEditAPI "DEFAULT"}}selected{{end}}>DEFAULT — Use server default</option>
-                                        <option value="INCREASE" {{if eq .Form.SOAEditAPI "INCREASE"}}selected{{end}}>INCREASE — Increment serial on update</option>
-                                        <option value="EPOCH" {{if eq .Form.SOAEditAPI "EPOCH"}}selected{{end}}>EPOCH — Set serial to current timestamp</option>
-                                        <option value="OFF" {{if eq .Form.SOAEditAPI "OFF"}}selected{{end}}>OFF — Do not auto-update serial</option>
-                                    </select>
-                                    <div class="form-text">Controls how the SOA serial number is updated when records change.</div>
-                                    <div id="soa-edit-api-off-warn" class="callout callout-warning mt-2 small"
-                                         style="{{ if ne .Form.SOAEditAPI "OFF" }}display:none{{ end }}">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>
-                                        <strong>OFF</strong> disables automatic serial updates via the API.
-                                        Secondary servers may not detect zone changes and fail to sync.
-                                        Only use this if serial management is handled at the server level via <code>default-soa-edit</code>.
+                                    <!--begin::SOA-EDIT-API-->
+                                    <div class="mb-3">
+                                        <label for="soa-edit-api" class="form-label">SOA-EDIT-API <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="soa-edit-api" name="soa_edit_api" required
+                                                onchange="document.getElementById('soa-edit-api-off-warn').style.display = this.value === 'OFF' ? '' : 'none'">
+                                            <option value="DEFAULT" {{if eq .Form.SOAEditAPI "DEFAULT"}}selected{{end}}>DEFAULT — Use server default</option>
+                                            <option value="INCREASE" {{if eq .Form.SOAEditAPI "INCREASE"}}selected{{end}}>INCREASE — Increment serial on update</option>
+                                            <option value="EPOCH" {{if eq .Form.SOAEditAPI "EPOCH"}}selected{{end}}>EPOCH — Set serial to current timestamp</option>
+                                            <option value="OFF" {{if eq .Form.SOAEditAPI "OFF"}}selected{{end}}>OFF — Do not auto-update serial</option>
+                                        </select>
+                                        <div class="form-text">Controls how the SOA serial number is updated when records change.</div>
+                                        <div id="soa-edit-api-off-warn" class="callout callout-warning mt-2 small"
+                                             style="{{ if ne .Form.SOAEditAPI "OFF" }}display:none{{ end }}">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            <strong>OFF</strong> disables automatic serial updates via the API.
+                                            Secondary servers may not detect zone changes and fail to sync.
+                                            Only use this if serial management is handled at the server level via <code>default-soa-edit</code>.
+                                        </div>
                                     </div>
-                                </div>
-                                <!--end::SOA-EDIT-API-->
+                                    <!--end::SOA-EDIT-API-->
+                                </fieldset>
                             </form>
                             <!--end::Form-->
                         </div>
                         <!--end::Body-->
                         <!--begin::Footer-->
                         <div class="card-footer" {{if not (or .Success .Error)}}style="display: none;"{{end}}>
+                            {{if .CanDelete}}
                             <button type="button" class="btn btn-outline-danger btn-sm float-end" id="delete-zone-btn" data-zone-name="{{.Form.Name}}">
                                 <i class="bi bi-trash me-1"></i> Delete Zone
                             </button>
-                            <button type="submit" form="zone-settings-form" class="btn btn-primary">
+                            {{end}}
+                            {{if .CanUpdate}}
+                            <button type="submit" form="zone-settings-form" class="btn btn-primary me-2">
                                 <i class="bi bi-save"></i> Update Zone
                             </button>
-                            <a href="/dashboard" class="btn btn-secondary ms-2">
+                            {{end}}
+                            <a href="/dashboard" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> Cancel
                             </a>
                         </div>
@@ -222,11 +228,13 @@
                                         DNSSEC is <strong>not enabled</strong> for this zone.
                                         Enabling it will generate a Combined Signing Key (CSK) using the PowerDNS server default algorithm.
                                     </div>
+                                    {{if .CanUpdate}}
                                     <button class="btn btn-warning" @click="enableDNSSEC()" :disabled="busy">
                                         <span x-show="busy" class="spinner-border spinner-border-sm me-1"></span>
                                         <i x-show="!busy" class="bi bi-shield-plus me-1"></i>
                                         Enable DNSSEC
                                     </button>
+                                    {{end}}
                                 </div>
                             </template>
 
@@ -244,7 +252,7 @@
                                                     <th>Active</th>
                                                     <th>Published</th>
                                                     <th>DS Records</th>
-                                                    <th></th>
+                                                    {{if .CanUpdate}}<th></th>{{end}}
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -276,6 +284,7 @@
                                                                 <span class="text-muted small">—</span>
                                                             </template>
                                                         </td>
+                                                        {{if .CanUpdate}}
                                                         <td class="align-middle text-end">
                                                             <div class="dropdown">
                                                                 <button type="button" class="btn btn-sm btn-light"
@@ -310,6 +319,7 @@
                                                                 </ul>
                                                             </div>
                                                         </td>
+                                                        {{end}}
                                                     </tr>
                                                 </template>
                                             </tbody>
@@ -317,12 +327,14 @@
                                     </div>
 
                                     <div class="d-flex gap-2 flex-wrap">
+                                        {{if .CanUpdate}}
                                         <button class="btn btn-outline-danger btn-sm"
                                                 @click="disableDNSSEC()" :disabled="busy">
                                             <span x-show="busy" class="spinner-border spinner-border-sm me-1"></span>
                                             <i x-show="!busy" class="bi bi-shield-x me-1"></i>
                                             Disable DNSSEC
                                         </button>
+                                        {{end}}
                                         <button class="btn btn-outline-info btn-sm"
                                                 @click="checkChain()" :disabled="chainBusy">
                                             <span x-show="chainBusy" class="spinner-border spinner-border-sm me-1"></span>
@@ -397,6 +409,7 @@
                         </div>
                     </div>
 
+                    {{if .CanUpdate}}
                     <!-- Delete Key Confirm Modal -->
                     <div class="modal fade" id="deleteKeyModal" tabindex="-1" aria-labelledby="deleteKeyModalLabel">
                         <div class="modal-dialog">
@@ -424,6 +437,7 @@
                             </div>
                         </div>
                     </div>
+                    {{end}}
 
                     <script src="/static/js/dnssec-manager.js"></script>
                     {{end}}
@@ -449,6 +463,9 @@
                                     <span class="text-muted small ms-1">
                                         {{.Form.Kind}}{{if .Zone.Serial}} · Serial {{.Zone.Serial}}{{end}}
                                     </span>
+                                    {{end}}
+                                    {{if not .CanUpdate}}
+                                    <span class="badge bg-info">Read-Only</span>
                                     {{end}}
                                 </div>
                                 <!--end::Title row-->
@@ -490,6 +507,7 @@
                                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     </div>
 
+                                    {{if .CanUpdate}}
                                     <!--begin::Action buttons (grouped; right-aligned from sm up, left on very small screens)-->
                                     <div class="d-flex align-items-center flex-wrap gap-2 ms-sm-auto">
                                         <span class="badge text-bg-warning" x-show="pendingCount > 0" x-cloak>
@@ -508,6 +526,7 @@
                                         </button>
                                     </div>
                                     <!--end::Action buttons-->
+                                    {{end}}
                                 </div>
                                 <!--end::Toolbar row-->
                             </div>
@@ -534,7 +553,7 @@
                                                 <th>Status</th>
                                                 <th>Data</th>
                                                 <th>Comment</th>
-                                                <th width="48"></th>
+                                                {{if .CanUpdate}}<th width="48"></th>{{end}}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -566,6 +585,7 @@
                                                     </td>
                                                     <td class="record-comment text-truncate text-muted" style="max-width:150px;"
                                                         :title="record.comment" x-text="record.comment"></td>
+                                                    {{if .CanUpdate}}
                                                     <td class="text-end">
                                                         <div class="dropdown">
                                                             <button type="button" class="btn btn-sm btn-light"
@@ -594,6 +614,7 @@
                                                             </ul>
                                                         </div>
                                                     </td>
+                                                    {{end}}
                                                 </tr>
                                             </template>
                                         </tbody>
@@ -644,6 +665,7 @@
                         </div>
                         <!--end::DNS Records Card-->
 
+                        {{if .CanUpdate}}
                         <!-- Record Edit/Add Modal -->
                         <div class="modal fade" id="recordModal" tabindex="-1" aria-labelledby="recordModalLabel">
                             <div class="modal-dialog">
@@ -831,6 +853,7 @@
                                 </div>
                             </div>
                         </div>
+                        {{end}}
 
                         <!-- Zone edit JavaScript (defines zoneEditor before Alpine defer fires) -->
                         <script src="/static/js/zone-edit.js"></script>
@@ -902,6 +925,7 @@
 </main>
 <!--end::App Main-->
 
+{{if .CanDelete}}
 <!-- Delete Zone Modal -->
 <div class="modal fade" id="deleteZoneModal" tabindex="-1" aria-labelledby="deleteZoneModalLabel">
     <div class="modal-dialog">
@@ -934,6 +958,7 @@
         </div>
     </div>
 </div>
+{{end}}
 
 <!-- Zone settings JavaScript (zone-kind select + delete zone modal) -->
 <script src="/static/js/zone-settings.js"></script>

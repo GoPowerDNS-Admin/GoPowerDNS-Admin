@@ -45,7 +45,7 @@ type Service struct {
 var Handler = Service{}
 
 // Init registers all DNSSEC routes with the Fiber app.
-// All routes require PermZoneUpdate — the same permission used by the zone edit handler.
+// Read-only routes require PermZoneRead; routes that change keys require PermZoneUpdate.
 func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authService *auth.Service) {
 	if app == nil || cfg == nil || db == nil {
 		log.Fatal().Msg(handler.ErrNilACDFatalLogMsg)
@@ -56,10 +56,11 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	s.db = db
 	s.authService = authService
 
+	requireRead := auth.RequirePermission(authService, auth.PermZoneRead)
 	requireUpdate := auth.RequirePermission(authService, auth.PermZoneUpdate)
 
 	// GET  /zone/edit/:name/dnssec        — list cryptokeys (JSON)
-	app.Get(BasePath, requireUpdate, s.List)
+	app.Get(BasePath, requireRead, s.List)
 
 	// POST /zone/edit/:name/dnssec/enable  — enable DNSSEC (create first CSK)
 	app.Post(BasePath+"/enable", requireUpdate, s.Enable)
@@ -74,7 +75,7 @@ func (s *Service) Init(app *fiber.App, cfg *config.Config, db *gorm.DB, authServ
 	app.Post(BasePath+"/keys/:id/delete", requireUpdate, s.DeleteKey)
 
 	// GET /zone/edit/:name/dnssec/chain — full trust chain verification
-	app.Get(BasePath+"/chain", requireUpdate, s.CheckChain)
+	app.Get(BasePath+"/chain", requireRead, s.CheckChain)
 }
 
 // CryptokeyView is the JSON representation of a cryptokey sent to the frontend.

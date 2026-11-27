@@ -84,7 +84,7 @@ pre-commit: linter linter-js
 
 changelog:
 	@echo "Generating CHANGELOG.md..."
-	@git-cliff -o CHANGELOG.md
+	@git-cliff --unreleased --bump -o CHANGELOG.md
 	@echo "✓ CHANGELOG.md updated"
 
 vendor-update: vendor-bootstrap vendor-adminlte vendor-jquery vendor-datatables vendor-overlayscrollbars vendor-bootstrap-icons vendor-source-sans-3 vendor-alpinejs
